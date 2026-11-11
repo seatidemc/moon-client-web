@@ -1,0 +1,15 @@
+@font-face {
+  font-family: "Minecraft SC";
+  src: url("./assets/MinecraftSC-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0020-007E, U+00A0-00FF, U+2000-206F, U+3000-303F, U+4E00-9FFF,
+    U+FF00-FFEF;
+}
+
+@theme {
+  --font-minecraft-sc:
+    "Minecraft SC", "PingFang SC", "Microsoft YaHei", ui-monospace, monospace;
+}
