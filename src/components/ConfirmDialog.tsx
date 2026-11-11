@@ -1,0 +1,44 @@
+import { Button, Modal } from '@heroui/react'
+
+interface ConfirmDialogProps {
+  isOpen: boolean
+  onOpenChange: (isOpen: boolean) => void
+  title: string
+  description: string
+  confirmLabel?: string
+  onConfirm: () => void
+}
+
+export function ConfirmDialog({
+  isOpen,
+  onOpenChange,
+  title,
+  description,
+  confirmLabel = '删除',
+  onConfirm,
+}: ConfirmDialogProps) {
+  return (
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+      <Modal.Backdrop>
+        <Modal.Container size="sm">
+          <Modal.Dialog>
+            <Modal.Header>
+              <Modal.Heading>{title}</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body>
+              <p>{description}</p>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="tertiary" onPress={() => onOpenChange(false)}>
+                取消
+              </Button>
+              <Button variant="danger" onPress={onConfirm}>
+                {confirmLabel}
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  )
+}
