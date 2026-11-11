@@ -85,3 +85,27 @@ export function formatDateTime(isoDate: string): string {
 export function createId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
 }
+
+export function readCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null
+
+  const prefix = `${encodeURIComponent(name)}=`
+
+  for (const part of document.cookie.split('; ')) {
+    if (part.startsWith(prefix)) {
+      return decodeURIComponent(part.slice(prefix.length))
+    }
+  }
+
+  return null
+}
+
+export function writeCookie(
+  name: string,
+  value: string,
+  maxAgeSeconds = 60 * 60 * 24 * 365,
+): void {
+  if (typeof document === 'undefined') return
+
+  document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax`
+}

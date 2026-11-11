@@ -9,7 +9,17 @@
     U+FF00-FFEF;
 }
 
+@font-face {
+  font-family: "Recursive";
+  src: url("/fonts/Recursive-VF.woff2") format("woff2");
+  font-weight: 300 1000;
+  font-style: oblique -15deg 0deg;
+  font-display: swap;
+}
+
 @theme {
   --font-minecraft-sc:
     "Minecraft SC", "PingFang SC", "Microsoft YaHei", ui-monospace, monospace;
+  --font-recursive:
+    "Recursive", ui-sans-serif, system-ui, "PingFang SC", sans-serif;
 }

@@ -26,6 +26,15 @@ body {
 }
 
 @layer components {
+  .brand-logo {
+    font-family: var(--font-recursive);
+    font-variation-settings:
+      "CASL" 1,
+      "wght" 700,
+      "slnt" -8,
+      "MONO" 0;
+  }
+
   .moon-prose,
   .moon-editor-content {
     color: var(--foreground);

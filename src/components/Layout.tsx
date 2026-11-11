@@ -43,10 +43,14 @@ export function Layout() {
   return (
     <div className="flex min-h-svh flex-col bg-background text-foreground">
       <header className="border-b border-border bg-surface">
-        <div className="mx-auto flex h-14 w-full max-w-3xl items-center gap-3 px-4 sm:gap-4">
+        <div
+          className={`mx-auto flex h-14 w-full items-center gap-3 px-4 sm:gap-4 ${
+            location.pathname === '/' ? 'max-w-[69.25rem]' : 'max-w-3xl'
+          }`}
+        >
           <Link
             to="/"
-            className="shrink-0 text-base font-semibold tracking-tight"
+            className="brand-logo shrink-0 text-lg tracking-tight"
             aria-label={`${SITE_NAME} 首页`}
           >
             {SITE_NAME}

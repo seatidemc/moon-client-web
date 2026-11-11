@@ -30,6 +30,14 @@ export interface Reply {
   createdAt: string
 }
 
+export interface PinnedAnnouncement {
+  id: string
+  title: string
+  content: string
+  publisherId: string
+  publishedAt: string
+}
+
 export interface ForumData {
   users: User[]
   boards: Board[]

@@ -1,7 +1,7 @@
 import { Markdown } from '@tiptap/markdown'
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import { Button, cn, TextArea } from '@heroui/react'
+import { Button, cn, Tabs, TextArea } from '@heroui/react'
 import {
   Bold,
   Code,
@@ -94,141 +94,148 @@ export function MarkdownEditor({ value, onChange }: MarkdownEditorProps) {
   }
 
   return (
-    <div>
+    <Tabs
+      selectedKey={mode}
+      onSelectionChange={(key) => switchMode(key as EditorMode)}
+      className="block"
+    >
       <div className="mb-2 flex items-center justify-between gap-4">
         <span className="text-sm font-medium">正文</span>
-        <div
-          className="flex rounded-lg border border-border bg-surface p-0.5"
-          role="group"
-          aria-label="编辑模式"
-        >
-          <ModeButton
-            active={mode === 'rich'}
-            onClick={() => switchMode('rich')}
-          >
-            富文本
-          </ModeButton>
-          <ModeButton
-            active={mode === 'markdown'}
-            onClick={() => switchMode('markdown')}
-          >
-            Markdown
-          </ModeButton>
-        </div>
+        <Tabs.ListContainer className="rounded-lg border border-border bg-surface p-0.5">
+          <Tabs.List aria-label="编辑模式" className="gap-0 p-0">
+            <Tabs.Tab
+              id="rich"
+              className="h-7 rounded-md px-2.5 text-xs data-[selected=true]:bg-default data-[selected=true]:text-foreground"
+            >
+              富文本
+            </Tabs.Tab>
+            <Tabs.Tab
+              id="markdown"
+              className="h-7 rounded-md px-2.5 text-xs data-[selected=true]:bg-default data-[selected=true]:text-foreground"
+            >
+              Markdown
+            </Tabs.Tab>
+          </Tabs.List>
+        </Tabs.ListContainer>
       </div>
 
-      <div
-        className={cn(
-          'overflow-hidden rounded-xl border border-border bg-surface',
-          'transition-colors focus-within:border-accent',
-          mode !== 'rich' && 'hidden',
-        )}
-      >
+      <Tabs.Panel id="rich" shouldForceMount className="mt-0 p-0">
         <div
-          className="flex flex-wrap items-center gap-0.5 border-b border-separator bg-surface-secondary px-2 py-1.5"
-          role="toolbar"
-          aria-label="格式工具栏"
+          className={cn(
+            'overflow-hidden rounded-xl border border-border bg-surface',
+            'transition-colors focus-within:border-accent',
+          )}
         >
-          <ToolbarButton
-            label="粗体"
-            active={editorState.isBold}
-            onPress={() => run(() => editor?.chain().focus().toggleBold().run())}
+          <div
+            className="flex flex-wrap items-center gap-0.5 border-b border-separator bg-surface-secondary px-2 py-1.5"
+            role="toolbar"
+            aria-label="格式工具栏"
           >
-            <Bold />
-          </ToolbarButton>
-          <ToolbarButton
-            label="斜体"
-            active={editorState.isItalic}
-            onPress={() =>
-              run(() => editor?.chain().focus().toggleItalic().run())
-            }
-          >
-            <Italic />
-          </ToolbarButton>
-          <ToolbarButton
-            label="删除线"
-            active={editorState.isStrike}
-            onPress={() =>
-              run(() => editor?.chain().focus().toggleStrike().run())
-            }
-          >
-            <Strikethrough />
-          </ToolbarButton>
-          <span className="mx-1 h-5 w-px bg-separator" aria-hidden="true" />
-          <ToolbarButton
-            label="二级标题"
-            active={editorState.isHeading}
-            onPress={() =>
-              run(() =>
-                editor?.chain().focus().toggleHeading({ level: 2 }).run(),
-              )
-            }
-          >
-            <Heading2 />
-          </ToolbarButton>
-          <ToolbarButton
-            label="无序列表"
-            active={editorState.isBulletList}
-            onPress={() =>
-              run(() => editor?.chain().focus().toggleBulletList().run())
-            }
-          >
-            <List />
-          </ToolbarButton>
-          <ToolbarButton
-            label="有序列表"
-            active={editorState.isOrderedList}
-            onPress={() =>
-              run(() => editor?.chain().focus().toggleOrderedList().run())
-            }
-          >
-            <ListOrdered />
-          </ToolbarButton>
-          <ToolbarButton
-            label="引用"
-            active={editorState.isBlockquote}
-            onPress={() =>
-              run(() => editor?.chain().focus().toggleBlockquote().run())
-            }
-          >
-            <Quote />
-          </ToolbarButton>
-          <ToolbarButton
-            label="行内代码"
-            active={editorState.isCode}
-            onPress={() => run(() => editor?.chain().focus().toggleCode().run())}
-          >
-            <Code />
-          </ToolbarButton>
-          <ToolbarButton
-            label="代码块"
-            active={editorState.isCodeBlock}
-            onPress={() =>
-              run(() => editor?.chain().focus().toggleCodeBlock().run())
-            }
-          >
-            <Code2 />
-          </ToolbarButton>
-          <span className="mx-1 h-5 w-px bg-separator" aria-hidden="true" />
-          <ToolbarButton
-            label="撤销"
-            disabled={!editorState.canUndo}
-            onPress={() => run(() => editor?.chain().focus().undo().run())}
-          >
-            <Undo2 />
-          </ToolbarButton>
-          <ToolbarButton
-            label="重做"
-            disabled={!editorState.canRedo}
-            onPress={() => run(() => editor?.chain().focus().redo().run())}
-          >
-            <Redo2 />
-          </ToolbarButton>
+            <ToolbarButton
+              label="粗体"
+              active={editorState.isBold}
+              onPress={() =>
+                run(() => editor?.chain().focus().toggleBold().run())
+              }
+            >
+              <Bold />
+            </ToolbarButton>
+            <ToolbarButton
+              label="斜体"
+              active={editorState.isItalic}
+              onPress={() =>
+                run(() => editor?.chain().focus().toggleItalic().run())
+              }
+            >
+              <Italic />
+            </ToolbarButton>
+            <ToolbarButton
+              label="删除线"
+              active={editorState.isStrike}
+              onPress={() =>
+                run(() => editor?.chain().focus().toggleStrike().run())
+              }
+            >
+              <Strikethrough />
+            </ToolbarButton>
+            <span className="mx-1 h-5 w-px bg-separator" aria-hidden="true" />
+            <ToolbarButton
+              label="二级标题"
+              active={editorState.isHeading}
+              onPress={() =>
+                run(() =>
+                  editor?.chain().focus().toggleHeading({ level: 2 }).run(),
+                )
+              }
+            >
+              <Heading2 />
+            </ToolbarButton>
+            <ToolbarButton
+              label="无序列表"
+              active={editorState.isBulletList}
+              onPress={() =>
+                run(() => editor?.chain().focus().toggleBulletList().run())
+              }
+            >
+              <List />
+            </ToolbarButton>
+            <ToolbarButton
+              label="有序列表"
+              active={editorState.isOrderedList}
+              onPress={() =>
+                run(() => editor?.chain().focus().toggleOrderedList().run())
+              }
+            >
+              <ListOrdered />
+            </ToolbarButton>
+            <ToolbarButton
+              label="引用"
+              active={editorState.isBlockquote}
+              onPress={() =>
+                run(() => editor?.chain().focus().toggleBlockquote().run())
+              }
+            >
+              <Quote />
+            </ToolbarButton>
+            <ToolbarButton
+              label="行内代码"
+              active={editorState.isCode}
+              onPress={() =>
+                run(() => editor?.chain().focus().toggleCode().run())
+              }
+            >
+              <Code />
+            </ToolbarButton>
+            <ToolbarButton
+              label="代码块"
+              active={editorState.isCodeBlock}
+              onPress={() =>
+                run(() => editor?.chain().focus().toggleCodeBlock().run())
+              }
+            >
+              <Code2 />
+            </ToolbarButton>
+            <span className="mx-1 h-5 w-px bg-separator" aria-hidden="true" />
+            <ToolbarButton
+              label="撤销"
+              disabled={!editorState.canUndo}
+              onPress={() => run(() => editor?.chain().focus().undo().run())}
+            >
+              <Undo2 />
+            </ToolbarButton>
+            <ToolbarButton
+              label="重做"
+              disabled={!editorState.canRedo}
+              onPress={() => run(() => editor?.chain().focus().redo().run())}
+            >
+              <Redo2 />
+            </ToolbarButton>
+          </div>
+          <EditorContent editor={editor} />
         </div>
-        <EditorContent editor={editor} />
-      </div>
+      </Tabs.Panel>
 
-      {mode === 'markdown' ? (
+      <Tabs.Panel id="markdown" shouldForceMount className="mt-0 p-0">
         <TextArea
           fullWidth
           value={value}
@@ -237,7 +244,7 @@ export function MarkdownEditor({ value, onChange }: MarkdownEditorProps) {
           placeholder="用 Markdown 写下正文…"
           className="min-h-64 resize-y font-mono text-sm leading-6"
         />
-      ) : null}
+      </Tabs.Panel>
 
       <p className="mt-2 text-xs leading-5 text-muted">
         {mode === 'rich'
@@ -246,33 +253,7 @@ export function MarkdownEditor({ value, onChange }: MarkdownEditorProps) {
         正文中的 <span className="whitespace-nowrap">#标签</span>{' '}
         会自动成为帖子标签。
       </p>
-    </div>
-  )
-}
-
-function ModeButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: string
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={cn(
-        'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
-        active
-          ? 'bg-default text-foreground'
-          : 'text-muted hover:text-foreground',
-      )}
-    >
-      {children}
-    </button>
+    </Tabs>
   )
 }
 

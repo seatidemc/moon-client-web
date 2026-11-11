@@ -22,7 +22,7 @@ export function ThreadListItem({
   const replyCount = replies.filter((reply) => reply.threadId === thread.id).length
 
   return (
-    <article className="relative rounded-2xl border-2 border-transparent bg-surface p-4 transition-colors hover:border-border hover:bg-surface-secondary active:bg-surface-tertiary sm:p-5">
+    <article className="relative rounded-2xl border-2 border-transparent bg-surface p-4 transition duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:bg-surface-secondary active:scale-[0.98] active:bg-surface-tertiary active:duration-100 sm:p-5">
       <span className="absolute top-4 right-4 text-xs text-muted sm:top-5 sm:right-5">
         <span className="text-foreground">{replyCount}</span> 回复
       </span>
