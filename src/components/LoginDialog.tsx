@@ -55,7 +55,7 @@ function LoginForm({ onClose }: { onClose: () => void }) {
       <Modal.Header>
         <Modal.Heading>登录 Moon</Modal.Heading>
         <p className="text-sm text-muted">
-          登录后即可发帖和回复。Moon 目前不开放注册。
+          登录后即可发帖、回复和点赞。Moon 目前不开放注册。
         </p>
       </Modal.Header>
       <Modal.Body className="space-y-4">

@@ -43,4 +43,8 @@ export interface ForumData {
   boards: Board[]
   threads: ForumThread[]
   replies: Reply[]
+  /** 用户主页的点赞记录：被点赞用户 id → 点赞者 id 列表 */
+  userLikes: Record<string, string[]>
+  /** 用户主页背景图：用户 id → 图片 data URL */
+  userBackgrounds: Record<string, string>
 }
