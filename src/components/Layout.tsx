@@ -1,11 +1,13 @@
 import {
   Button,
+  Dropdown,
   SearchField,
 } from '@heroui/react'
-import { LogOut, Search } from 'lucide-react'
+import { LogOut, Search, User } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { LoginDialog } from '@/components/LoginDialog'
 import { UserAvatar } from '@/components/UserAvatar'
 import { SITE_NAME } from '@/lib/constants'
@@ -24,6 +26,7 @@ export function Layout() {
     locationKey: string
     value: string
   } | null>(null)
+  const [logoutOpen, setLogoutOpen] = useState(false)
   const query =
     draft?.locationKey === locationKey ? draft.value : urlQuery
 
@@ -72,32 +75,42 @@ export function Layout() {
 
           <div className="flex shrink-0 items-center gap-1.5">
             {currentUser ? (
-              <>
-                <Link
-                  to={`/user/${currentUser.id}`}
-                  className="hidden items-center gap-2 rounded-lg px-2 py-1 text-sm transition-colors hover:bg-default-soft sm:flex"
+              <Dropdown>
+                <Dropdown.Trigger
+                  aria-label="账号菜单"
+                  className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm transition-colors hover:bg-default-soft"
                 >
                   <UserAvatar user={currentUser} />
-                  <span className="max-w-24 truncate">{currentUser.name}</span>
-                </Link>
-                <Link
-                  to={`/user/${currentUser.id}`}
-                  className="sm:hidden"
-                  aria-label="个人中心"
-                >
-                  <UserAvatar user={currentUser} />
-                </Link>
-                <Button
-                  type="button"
-                  size="sm"
-                  isIconOnly
-                  variant="ghost"
-                  aria-label="退出登录"
-                  onPress={logout}
-                >
-                  <LogOut className="size-4" />
-                </Button>
-              </>
+                  <span className="hidden max-w-24 truncate sm:inline">
+                    {currentUser.name}
+                  </span>
+                </Dropdown.Trigger>
+                <Dropdown.Popover placement="bottom end" className="min-w-36">
+                  <Dropdown.Menu
+                    aria-label="账号菜单"
+                    onAction={(key) => {
+                      if (key === 'profile') {
+                        navigate(`/user/${currentUser.id}`)
+                      } else if (key === 'logout') {
+                        setLogoutOpen(true)
+                      }
+                    }}
+                  >
+                    <Dropdown.Item id="profile" textValue="我的主页">
+                      <User className="size-4 text-muted" />
+                      <span data-slot="label">我的主页</span>
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      id="logout"
+                      textValue="退出登录"
+                      variant="danger"
+                    >
+                      <LogOut className="size-4 text-danger" />
+                      <span data-slot="label">退出登录</span>
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown.Popover>
+              </Dropdown>
             ) : (
               <Button
                 type="button"
@@ -117,6 +130,18 @@ export function Layout() {
       </div>
 
       <LoginDialog />
+      <ConfirmDialog
+        isOpen={logoutOpen}
+        onOpenChange={setLogoutOpen}
+        title="退出登录？"
+        description="退出后需要重新登录才能发帖和回复。"
+        confirmLabel="退出登录"
+        confirmVariant="primary"
+        onConfirm={() => {
+          logout()
+          setLogoutOpen(false)
+        }}
+      />
     </div>
   )
 }

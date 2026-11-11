@@ -6,6 +6,7 @@ interface ConfirmDialogProps {
   title: string
   description: string
   confirmLabel?: string
+  confirmVariant?: 'danger' | 'primary'
   onConfirm: () => void
 }
 
@@ -15,6 +16,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel = '删除',
+  confirmVariant = 'danger',
   onConfirm,
 }: ConfirmDialogProps) {
   return (
@@ -32,7 +34,7 @@ export function ConfirmDialog({
               <Button variant="tertiary" onPress={() => onOpenChange(false)}>
                 取消
               </Button>
-              <Button variant="danger" onPress={onConfirm}>
+              <Button variant={confirmVariant} onPress={onConfirm}>
                 {confirmLabel}
               </Button>
             </Modal.Footer>

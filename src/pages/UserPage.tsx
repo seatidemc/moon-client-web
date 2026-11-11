@@ -69,7 +69,7 @@ export function UserPage() {
         <h2 id="user-threads-heading" className="text-base font-medium">
           主题
         </h2>
-        <div className="mt-2 divide-y divide-border border-t border-border">
+        <div className="mt-4 space-y-5">
           {userThreads.length > 0 ? (
             userThreads.map((thread) => (
               <ThreadListItem key={thread.id} thread={thread} showBoard />
@@ -98,7 +98,7 @@ export function UserPage() {
                     <span>回复了</span>
                     <Link
                       to={`/thread/${thread.id}#reply-${reply.id}`}
-                      className="font-medium text-foreground hover:underline"
+                      className="font-minecraft-sc text-foreground hover:underline"
                     >
                       {thread.title}
                     </Link>

@@ -106,7 +106,7 @@ export function SearchPage() {
           </div>
 
           {results.length > 0 ? (
-            <div className="divide-y divide-border">
+            <div className="mt-4 space-y-5">
               {results.map((thread) => (
                 <ThreadListItem key={thread.id} thread={thread} showBoard />
               ))}

@@ -72,7 +72,7 @@ export function ThreadPage() {
       />
 
       <article className="mt-4">
-        <h1 className="break-words text-2xl leading-tight font-semibold tracking-tight sm:text-3xl">
+        <h1 className="break-words font-minecraft-sc text-2xl leading-tight tracking-tight sm:text-3xl">
           {thread.title}
         </h1>
 

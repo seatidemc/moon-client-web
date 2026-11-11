@@ -79,7 +79,7 @@ export function TopicPage() {
         </div>
       ) : null}
 
-      <div className="mt-8 divide-y divide-border border-t border-border">
+      <div className="mt-8 space-y-5">
         {boardThreads.length > 0 ? (
           boardThreads.map((thread) => (
             <ThreadListItem key={thread.id} thread={thread} />

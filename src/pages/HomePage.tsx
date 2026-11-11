@@ -14,7 +14,7 @@ export function HomePage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:py-12">
-      <div className="divide-y divide-border">
+      <div className="space-y-5">
         {recentThreads.length > 0 ? (
           recentThreads.map((thread) => (
             <ThreadListItem key={thread.id} thread={thread} />
