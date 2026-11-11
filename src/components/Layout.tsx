@@ -1,9 +1,4 @@
-import {
-  Button,
-  Dropdown,
-  SearchField,
-  cn,
-} from '@heroui/react'
+import { Button, Dropdown, SearchField } from '@heroui/react'
 import { LogOut, Search, User } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -13,19 +8,13 @@ import { LoginDialog } from '@/components/LoginDialog'
 import { UserAvatar } from '@/components/UserAvatar'
 import { SITE_NAME } from '@/lib/constants'
 import { useForum } from '@/lib/forum-context'
-import { useCoverTextTones } from '@/lib/use-cover-text-tone'
 
 export function Layout() {
-  const { currentUser, userBackgrounds, logout, openLogin } = useForum()
+  const { currentUser, logout, openLogin } = useForum()
   const location = useLocation()
   const navigate = useNavigate()
-  const profileId = location.pathname.match(/^\/user\/([^/]+)\/?$/)?.[1]
-  const profileBackground = profileId
-    ? userBackgrounds[decodeURIComponent(profileId)]
-    : undefined
-  const overProfileCover = Boolean(profileBackground)
-  const coverTones = useCoverTextTones(profileBackground)
   const locationKey = `${location.pathname}${location.search}`
+  const isSearchPage = location.pathname === '/search'
   const urlQuery =
     location.pathname === '/search'
       ? new URLSearchParams(location.search).get('q') ?? ''
@@ -50,83 +39,55 @@ export function Layout() {
 
   return (
     <div className="flex min-h-svh flex-col bg-background text-foreground">
-      <header
-        className={cn(
-          'relative z-20',
-          overProfileCover
-            ? 'bg-transparent'
-            : 'border-b border-border bg-surface',
-        )}
-      >
+      <header className="relative z-20 border-b border-border bg-surface">
         <div
           className={`mx-auto flex h-14 w-full items-center gap-3 px-4 sm:gap-4 ${
-            location.pathname === '/' ? 'max-w-[69.25rem]' : 'max-w-3xl'
+            location.pathname === '/' || location.pathname === '/boards'
+              ? 'max-w-[69.25rem]'
+              : 'max-w-3xl'
           }`}
         >
           <Link
             to="/"
-            className={cn(
-              'brand-logo shrink-0 text-lg tracking-tight',
-              overProfileCover && coverTones.logo,
-            )}
+            className="brand-logo shrink-0 text-lg tracking-tight"
             aria-label={`${SITE_NAME} 首页`}
           >
             {SITE_NAME}
           </Link>
 
-          <form
-            role="search"
-            onSubmit={handleSearch}
-            className="ml-auto min-w-0 max-w-xs flex-1 sm:max-w-sm"
-          >
-            <SearchField
-              aria-label="搜索主题、标签或作者"
-              value={query}
-              onChange={updateQuery}
-              className="w-full"
+          {isSearchPage ? null : (
+            <form
+              role="search"
+              onSubmit={handleSearch}
+              className="ml-auto min-w-0 max-w-xs flex-1 sm:max-w-sm"
             >
-              <SearchField.Group
-                className={cn(
-                  overProfileCover &&
-                    'border-background/25 bg-foreground/20 text-background shadow-none backdrop-blur-sm',
-                )}
+              <SearchField
+                aria-label="搜索主题、标签或作者"
+                value={query}
+                onChange={updateQuery}
+                className="w-full"
               >
-                <SearchField.SearchIcon
-                  className={cn(overProfileCover && 'text-background/70')}
-                >
-                  <Search className="size-4" />
-                </SearchField.SearchIcon>
-                <SearchField.Input
-                  placeholder="搜索主题、标签或作者"
-                  className={cn(
-                    overProfileCover &&
-                      'text-background placeholder:text-background/60',
-                  )}
-                />
-                <SearchField.ClearButton
-                  aria-label="清空搜索"
-                  className={cn(overProfileCover && 'text-background/70')}
-                />
-              </SearchField.Group>
-            </SearchField>
-          </form>
+                <SearchField.Group className="rounded-full shadow-none">
+                  <SearchField.SearchIcon>
+                    <Search className="size-4" />
+                  </SearchField.SearchIcon>
+                  <SearchField.Input placeholder="搜索主题、标签或作者" />
+                  <SearchField.ClearButton aria-label="清空搜索" />
+                </SearchField.Group>
+              </SearchField>
+            </form>
+          )}
 
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div
+            className={`flex shrink-0 items-center gap-1.5 ${
+              isSearchPage ? 'ml-auto' : ''
+            }`}
+          >
             {currentUser ? (
               <Dropdown>
                 <Dropdown.Trigger
                   aria-label="账号菜单"
-                  className={cn(
-                    'flex items-center gap-2 rounded-lg px-2 py-1 text-sm transition-colors',
-                    overProfileCover
-                      ? cn(
-                          coverTones.account,
-                          coverTones.account === 'text-foreground'
-                            ? 'hover:bg-foreground/10'
-                            : 'hover:bg-background/15',
-                        )
-                      : 'hover:bg-default-soft',
-                  )}
+                  className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm transition-colors hover:bg-default-soft"
                 >
                   <UserAvatar user={currentUser} />
                   <span className="hidden max-w-24 truncate sm:inline">

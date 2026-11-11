@@ -1,4 +1,4 @@
-import { Button, Modal, cn } from '@heroui/react'
+import { Button, Modal, cn, toast } from '@heroui/react'
 import { ImagePlus, Trash2 } from 'lucide-react'
 import { useRef, useState, type DragEvent } from 'react'
 
@@ -46,19 +46,27 @@ function CustomizePanel({
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const [processing, setProcessing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   async function applyFile(file: File | undefined) {
     if (!file) return
 
-    setError(null)
     setProcessing(true)
 
     try {
-      const dataUrl = await imageFileToDataUrl(file)
-      setUserBackground(userId, dataUrl)
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '无法读取这张图片。')
+      const updateBackground = imageFileToDataUrl(file).then((dataUrl) => {
+        setUserBackground(userId, dataUrl)
+      })
+
+      toast.promise(updateBackground, {
+        loading: '正在处理图片…',
+        success: '主页背景已更新。',
+        error: (cause) =>
+          cause instanceof Error ? cause.message : '无法读取这张图片。',
+      })
+
+      await updateBackground
+    } catch {
+      // 错误信息已由 toast 展示。
     } finally {
       setProcessing(false)
     }
@@ -77,7 +85,6 @@ function CustomizePanel({
   }
 
   function handleRemove() {
-    setError(null)
     setUserBackground(userId, null)
   }
 
@@ -163,15 +170,6 @@ function CustomizePanel({
             }}
           />
         </div>
-
-        {processing ? (
-          <p className="text-xs text-muted">正在处理图片…</p>
-        ) : null}
-        {error ? (
-          <p role="alert" className="text-sm text-danger">
-            {error}
-          </p>
-        ) : null}
       </Modal.Body>
 
       <Modal.Footer>

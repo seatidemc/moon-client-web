@@ -49,13 +49,40 @@ export function formatRelativeTime(isoDate: string): string {
   if (Number.isNaN(date.getTime())) return ''
 
   const diffSeconds = Math.floor((Date.now() - date.getTime()) / 1000)
+  if (diffSeconds >= 86400 * 7) return formatDate(isoDate)
+
+  return formatTimeAgo(isoDate)
+}
+
+/**
+ * Always-relative time, e.g. 3 天前 / 7 个月前 / 2 年前.
+ */
+export function formatTimeAgo(isoDate: string): string {
+  const date = new Date(isoDate)
+  if (Number.isNaN(date.getTime())) return ''
+
+  const diffSeconds = Math.floor((Date.now() - date.getTime()) / 1000)
 
   if (diffSeconds < 60) return '刚刚'
   if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)} 分钟前`
   if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)} 小时前`
-  if (diffSeconds < 86400 * 7) return `${Math.floor(diffSeconds / 86400)} 天前`
 
-  return formatDate(isoDate)
+  const diffDays = Math.floor(diffSeconds / 86400)
+  if (diffDays < 30) return `${diffDays} 天前`
+
+  const months = monthsSince(date, new Date())
+  if (months < 12) return `${months} 个月前`
+
+  return `${Math.floor(months / 12)} 年前`
+}
+
+function monthsSince(from: Date, to: Date): number {
+  let months =
+    (to.getFullYear() - from.getFullYear()) * 12 +
+    (to.getMonth() - from.getMonth())
+  if (to.getDate() < from.getDate()) months -= 1
+
+  return Math.max(1, months)
 }
 
 export function formatDate(isoDate: string): string {

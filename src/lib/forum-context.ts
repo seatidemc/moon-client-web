@@ -13,6 +13,11 @@ export interface NewReplyInput {
   content: string
 }
 
+export interface UpdateThreadInput {
+  title: string
+  content: string
+}
+
 export interface ForumContextValue {
   users: User[]
   boards: Board[]
@@ -27,8 +32,10 @@ export interface ForumContextValue {
   login: (identifier: string, password: string) => string | null
   logout: () => void
   createThread: (input: NewThreadInput) => ForumThread | null
+  updateThread: (threadId: string, input: UpdateThreadInput) => void
   deleteThread: (threadId: string) => void
   createReply: (input: NewReplyInput) => Reply | null
+  updateReply: (replyId: string, content: string) => void
   deleteReply: (replyId: string) => void
   toggleUserLike: (userId: string) => void
   setUserBackground: (userId: string, background: string | null) => void

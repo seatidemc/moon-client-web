@@ -1,10 +1,10 @@
 import { Button } from '@heroui/react'
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 
 import { Breadcrumbs } from '@/components/Breadcrumbs'
-import { ThreadComposer } from '@/components/ThreadComposer'
+import { NewThreadDialog } from '@/components/NewThreadDialog'
 import { ThreadListItem } from '@/components/ThreadListItem'
 import { useForum } from '@/lib/forum-context'
 import { usePageTitle } from '@/lib/use-page-title'
@@ -12,7 +12,6 @@ import { NotFoundPage } from '@/pages/NotFoundPage'
 
 export function TopicPage() {
   const { id } = useParams()
-  const navigate = useNavigate()
   const { boards, threads, currentUser, openLogin } = useForum()
   const [composerOpen, setComposerOpen] = useState(false)
   const board = boards.find((item) => item.id === id)
@@ -25,12 +24,7 @@ export function TopicPage() {
     .filter((thread) => thread.boardId === board.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 
-  function toggleComposer() {
-    if (composerOpen) {
-      setComposerOpen(false)
-      return
-    }
-
+  function openComposer() {
     if (!currentUser) {
       openLogin(() => setComposerOpen(true))
       return
@@ -41,43 +35,24 @@ export function TopicPage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
-      <Breadcrumbs items={[{ label: '首页', to: '/' }, { label: board.name }]} />
+      <Breadcrumbs items={[{ label: '板块', to: '/boards' }, { label: board.name }]} />
 
       <div className="mt-4 flex items-start justify-between gap-6">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">{board.name}</h1>
           <p className="mt-1.5 text-sm text-muted">{board.description}</p>
-          <p className="mt-3 text-xs text-muted">
-            {boardThreads.length} 个主题
-          </p>
         </div>
         <Button
           type="button"
           size="sm"
-          variant={composerOpen ? 'tertiary' : 'primary'}
+          variant="primary"
           className="shrink-0"
-          onPress={toggleComposer}
+          onPress={openComposer}
         >
-          {composerOpen ? (
-            '收起'
-          ) : (
-            <>
-              <Plus />
-              发帖
-            </>
-          )}
+          <Plus />
+          发帖
         </Button>
       </div>
-
-      {composerOpen ? (
-        <div className="mt-6">
-          <ThreadComposer
-            boardId={board.id}
-            onPublished={(thread) => navigate(`/thread/${thread.id}`)}
-            onCancel={() => setComposerOpen(false)}
-          />
-        </div>
-      ) : null}
 
       <div className="mt-8 space-y-5">
         {boardThreads.length > 0 ? (
@@ -92,13 +67,19 @@ export function TopicPage() {
               size="sm"
               variant="outline"
               className="mt-4"
-              onPress={toggleComposer}
+              onPress={openComposer}
             >
               发布第一个主题
             </Button>
           </div>
         )}
       </div>
+
+      <NewThreadDialog
+        isOpen={composerOpen}
+        onOpenChange={setComposerOpen}
+        boardId={board.id}
+      />
     </main>
   )
 }

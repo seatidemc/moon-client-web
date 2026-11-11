@@ -1,4 +1,4 @@
-import { Button, Input } from '@heroui/react'
+import { Button, SearchField } from '@heroui/react'
 import { Search } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -79,15 +79,18 @@ export function SearchPage() {
       <h1 className="text-2xl font-semibold tracking-tight">搜索</h1>
 
       <form onSubmit={handleSubmit} className="mt-5 flex items-center gap-2">
-        <Input
-          type="search"
+        <SearchField
           aria-label="搜索主题、标签或作者"
           fullWidth
           value={input}
-          onChange={(event) => updateInput(event.target.value)}
-          placeholder="搜索标题、正文、标签或作者"
-          className="h-10"
-        />
+          onChange={updateInput}
+          className="min-w-0 flex-1"
+        >
+          <SearchField.Group className="h-10 rounded-full shadow-none">
+            <SearchField.Input placeholder="搜索标题、正文、标签或作者" />
+            <SearchField.ClearButton aria-label="清空搜索" />
+          </SearchField.Group>
+        </SearchField>
         <Button type="submit" variant="primary" className="shrink-0">
           <Search />
           搜索
@@ -96,14 +99,9 @@ export function SearchPage() {
 
       {query ? (
         <section className="mt-8" aria-labelledby="search-results-heading">
-          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-3">
-            <h2 id="search-results-heading" className="text-sm font-medium">
-              “{query}” 的结果
-            </h2>
-            <span className="text-xs text-muted">
-              {results.length} 个主题
-            </span>
-          </div>
+          <h2 id="search-results-heading" className="text-sm font-medium">
+            找到 {results.length} 个结果
+          </h2>
 
           {results.length > 0 ? (
             <div className="mt-4 space-y-5">

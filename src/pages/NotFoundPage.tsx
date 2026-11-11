@@ -16,7 +16,11 @@ export function NotFoundPage() {
       <p className="mt-2 text-sm text-muted">
         你访问的页面可能已被删除，或者链接有误。
       </p>
-      <Button variant="outline" className="mt-6" onPress={() => navigate('/')}>
+      <Button
+        variant="outline"
+        className="mt-6"
+        onPress={() => navigate('/boards')}
+      >
         返回板块
       </Button>
     </main>

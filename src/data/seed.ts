@@ -41,21 +41,29 @@ const boards: ForumData['boards'] = [
     id: 'general',
     name: '综合讨论',
     description: '聊聊任何值得认真讨论的事情。',
+    icon: 'discussion',
+    color: '#6366f1',
   },
   {
     id: 'tech',
     name: '技术',
     description: '开发、工具、产品与工程实践。',
+    icon: 'code',
+    color: '#0ea5e9',
   },
   {
     id: 'life',
     name: '生活',
     description: '日常、阅读、影音与城市漫游。',
+    icon: 'life',
+    color: '#f59e0b',
   },
   {
     id: 'feedback',
     name: '反馈',
     description: '关于 Moon 的问题、建议与使用反馈。',
+    icon: 'feedback',
+    color: '#10b981',
   },
 ]
 

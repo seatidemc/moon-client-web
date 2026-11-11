@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Toast } from '@heroui/react'
 import {
   Route,
   Routes,
@@ -7,6 +8,7 @@ import {
 
 import { Layout } from '@/components/Layout'
 import { ForumProvider } from '@/lib/forum-store'
+import { BoardsPage } from '@/pages/BoardsPage'
 import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { SearchPage } from '@/pages/SearchPage'
@@ -39,6 +41,7 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<HomePage />} />
+          <Route path="boards" element={<BoardsPage />} />
           <Route path="topic/:id" element={<TopicPage />} />
           <Route path="thread/:id" element={<ThreadPage />} />
           <Route path="user/:id" element={<UserPage />} />
@@ -46,6 +49,7 @@ export default function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
+      <Toast.Provider placement="top" />
     </ForumProvider>
   )
 }

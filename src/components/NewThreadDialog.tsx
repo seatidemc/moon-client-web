@@ -5,7 +5,9 @@ import {
   FieldError,
   Input,
   Label,
+  ListBox,
   Modal,
+  Select,
   TextField,
 } from '@heroui/react'
 import { Maximize2, Minimize2 } from 'lucide-react'
@@ -19,9 +21,15 @@ import { markdownToPlainText } from '@/lib/utils'
 interface NewThreadDialogProps {
   isOpen: boolean
   onOpenChange: (isOpen: boolean) => void
+  /** 固定发帖板块；设置后隐藏板块选择 */
+  boardId?: string
 }
 
-export function NewThreadDialog({ isOpen, onOpenChange }: NewThreadDialogProps) {
+export function NewThreadDialog({
+  isOpen,
+  onOpenChange,
+  boardId,
+}: NewThreadDialogProps) {
   const [isAdvanced, setIsAdvanced] = useState(false)
   const [formKey, setFormKey] = useState(0)
   const [wasOpen, setWasOpen] = useState(isOpen)
@@ -57,6 +65,7 @@ export function NewThreadDialog({ isOpen, onOpenChange }: NewThreadDialogProps) 
             <Modal.CloseTrigger aria-label="关闭发帖窗口" />
             <NewThreadForm
               key={formKey}
+              boardId={boardId}
               isAdvanced={isAdvanced}
               onClose={closeDialog}
             />
@@ -68,14 +77,19 @@ export function NewThreadDialog({ isOpen, onOpenChange }: NewThreadDialogProps) 
 }
 
 function NewThreadForm({
+  boardId,
   isAdvanced,
   onClose,
 }: {
+  boardId?: string
   isAdvanced: boolean
   onClose: () => void
 }) {
   const { boards, createThread } = useForum()
   const navigate = useNavigate()
+  const [selectedBoardId, setSelectedBoardId] = useState(
+    () => boardId ?? boards[0]?.id ?? '',
+  )
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [titleError, setTitleError] = useState<string | null>(null)
@@ -94,7 +108,11 @@ function NewThreadForm({
 
     if (nextTitleError || nextContentError) return
 
-    const thread = createThread({ boardId: boards[0]?.id ?? '', title, content })
+    const thread = createThread({
+      boardId: selectedBoardId,
+      title,
+      content,
+    })
     if (!thread) {
       setSubmitError('登录后才能发帖。')
       return
@@ -156,6 +174,36 @@ function NewThreadForm({
             </p>
           ) : null}
         </div>
+
+        {boardId ? null : (
+          <Select
+            fullWidth
+            selectedKey={selectedBoardId || null}
+            onSelectionChange={(key) =>
+              setSelectedBoardId(key === null ? '' : String(key))
+            }
+            className="text-left"
+          >
+            <Label>板块</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                {boards.map((board) => (
+                  <ListBox.Item
+                    key={board.id}
+                    id={board.id}
+                    textValue={board.name}
+                  >
+                    {board.name}
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
+          </Select>
+        )}
 
         {submitError ? (
           <p className="text-sm text-danger" role="alert">

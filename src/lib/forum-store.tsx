@@ -8,6 +8,11 @@ import {
 
 import { seedData } from '@/data/seed'
 import {
+  DEFAULT_BOARD_COLOR,
+  DEFAULT_BOARD_ICON,
+  isBoardIconName,
+} from '@/lib/board-icons'
+import {
   DEMO_PASSWORD,
   FORUM_STORAGE_KEY,
   SESSION_STORAGE_KEY,
@@ -17,9 +22,10 @@ import {
   type ForumContextValue,
   type NewReplyInput,
   type NewThreadInput,
+  type UpdateThreadInput,
 } from '@/lib/forum-context'
 import { createId, extractTags } from '@/lib/utils'
-import type { ForumData, ForumThread, Reply } from '@/types'
+import type { Board, ForumData, ForumThread, Reply } from '@/types'
 
 function isForumData(value: unknown): value is ForumData {
   if (!value || typeof value !== 'object') return false
@@ -31,6 +37,49 @@ function isForumData(value: unknown): value is ForumData {
     Array.isArray(candidate.threads) &&
     Array.isArray(candidate.replies)
   )
+}
+
+type StoredBoard = Partial<Omit<Board, 'icon' | 'color'>> & {
+  icon?: unknown
+  color?: unknown
+}
+
+function normalizeBoards(value: unknown): Board[] {
+  if (!Array.isArray(value)) return seedData.boards
+
+  return value.flatMap((item): Board[] => {
+    if (!item || typeof item !== 'object') return []
+
+    const board = item as StoredBoard
+    if (
+      typeof board.id !== 'string' ||
+      typeof board.name !== 'string' ||
+      typeof board.description !== 'string'
+    ) {
+      return []
+    }
+
+    // Older saves predate board icons and colors, so fall back to the seed
+    // values for known boards instead of dropping them.
+    const seedBoard = seedData.boards.find(
+      (candidate) => candidate.id === board.id,
+    )
+
+    return [
+      {
+        id: board.id,
+        name: board.name,
+        description: board.description,
+        icon: isBoardIconName(board.icon)
+          ? board.icon
+          : (seedBoard?.icon ?? DEFAULT_BOARD_ICON),
+        color:
+          typeof board.color === 'string' && board.color
+            ? board.color
+            : (seedBoard?.color ?? DEFAULT_BOARD_COLOR),
+      },
+    ]
+  })
 }
 
 function normalizeUserLikes(value: unknown): Record<string, string[]> {
@@ -75,6 +124,7 @@ function loadForumData(): ForumData {
     // dropping them.
     return {
       ...parsed,
+      boards: normalizeBoards(parsed.boards),
       userLikes: normalizeUserLikes(parsed.userLikes),
       userBackgrounds: normalizeUserBackgrounds(parsed.userBackgrounds),
     }
@@ -179,6 +229,24 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       return thread
     }
 
+    function updateThread(threadId: string, input: UpdateThreadInput) {
+      if (!currentUser) return
+
+      setData((previous) => ({
+        ...previous,
+        threads: previous.threads.map((thread) =>
+          thread.id === threadId && thread.authorId === currentUser.id
+            ? {
+                ...thread,
+                title: input.title.trim(),
+                content: input.content,
+                tags: extractTags(input.content),
+              }
+            : thread,
+        ),
+      }))
+    }
+
     function deleteThread(threadId: string) {
       if (!currentUser) return
 
@@ -211,6 +279,19 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       }))
 
       return reply
+    }
+
+    function updateReply(replyId: string, content: string) {
+      if (!currentUser) return
+
+      setData((previous) => ({
+        ...previous,
+        replies: previous.replies.map((reply) =>
+          reply.id === replyId && reply.authorId === currentUser.id
+            ? { ...reply, content }
+            : reply,
+        ),
+      }))
     }
 
     function deleteReply(replyId: string) {
@@ -274,8 +355,10 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       createThread,
+      updateThread,
       deleteThread,
       createReply,
+      updateReply,
       deleteReply,
       toggleUserLike,
       setUserBackground,
