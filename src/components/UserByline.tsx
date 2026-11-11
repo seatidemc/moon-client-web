@@ -1,4 +1,5 @@
 import { cn } from '@heroui/react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import { UserAvatar } from '@/components/UserAvatar'
@@ -9,6 +10,7 @@ interface UserBylineProps {
   user: User
   date?: string
   showHandle?: boolean
+  badge?: ReactNode
   className?: string
 }
 
@@ -16,6 +18,7 @@ export function UserByline({
   user,
   date,
   showHandle = true,
+  badge,
   className,
 }: UserBylineProps) {
   return (
@@ -31,6 +34,7 @@ export function UserByline({
           >
             {user.name}
           </Link>
+          {badge}
           {showHandle ? (
             <span className="truncate text-xs text-muted">@{user.handle}</span>
           ) : null}
