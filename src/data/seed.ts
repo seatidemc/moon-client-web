@@ -223,9 +223,18 @@ const replies: ForumData['replies'] = [
   },
 ]
 
+const userLikes: ForumData['userLikes'] = {
+  u1: ['u2', 'u3', 'u4'],
+  u2: ['u1', 'u4'],
+  u3: ['u1'],
+  u4: [],
+}
+
 export const seedData: ForumData = {
   users,
   boards,
   threads,
   replies,
+  userLikes,
+  userBackgrounds: {},
 }

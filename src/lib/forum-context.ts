@@ -18,6 +18,8 @@ export interface ForumContextValue {
   boards: Board[]
   threads: ForumThread[]
   replies: Reply[]
+  userLikes: Record<string, string[]>
+  userBackgrounds: Record<string, string>
   currentUser: User | null
   loginDialogOpen: boolean
   openLogin: (afterLogin?: () => void) => void
@@ -28,6 +30,8 @@ export interface ForumContextValue {
   deleteThread: (threadId: string) => void
   createReply: (input: NewReplyInput) => Reply | null
   deleteReply: (replyId: string) => void
+  toggleUserLike: (userId: string) => void
+  setUserBackground: (userId: string, background: string | null) => void
 }
 
 export const ForumContext = createContext<ForumContextValue | null>(null)

@@ -33,13 +33,51 @@ function isForumData(value: unknown): value is ForumData {
   )
 }
 
+function normalizeUserLikes(value: unknown): Record<string, string[]> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+
+  const userLikes: Record<string, string[]> = {}
+
+  for (const [userId, likerIds] of Object.entries(value)) {
+    if (!Array.isArray(likerIds)) continue
+
+    userLikes[userId] = likerIds.filter(
+      (likerId): likerId is string => typeof likerId === 'string',
+    )
+  }
+
+  return userLikes
+}
+
+function normalizeUserBackgrounds(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+
+  const userBackgrounds: Record<string, string> = {}
+
+  for (const [userId, background] of Object.entries(value)) {
+    if (typeof background === 'string' && background) {
+      userBackgrounds[userId] = background
+    }
+  }
+
+  return userBackgrounds
+}
+
 function loadForumData(): ForumData {
   try {
     const stored = window.localStorage.getItem(FORUM_STORAGE_KEY)
     if (!stored) return seedData
 
     const parsed: unknown = JSON.parse(stored)
-    return isForumData(parsed) ? parsed : seedData
+    if (!isForumData(parsed)) return seedData
+
+    // Older saves predate likes and backgrounds, so fill in defaults instead of
+    // dropping them.
+    return {
+      ...parsed,
+      userLikes: normalizeUserLikes(parsed.userLikes),
+      userBackgrounds: normalizeUserBackgrounds(parsed.userBackgrounds),
+    }
   } catch {
     return seedData
   }
@@ -186,11 +224,49 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       }))
     }
 
+    function toggleUserLike(userId: string) {
+      if (!currentUser) return
+
+      const likerId = currentUser.id
+
+      setData((previous) => {
+        if (!previous.users.some((user) => user.id === userId)) return previous
+
+        const likers = previous.userLikes[userId] ?? []
+        const nextLikers = likers.includes(likerId)
+          ? likers.filter((id) => id !== likerId)
+          : [...likers, likerId]
+
+        return {
+          ...previous,
+          userLikes: { ...previous.userLikes, [userId]: nextLikers },
+        }
+      })
+    }
+
+    function setUserBackground(userId: string, background: string | null) {
+      setData((previous) => {
+        if (!previous.users.some((user) => user.id === userId)) return previous
+
+        const userBackgrounds = { ...previous.userBackgrounds }
+
+        if (background) {
+          userBackgrounds[userId] = background
+        } else {
+          delete userBackgrounds[userId]
+        }
+
+        return { ...previous, userBackgrounds }
+      })
+    }
+
     return {
       users: data.users,
       boards: data.boards,
       threads: data.threads,
       replies: data.replies,
+      userLikes: data.userLikes,
+      userBackgrounds: data.userBackgrounds,
       currentUser,
       loginDialogOpen,
       openLogin,
@@ -201,6 +277,8 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       deleteThread,
       createReply,
       deleteReply,
+      toggleUserLike,
+      setUserBackground,
     }
   }, [currentUser, data, loginDialogOpen])
 
