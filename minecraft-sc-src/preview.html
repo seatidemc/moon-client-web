@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Minecraft SC · 字体预览</title>
+    <style>
+      @font-face {
+        font-family: "Minecraft SC";
+        src:
+          url("./MinecraftSC-Regular.woff2") format("woff2"),
+          url("./MinecraftSC-Regular.ttf") format("truetype");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      :root {
+        --bg: #f6f6f4;
+        --panel: #ffffff;
+        --ink: #17181a;
+        --muted: #77787c;
+        --line: #e4e4e0;
+        --accent: #3c8527;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+        line-height: 1.7;
+      }
+
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 64px 24px 96px;
+      }
+
+      header {
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      h1 {
+        margin: 0;
+        font-family: "Minecraft SC", monospace;
+        font-size: 48px;
+        font-weight: 400;
+        line-height: 1.15;
+      }
+
+      header p {
+        margin: 12px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      section {
+        margin-top: 40px;
+      }
+
+      h2 {
+        margin: 0 0 4px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .row {
+        padding: 10px 0;
+        border-bottom: 1px dashed var(--line);
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      .row.wrap {
+        white-space: normal;
+        line-height: 1.9;
+      }
+
+      .row small {
+        display: inline-block;
+        width: 44px;
+        color: var(--muted);
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+        vertical-align: middle;
+      }
+
+      .sample {
+        font-family: "Minecraft SC", monospace;
+        font-weight: 400;
+        vertical-align: middle;
+      }
+
+      .card {
+        margin-top: 12px;
+        padding: 20px 22px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--panel);
+      }
+
+      .card h3 {
+        margin: 0 0 6px;
+        font-family: "Minecraft SC", monospace;
+        font-size: 32px;
+        font-weight: 400;
+      }
+
+      .card .meta {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .card p {
+        margin: 10px 0 0;
+        font-family: "Minecraft SC", monospace;
+        font-size: 16px;
+        line-height: 1.75;
+      }
+
+      .dark {
+        display: flex;
+        gap: 16px;
+        margin-top: 12px;
+        padding: 22px;
+        border-radius: 12px;
+        background: #1d1f21;
+        color: #e8e8e8;
+        font-family: "Minecraft SC", monospace;
+        font-size: 32px;
+      }
+
+      .dark span:nth-child(2) {
+        color: #8fbf6a;
+      }
+
+      footer {
+        margin-top: 48px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      code {
+        font-family: ui-monospace, monospace;
+        font-size: 0.92em;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Minecraft SC</h1>
+        <p>
+          中英文都来自 GNU Unifont 点阵字形 —— 这也是 Minecraft 游戏内显示中文时使用的字形。
+          字距按系统字体的方式重新排过：汉字按墨迹宽度收紧，标点靠向相邻文字，英文改为比例字距。
+        </p>
+      </header>
+
+      <section>
+        <h2>字号</h2>
+        <div class="row"><small>16</small><span class="sample" style="font-size: 16px">我的世界 Minecraft 1234567890</span></div>
+        <div class="row"><small>24</small><span class="sample" style="font-size: 24px">我的世界 Minecraft 1234567890</span></div>
+        <div class="row"><small>32</small><span class="sample" style="font-size: 32px">我的世界 Minecraft 1234567890</span></div>
+        <div class="row"><small>48</small><span class="sample" style="font-size: 48px">我的世界 Minecraft</span></div>
+        <div class="row"><small>64</small><span class="sample" style="font-size: 64px">我的世界</span></div>
+      </section>
+
+      <section>
+        <h2>字符</h2>
+        <div class="row"><span class="sample" style="font-size: 32px">ABCDEFGHIJKLMNOPQRSTUVWXYZ</span></div>
+        <div class="row"><span class="sample" style="font-size: 32px">abcdefghijklmnopqrstuvwxyz</span></div>
+        <div class="row"><span class="sample" style="font-size: 32px">0123456789 !?@#$%&amp;*()[]{}&lt;&gt;/\+-</span></div>
+        <div class="row"><span class="sample" style="font-size: 32px">方块字，标点。问号？感叹号！书名号《》</span></div>
+      </section>
+
+      <section>
+        <h2>标点</h2>
+        <div class="row"><small>标点</small><span class="sample" style="font-size: 32px">，。、；：！？</span></div>
+        <div class="row"><small>括号</small><span class="sample" style="font-size: 32px">《》〈〉「」『』【】〔〕（）</span></div>
+        <div class="row"><small>引号</small><span class="sample" style="font-size: 32px">“”‘’</span></div>
+        <div class="row"><small>符号</small><span class="sample" style="font-size: 32px">……——·～％＃＠＆＊＋－＝＜＞</span></div>
+        <div class="row"><small>成对</small><span class="sample" style="font-size: 32px">（）〔〕【】《》〈〉「」『』“”‘’</span></div>
+        <div class="row wrap"><small>句中</small><span class="sample" style="font-size: 32px">他说：“今天下雨，我们不出门。”然后（真的）没出门。</span></div>
+        <div class="row wrap"><small>嵌套</small><span class="sample" style="font-size: 32px">《Minecraft》（我的世界）【标注】〔备注〕「引号『再引号』」</span></div>
+        <div class="row"><small>英文</small><span class="sample" style="font-size: 32px">! " # $ % &amp; ' ( ) * + , - . / : ; &lt; = &gt; ? @ [ \ ] ^ _ ` { | } ~</span></div>
+        <div class="row wrap"><small>混排</small><span class="sample" style="font-size: 32px">Minecraft SC（2026-11-11）完成 50%；详见《说明》。</span></div>
+      </section>
+
+      <section>
+        <h2>示例</h2>
+        <div class="card">
+          <h3>服务器开荒招人</h3>
+          <div class="meta">wanfeng · 2 小时前 · 生存模式</div>
+          <p>
+            今晚八点开新档，原版生存，不装模组。喜欢慢慢盖房子的朋友欢迎一起来，
+            工具自带，出生点附近先搭个临时营地。
+          </p>
+        </div>
+        <div class="dark">
+          <span>[MC]</span><span>Steve</span><span>加入了游戏</span>
+        </div>
+      </section>
+
+      <footer>
+        仅包含简体中文（GB2312 汉字与中文标点）、英文与数字。在 CSS 中以
+        <code>font-family: "Minecraft SC"</code> 或 Tailwind 的
+        <code>font-minecraft-sc</code> 使用。
+      </footer>
+    </main>
+  </body>
+</html>
