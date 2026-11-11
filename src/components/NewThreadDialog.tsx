@@ -1,4 +1,14 @@
-import { Button, Input, Modal } from '@heroui/react'
+import {
+  Button,
+  CloseButton,
+  cn,
+  FieldError,
+  Input,
+  Label,
+  Modal,
+  TextField,
+} from '@heroui/react'
+import { Maximize2, Minimize2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -12,15 +22,43 @@ interface NewThreadDialogProps {
 }
 
 export function NewThreadDialog({ isOpen, onOpenChange }: NewThreadDialogProps) {
+  const [isAdvanced, setIsAdvanced] = useState(false)
+  const [formKey, setFormKey] = useState(0)
+  const [wasOpen, setWasOpen] = useState(isOpen)
+
+  if (wasOpen !== isOpen) {
+    setWasOpen(isOpen)
+    if (isOpen) {
+      setIsAdvanced(false)
+      setFormKey((key) => key + 1)
+    }
+  }
+
+  function closeDialog() {
+    onOpenChange(false)
+  }
+
   return (
     <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
       <Modal.Backdrop>
-        <Modal.Container size="lg">
+        <Modal.Container size={isAdvanced ? 'full' : 'lg'}>
           <Modal.Dialog>
+            <CloseButton
+              className="absolute end-12 top-4"
+              aria-label={isAdvanced ? '退出全屏' : '高级编辑'}
+              onPress={() => setIsAdvanced((current) => !current)}
+            >
+              {isAdvanced ? (
+                <Minimize2 className="size-3.5" />
+              ) : (
+                <Maximize2 className="size-3.5" />
+              )}
+            </CloseButton>
             <Modal.CloseTrigger aria-label="关闭发帖窗口" />
             <NewThreadForm
-              key={isOpen ? 'open' : 'closed'}
-              onClose={() => onOpenChange(false)}
+              key={formKey}
+              isAdvanced={isAdvanced}
+              onClose={closeDialog}
             />
           </Modal.Dialog>
         </Modal.Container>
@@ -29,30 +67,36 @@ export function NewThreadDialog({ isOpen, onOpenChange }: NewThreadDialogProps) 
   )
 }
 
-function NewThreadForm({ onClose }: { onClose: () => void }) {
+function NewThreadForm({
+  isAdvanced,
+  onClose,
+}: {
+  isAdvanced: boolean
+  onClose: () => void
+}) {
   const { boards, createThread } = useForum()
   const navigate = useNavigate()
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [titleError, setTitleError] = useState<string | null>(null)
+  const [contentError, setContentError] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setError(null)
 
-    if (!title.trim()) {
-      setError('请填写标题。')
-      return
-    }
+    const nextTitleError = title.trim() ? null : '请填写标题。'
+    const nextContentError = markdownToPlainText(content) ? null : '请填写正文。'
 
-    if (!markdownToPlainText(content)) {
-      setError('请填写正文。')
-      return
-    }
+    setTitleError(nextTitleError)
+    setContentError(nextContentError)
+    setSubmitError(null)
+
+    if (nextTitleError || nextContentError) return
 
     const thread = createThread({ boardId: boards[0]?.id ?? '', title, content })
     if (!thread) {
-      setError('登录后才能发帖。')
+      setSubmitError('登录后才能发帖。')
       return
     }
 
@@ -61,29 +105,61 @@ function NewThreadForm({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+    <form
+      onSubmit={handleSubmit}
+      className={cn(
+        'flex min-h-0 flex-1 flex-col',
+        isAdvanced && 'mx-auto w-full max-w-3xl',
+      )}
+    >
       <Modal.Header>
         <Modal.Heading>发布帖子</Modal.Heading>
       </Modal.Header>
 
-      <Modal.Body className="space-y-4">
-        <Input
-          id="new-thread-title"
+      <Modal.Body
+        className={cn('space-y-4', isAdvanced && 'flex min-h-0 flex-1 flex-col')}
+      >
+        <TextField
           fullWidth
-          autoFocus
-          maxLength={120}
-          aria-label="标题"
-          placeholder="用一句话说清楚主题"
-          className="text-lg"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-        />
+          isRequired
+          isInvalid={Boolean(titleError)}
+          className="text-left"
+        >
+          <Label>标题</Label>
+          <Input
+            autoFocus
+            maxLength={120}
+            placeholder="用一句话说清楚主题"
+            value={title}
+            onChange={(event) => {
+              setTitle(event.target.value)
+              if (titleError) setTitleError(null)
+            }}
+          />
+          <FieldError>{titleError}</FieldError>
+        </TextField>
 
-        <MarkdownEditor value={content} onChange={setContent} />
+        <div className={cn(isAdvanced && 'flex min-h-0 flex-1 flex-col')}>
+          <MarkdownEditor
+            value={content}
+            onChange={(nextContent) => {
+              setContent(nextContent)
+              if (contentError) setContentError(null)
+            }}
+            defaultMode="markdown"
+            showModeSwitch={isAdvanced}
+            fillHeight={isAdvanced}
+          />
+          {contentError ? (
+            <p className="mt-1 text-xs text-danger" role="alert">
+              {contentError}
+            </p>
+          ) : null}
+        </div>
 
-        {error ? (
+        {submitError ? (
           <p className="text-sm text-danger" role="alert">
-            {error}
+            {submitError}
           </p>
         ) : null}
       </Modal.Body>

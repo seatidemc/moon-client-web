@@ -44,7 +44,6 @@ body {
   }
 
   .moon-editor-content {
-    min-height: 15rem;
     padding: 0.875rem 1rem;
     outline: none;
   }
