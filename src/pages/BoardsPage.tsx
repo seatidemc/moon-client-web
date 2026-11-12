@@ -27,7 +27,7 @@ export function BoardsPage() {
                 className="group flex h-full items-center gap-4 rounded-2xl bg-surface p-4 transition duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:bg-surface-secondary active:scale-[0.98] active:bg-surface-tertiary active:duration-100 sm:p-5"
               >
                 <span
-                  className="grid size-11 shrink-0 place-items-center rounded-xl"
+                  className="grid size-11 shrink-0 place-items-center self-start rounded-xl"
                   style={{
                     backgroundColor: `color-mix(in srgb, ${board.color} 14%, transparent)`,
                     color: board.color,
