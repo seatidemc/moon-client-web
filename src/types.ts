@@ -35,6 +35,8 @@ export interface Reply {
   threadId: string
   authorId: string
   content: string
+  /** 该跟帖回复的楼层号（0 表示主题帖）；未引用楼层时为空 */
+  replyToFloor?: number
   createdAt: string
 }
 
@@ -53,6 +55,8 @@ export interface ForumData {
   replies: Reply[]
   /** 用户主页的点赞记录：被点赞用户 id → 点赞者 id 列表 */
   userLikes: Record<string, string[]>
+  /** 楼层点赞记录：帖子键（thread:<id> / reply:<id>）→ 点赞者 id 列表 */
+  postLikes: Record<string, string[]>
   /** 用户主页背景图：用户 id → 图片 data URL */
   userBackgrounds: Record<string, string>
 }

@@ -1,3 +1,5 @@
+import { replaceEmojiShortcodesInMarkdown } from '@/lib/emoji-shortcodes'
+
 const HASHTAG_PATTERN = /(^|[^\p{L}\p{N}_#])#([\p{L}\p{N}_][\p{L}\p{N}_-]{0,23})/gu
 
 export function extractTags(markdown: string): string[] {
@@ -23,7 +25,7 @@ export function extractTags(markdown: string): string[] {
 }
 
 export function markdownToPlainText(markdown: string): string {
-  return markdown
+  return replaceEmojiShortcodesInMarkdown(markdown)
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/~~~[\s\S]*?~~~/g, ' ')
     .replace(/`([^`]*)`/g, '$1')

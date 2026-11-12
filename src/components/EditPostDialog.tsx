@@ -11,6 +11,7 @@ import { useState, type FormEvent } from 'react'
 
 import { EditorExpandToggle } from '@/components/EditorExpandToggle'
 import { MarkdownEditor } from '@/components/MarkdownEditor'
+import type { ReplyReferenceOption } from '@/lib/reply-reference-options'
 import { markdownToPlainText } from '@/lib/utils'
 
 interface EditPostDialogProps {
@@ -19,6 +20,8 @@ interface EditPostDialogProps {
   initialTitle?: string
   initialContent: string
   onSave: (values: { title: string; content: string }) => void
+  /** 编辑跟帖时用于 re# 楼层提示 */
+  floorOptions?: ReplyReferenceOption[]
 }
 
 export function EditPostDialog({
@@ -27,6 +30,7 @@ export function EditPostDialog({
   initialTitle,
   initialContent,
   onSave,
+  floorOptions,
 }: EditPostDialogProps) {
   const [isAdvanced, setIsAdvanced] = useState(false)
   const [wasOpen, setWasOpen] = useState(isOpen)
@@ -51,6 +55,7 @@ export function EditPostDialog({
               initialTitle={initialTitle}
               initialContent={initialContent}
               isAdvanced={isAdvanced}
+              floorOptions={floorOptions}
               onCancel={() => onOpenChange(false)}
               onSave={onSave}
             />
@@ -65,12 +70,14 @@ function EditPostForm({
   initialTitle,
   initialContent,
   isAdvanced,
+  floorOptions,
   onCancel,
   onSave,
 }: {
   initialTitle?: string
   initialContent: string
   isAdvanced: boolean
+  floorOptions?: ReplyReferenceOption[]
   onCancel: () => void
   onSave: (values: { title: string; content: string }) => void
 }) {
@@ -141,6 +148,7 @@ function EditPostForm({
             defaultMode="markdown"
             showModeSwitch={isAdvanced}
             fillHeight={isAdvanced}
+            floorOptions={floorOptions}
           />
           {contentError ? (
             <p className="mt-1 text-xs text-danger" role="alert">

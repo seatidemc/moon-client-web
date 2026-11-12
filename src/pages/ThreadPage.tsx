@@ -1,20 +1,82 @@
-import { Button } from '@heroui/react'
-import { Pencil, Trash2 } from 'lucide-react'
-import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Button, cn } from '@heroui/react'
+import { Heart, MessageCircle, Pencil, Trash2 } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { EditPostDialog } from '@/components/EditPostDialog'
 import { MarkdownView } from '@/components/MarkdownView'
-import { ReplyComposer } from '@/components/ReplyComposer'
+import {
+  ReplyComposer,
+  type ReplyComposerHandle,
+} from '@/components/ReplyComposer'
+import { ThreadToc } from '@/components/ThreadToc'
 import { UserByline } from '@/components/UserByline'
-import { useForum } from '@/lib/forum-context'
+import {
+  replyPostKey,
+  threadPostKey,
+  useForum,
+} from '@/lib/forum-context'
+import { buildReplyReferenceOptions } from '@/lib/reply-reference-options'
 import { usePageTitle } from '@/lib/use-page-title'
 import type { Reply } from '@/types'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
 type EditTarget = { kind: 'thread' } | { kind: 'reply'; reply: Reply }
+
+interface PostActionsProps {
+  postKey: string
+  postLabel: string
+  onReply: () => void
+}
+
+function PostActions({ postKey, postLabel, onReply }: PostActionsProps) {
+  const { postLikes, currentUser, togglePostLike, openLogin } = useForum()
+  const likers = postLikes[postKey] ?? []
+  const liked = currentUser ? likers.includes(currentUser.id) : false
+
+  function handleLike() {
+    if (!currentUser) {
+      openLogin()
+      return
+    }
+
+    togglePostLike(postKey)
+  }
+
+  return (
+    <div className="mt-4 flex items-center gap-1">
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        aria-pressed={liked}
+        aria-label={liked ? `取消${postLabel}的点赞` : `点赞${postLabel}`}
+        className="gap-1.5 px-2 text-xs text-muted hover:text-foreground"
+        onPress={handleLike}
+      >
+        <Heart
+          aria-hidden="true"
+          className={cn('size-4', liked && 'fill-current text-danger')}
+        />
+        <span className="tabular-nums">{likers.length}</span>
+      </Button>
+
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        aria-label={`回复${postLabel}`}
+        className="gap-1.5 px-2 text-xs text-muted hover:text-foreground"
+        onPress={onReply}
+      >
+        <MessageCircle aria-hidden="true" className="size-4" />
+        回复
+      </Button>
+    </div>
+  )
+}
 
 export function ThreadPage() {
   const { id } = useParams()
@@ -25,6 +87,7 @@ export function ThreadPage() {
     threads,
     replies,
     currentUser,
+    openLogin,
     updateThread,
     deleteThread,
     updateReply,
@@ -33,6 +96,7 @@ export function ThreadPage() {
   const [deleteThreadOpen, setDeleteThreadOpen] = useState(false)
   const [replyToDelete, setReplyToDelete] = useState<Reply | null>(null)
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null)
+  const composerRef = useRef<ReplyComposerHandle>(null)
 
   const thread = threads.find((item) => item.id === id)
   const board = thread
@@ -50,6 +114,20 @@ export function ThreadPage() {
     .filter((reply) => reply.threadId === thread.id)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
   const isThreadAuthor = currentUser?.id === thread.authorId
+  const replyReferenceOptions = buildReplyReferenceOptions(
+    thread,
+    threadReplies,
+    users,
+  )
+  const tocItems = [
+    { id: 'thread-post', label: '主题' },
+    ...threadReplies.map((reply, index) => ({
+      id: `reply-${reply.id}`,
+      label: `#${index + 1} ${
+        users.find((user) => user.id === reply.authorId)?.name ?? '未知用户'
+      }`,
+    })),
+  ]
 
   function handleDeleteThread() {
     deleteThread(thread!.id)
@@ -64,22 +142,36 @@ export function ThreadPage() {
     setReplyToDelete(null)
   }
 
+  function handleReply(reference: string) {
+    const run = () => composerRef.current?.appendReplyReference(reference)
+
+    if (!currentUser) {
+      openLogin(() => requestAnimationFrame(run))
+      return
+    }
+
+    run()
+  }
+
   return (
     <div className="flex min-h-[calc(100svh-3.5rem)] flex-col">
-      <main className="mx-auto w-full max-w-[69.25rem] flex-1 px-4 pt-8 pb-4 sm:pt-10">
-        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,48rem)_18rem]">
-          <div className="min-w-0 space-y-5">
-            <Breadcrumbs
-              items={[
-                { label: '板块', to: '/boards' },
-                ...(board
-                  ? [{ label: board.name, to: `/topic/${board.id}` }]
-                  : []),
-                { label: thread.title },
-              ]}
-            />
+      <main className="mx-auto w-full max-w-[57.25rem] flex-1 px-4 pt-8 pb-4 sm:pt-10">
+        <Breadcrumbs
+          items={[
+            { label: '板块', to: '/boards' },
+            ...(board
+              ? [{ label: board.name, to: `/topic/${board.id}` }]
+              : []),
+            { label: thread.title },
+          ]}
+        />
 
-            <article className="rounded-2xl bg-surface p-4 sm:p-5">
+        <div className="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,48rem)_6rem]">
+          <div className="min-w-0 space-y-5">
+            <article
+              id="thread-post"
+              className="scroll-mt-6 rounded-2xl bg-surface p-4 sm:p-5"
+            >
               <h1 className="break-words font-minecraft-sc text-2xl leading-tight tracking-tight sm:text-3xl">
                 {thread.title}
               </h1>
@@ -125,6 +217,12 @@ export function ThreadPage() {
               </div>
 
               <MarkdownView className="mt-6">{thread.content}</MarkdownView>
+
+              <PostActions
+                postKey={threadPostKey(thread.id)}
+                postLabel="主题"
+                onReply={() => handleReply('re#0')}
+              />
             </article>
 
             <section className="space-y-5" aria-label="跟帖">
@@ -140,7 +238,7 @@ export function ThreadPage() {
                     <article
                       key={reply.id}
                       id={`reply-${reply.id}`}
-                      className="rounded-2xl bg-surface p-4 sm:p-5"
+                      className="scroll-mt-6 rounded-2xl bg-surface p-4 sm:p-5"
                     >
                       <header className="flex flex-wrap items-center justify-between gap-3">
                         {replyAuthor ? (
@@ -190,15 +288,31 @@ export function ThreadPage() {
                               </Button>
                             </>
                           ) : null}
-                          <span className="ml-2 text-xs text-muted">
+                          <Link
+                            to={`/thread/${thread.id}#reply-${reply.id}`}
+                            aria-label={`第 ${index + 1} 楼的链接`}
+                            className="ml-2 rounded px-1 py-0.5 text-xs text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/40"
+                          >
                             #{index + 1}
-                          </span>
+                          </Link>
                         </div>
                       </header>
 
-                      <MarkdownView className="mt-5">
+                      <MarkdownView
+                        className="mt-5"
+                        replyReferences={{
+                          threadId: thread.id,
+                          replies: threadReplies,
+                        }}
+                      >
                         {reply.content}
                       </MarkdownView>
+
+                      <PostActions
+                        postKey={replyPostKey(reply.id)}
+                        postLabel={`第 ${index + 1} 楼`}
+                        onReply={() => handleReply(`re#${index + 1}`)}
+                      />
                     </article>
                   )
                 })
@@ -210,15 +324,11 @@ export function ThreadPage() {
             </section>
           </div>
 
-          {/* 侧边栏内容待补充 */}
-          <aside
-            aria-label="侧边栏"
-            className="hidden lg:sticky lg:top-6 lg:block lg:self-start"
-          />
+          <ThreadToc items={tocItems} />
         </div>
       </main>
 
-      <ReplyComposer threadId={thread.id} />
+      <ReplyComposer ref={composerRef} threadId={thread.id} />
 
       <EditPostDialog
         isOpen={editTarget !== null}
@@ -232,6 +342,9 @@ export function ThreadPage() {
           editTarget?.kind === 'reply'
             ? editTarget.reply.content
             : thread.content
+        }
+        floorOptions={
+          editTarget?.kind === 'reply' ? replyReferenceOptions : undefined
         }
         onSave={({ title, content }) => {
           if (!editTarget) return
