@@ -66,144 +66,156 @@ export function ThreadPage() {
 
   return (
     <div className="flex min-h-[calc(100svh-3.5rem)] flex-col">
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-4 pt-8 pb-4 sm:pt-10">
-        <Breadcrumbs
-          items={[
-            { label: '板块', to: '/boards' },
-            ...(board
-              ? [{ label: board.name, to: `/topic/${board.id}` }]
-              : []),
-            { label: thread.title },
-          ]}
-        />
+      <main className="mx-auto w-full max-w-[69.25rem] flex-1 px-4 pt-8 pb-4 sm:pt-10">
+        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,48rem)_18rem]">
+          <div className="min-w-0 space-y-5">
+            <Breadcrumbs
+              items={[
+                { label: '板块', to: '/boards' },
+                ...(board
+                  ? [{ label: board.name, to: `/topic/${board.id}` }]
+                  : []),
+                { label: thread.title },
+              ]}
+            />
 
-        <article className="rounded-2xl bg-surface p-4 sm:p-5">
-          <h1 className="break-words font-minecraft-sc text-2xl leading-tight tracking-tight sm:text-3xl">
-            {thread.title}
-          </h1>
+            <article className="rounded-2xl bg-surface p-4 sm:p-5">
+              <h1 className="break-words font-minecraft-sc text-2xl leading-tight tracking-tight sm:text-3xl">
+                {thread.title}
+              </h1>
 
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-            {author ? (
-              <UserByline
-                user={author}
-                date={thread.createdAt}
-                avatarSize="md"
-                showHandle={false}
-              />
-            ) : (
-              <span className="text-sm text-muted">未知用户</span>
-            )}
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                {author ? (
+                  <UserByline
+                    user={author}
+                    date={thread.createdAt}
+                    avatarSize="md"
+                    showHandle={false}
+                  />
+                ) : (
+                  <span className="text-sm text-muted">未知用户</span>
+                )}
 
-            {isThreadAuthor ? (
-              <div className="flex items-center">
-                <Button
-                  type="button"
-                  size="sm"
-                  isIconOnly
-                  variant="ghost"
-                  className="text-muted hover:text-foreground"
-                  aria-label="编辑主题"
-                  onPress={() => setEditTarget({ kind: 'thread' })}
-                >
-                  <Pencil className="size-3.5" />
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  isIconOnly
-                  variant="ghost"
-                  className="text-muted hover:text-danger"
-                  aria-label="删除主题"
-                  onPress={() => setDeleteThreadOpen(true)}
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
+                {isThreadAuthor ? (
+                  <div className="flex items-center">
+                    <Button
+                      type="button"
+                      size="sm"
+                      isIconOnly
+                      variant="ghost"
+                      className="text-muted hover:text-foreground"
+                      aria-label="编辑主题"
+                      onPress={() => setEditTarget({ kind: 'thread' })}
+                    >
+                      <Pencil className="size-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      isIconOnly
+                      variant="ghost"
+                      className="text-muted hover:text-danger"
+                      aria-label="删除主题"
+                      onPress={() => setDeleteThreadOpen(true)}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                ) : null}
               </div>
-            ) : null}
+
+              <MarkdownView className="mt-6">{thread.content}</MarkdownView>
+            </article>
+
+            <section className="space-y-5" aria-label="跟帖">
+              {threadReplies.length > 0 ? (
+                threadReplies.map((reply, index) => {
+                  const replyAuthor = users.find(
+                    (user) => user.id === reply.authorId,
+                  )
+                  const canModify = currentUser?.id === reply.authorId
+                  const fromThreadAuthor = reply.authorId === thread.authorId
+
+                  return (
+                    <article
+                      key={reply.id}
+                      id={`reply-${reply.id}`}
+                      className="rounded-2xl bg-surface p-4 sm:p-5"
+                    >
+                      <header className="flex flex-wrap items-center justify-between gap-3">
+                        {replyAuthor ? (
+                          <UserByline
+                            user={replyAuthor}
+                            date={reply.createdAt}
+                            avatarSize="md"
+                            showHandle={false}
+                            badge={
+                              fromThreadAuthor ? (
+                                <span className="rounded-full bg-default px-1.5 py-0.5 text-xs text-muted">
+                                  OP
+                                </span>
+                              ) : undefined
+                            }
+                          />
+                        ) : (
+                          <span className="text-sm text-muted">未知用户</span>
+                        )}
+
+                        <div className="flex items-center">
+                          {canModify ? (
+                            <>
+                              <Button
+                                type="button"
+                                size="sm"
+                                isIconOnly
+                                variant="ghost"
+                                className="text-muted hover:text-foreground"
+                                aria-label="编辑回复"
+                                onPress={() =>
+                                  setEditTarget({ kind: 'reply', reply })
+                                }
+                              >
+                                <Pencil className="size-3.5" />
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                isIconOnly
+                                variant="ghost"
+                                className="text-muted hover:text-danger"
+                                aria-label="删除跟帖"
+                                onPress={() => setReplyToDelete(reply)}
+                              >
+                                <Trash2 className="size-3.5" />
+                              </Button>
+                            </>
+                          ) : null}
+                          <span className="ml-2 text-xs text-muted">
+                            #{index + 1}
+                          </span>
+                        </div>
+                      </header>
+
+                      <MarkdownView className="mt-5">
+                        {reply.content}
+                      </MarkdownView>
+                    </article>
+                  )
+                })
+              ) : (
+                <p className="rounded-2xl bg-surface px-4 py-10 text-center text-sm text-muted">
+                  还没有跟帖，来写下第一帖吧。
+                </p>
+              )}
+            </section>
           </div>
 
-          <MarkdownView className="mt-6">{thread.content}</MarkdownView>
-        </article>
-
-        <section className="space-y-5" aria-label="跟帖">
-          {threadReplies.length > 0 ? (
-            threadReplies.map((reply, index) => {
-              const replyAuthor = users.find(
-                (user) => user.id === reply.authorId,
-              )
-              const canModify = currentUser?.id === reply.authorId
-              const fromThreadAuthor = reply.authorId === thread.authorId
-
-              return (
-                <article
-                  key={reply.id}
-                  id={`reply-${reply.id}`}
-                  className="rounded-2xl bg-surface p-4 sm:p-5"
-                >
-                  <header className="flex flex-wrap items-center justify-between gap-3">
-                    {replyAuthor ? (
-                      <UserByline
-                        user={replyAuthor}
-                        date={reply.createdAt}
-                        avatarSize="md"
-                        showHandle={false}
-                        badge={
-                          fromThreadAuthor ? (
-                            <span className="rounded-full bg-default px-1.5 py-0.5 text-xs text-muted">
-                              OP
-                            </span>
-                          ) : undefined
-                        }
-                      />
-                    ) : (
-                      <span className="text-sm text-muted">未知用户</span>
-                    )}
-
-                    <div className="flex items-center">
-                      {canModify ? (
-                        <>
-                          <Button
-                            type="button"
-                            size="sm"
-                            isIconOnly
-                            variant="ghost"
-                            className="text-muted hover:text-foreground"
-                            aria-label="编辑回复"
-                            onPress={() =>
-                              setEditTarget({ kind: 'reply', reply })
-                            }
-                          >
-                            <Pencil className="size-3.5" />
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            isIconOnly
-                            variant="ghost"
-                            className="text-muted hover:text-danger"
-                            aria-label="删除跟帖"
-                            onPress={() => setReplyToDelete(reply)}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                        </>
-                      ) : null}
-                      <span className="ml-2 text-xs text-muted">
-                        #{index + 1}
-                      </span>
-                    </div>
-                  </header>
-
-                  <MarkdownView className="mt-5">{reply.content}</MarkdownView>
-                </article>
-              )
-            })
-          ) : (
-            <p className="rounded-2xl bg-surface px-4 py-10 text-center text-sm text-muted">
-              还没有跟帖，来写下第一帖吧。
-            </p>
-          )}
-        </section>
+          {/* 侧边栏内容待补充 */}
+          <aside
+            aria-label="侧边栏"
+            className="hidden lg:sticky lg:top-6 lg:block lg:self-start"
+          />
+        </div>
       </main>
 
       <ReplyComposer threadId={thread.id} />

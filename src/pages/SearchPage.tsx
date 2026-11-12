@@ -75,7 +75,7 @@ export function SearchPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:py-12">
+    <main className="mx-auto w-full max-w-[69.25rem] px-4 py-10 sm:py-12">
       <h1 className="text-2xl font-semibold tracking-tight">搜索</h1>
 
       <form onSubmit={handleSubmit} className="mt-5 flex items-center gap-2">

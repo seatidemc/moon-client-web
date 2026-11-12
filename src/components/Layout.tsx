@@ -40,13 +40,7 @@ export function Layout() {
   return (
     <div className="flex min-h-svh flex-col bg-background text-foreground">
       <header className="relative z-20 border-b border-border bg-surface">
-        <div
-          className={`mx-auto flex h-14 w-full items-center gap-3 px-4 sm:gap-4 ${
-            location.pathname === '/' || location.pathname === '/boards'
-              ? 'max-w-[69.25rem]'
-              : 'max-w-3xl'
-          }`}
-        >
+        <div className="mx-auto flex h-14 w-full max-w-[69.25rem] items-center gap-3 px-4 sm:gap-4">
           <Link
             to="/"
             className="brand-logo shrink-0 text-lg tracking-tight"

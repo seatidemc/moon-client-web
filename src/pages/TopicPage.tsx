@@ -34,7 +34,7 @@ export function TopicPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
+    <main className="mx-auto w-full max-w-[69.25rem] px-4 py-8 sm:py-10">
       <Breadcrumbs items={[{ label: '板块', to: '/boards' }, { label: board.name }]} />
 
       <div className="mt-4 flex items-start justify-between gap-6">

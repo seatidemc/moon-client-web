@@ -91,9 +91,9 @@ export function ReplyComposer({ threadId }: ReplyComposerProps) {
   return (
     <>
       <div className={follow ? 'sticky bottom-0 z-20 mt-auto' : 'mt-auto'}>
-        <div className="mx-auto w-full max-w-3xl px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto w-full max-w-[69.25rem] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           {currentUser ? (
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="max-w-3xl">
               <div
                 className={`group max-h-56 overflow-y-auto rounded-2xl border border-field-border bg-field transition duration-150 focus-within:border-field-border-focus focus-within:bg-field-focus focus-within:status-focused-field ${
                   follow && floating ? 'shadow-lg' : 'shadow-none'
@@ -153,7 +153,7 @@ export function ReplyComposer({ threadId }: ReplyComposerProps) {
               </div>
             </form>
           ) : (
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex max-w-3xl flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-muted">登录后参与讨论。</p>
               <Button
                 type="button"

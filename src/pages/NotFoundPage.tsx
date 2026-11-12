@@ -8,7 +8,7 @@ export function NotFoundPage() {
   usePageTitle('页面不存在')
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col items-start px-4 py-20">
+    <main className="mx-auto flex w-full max-w-[69.25rem] flex-col items-start px-4 py-20">
       <p className="text-sm text-muted">404</p>
       <h1 className="mt-2 text-2xl font-semibold tracking-tight">
         页面不存在

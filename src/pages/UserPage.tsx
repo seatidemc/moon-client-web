@@ -150,7 +150,7 @@ export function UserPage() {
 
       <div
         className={cn(
-          'mx-auto w-full max-w-3xl px-4',
+          'mx-auto w-full max-w-[69.25rem] px-4',
           background ? 'pt-5' : 'pt-10 sm:pt-12',
         )}
       >
