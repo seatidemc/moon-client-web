@@ -1,6 +1,5 @@
 import {
   Button,
-  CloseButton,
   cn,
   FieldError,
   Input,
@@ -10,10 +9,10 @@ import {
   Select,
   TextField,
 } from '@heroui/react'
-import { Maximize2, Minimize2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { EditorExpandToggle } from '@/components/EditorExpandToggle'
 import { MarkdownEditor } from '@/components/MarkdownEditor'
 import { useForum } from '@/lib/forum-context'
 import { markdownToPlainText } from '@/lib/utils'
@@ -51,17 +50,10 @@ export function NewThreadDialog({
       <Modal.Backdrop>
         <Modal.Container size={isAdvanced ? 'full' : 'lg'}>
           <Modal.Dialog>
-            <CloseButton
-              className="absolute end-12 top-4"
-              aria-label={isAdvanced ? '退出全屏' : '高级编辑'}
-              onPress={() => setIsAdvanced((current) => !current)}
-            >
-              {isAdvanced ? (
-                <Minimize2 className="size-3.5" />
-              ) : (
-                <Maximize2 className="size-3.5" />
-              )}
-            </CloseButton>
+            <EditorExpandToggle
+              expanded={isAdvanced}
+              onToggle={() => setIsAdvanced((current) => !current)}
+            />
             <Modal.CloseTrigger aria-label="关闭发帖窗口" />
             <NewThreadForm
               key={formKey}

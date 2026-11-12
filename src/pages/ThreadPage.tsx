@@ -149,8 +149,8 @@ export function ThreadPage() {
                         showHandle={false}
                         badge={
                           fromThreadAuthor ? (
-                            <span className="rounded bg-default px-1.5 py-0.5 text-xs text-muted">
-                              楼主
+                            <span className="rounded-full bg-default px-1.5 py-0.5 text-xs text-muted">
+                              OP
                             </span>
                           ) : undefined
                         }

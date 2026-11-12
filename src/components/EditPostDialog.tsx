@@ -1,5 +1,6 @@
 import {
   Button,
+  cn,
   FieldError,
   Input,
   Label,
@@ -8,6 +9,7 @@ import {
 } from '@heroui/react'
 import { useState, type FormEvent } from 'react'
 
+import { EditorExpandToggle } from '@/components/EditorExpandToggle'
 import { MarkdownEditor } from '@/components/MarkdownEditor'
 import { markdownToPlainText } from '@/lib/utils'
 
@@ -26,16 +28,29 @@ export function EditPostDialog({
   initialContent,
   onSave,
 }: EditPostDialogProps) {
+  const [isAdvanced, setIsAdvanced] = useState(false)
+  const [wasOpen, setWasOpen] = useState(isOpen)
+
+  if (wasOpen !== isOpen) {
+    setWasOpen(isOpen)
+    if (isOpen) setIsAdvanced(false)
+  }
+
   return (
     <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
       <Modal.Backdrop>
-        <Modal.Container size="lg">
+        <Modal.Container size={isAdvanced ? 'full' : 'lg'}>
           <Modal.Dialog>
+            <EditorExpandToggle
+              expanded={isAdvanced}
+              onToggle={() => setIsAdvanced((current) => !current)}
+            />
             <Modal.CloseTrigger aria-label="关闭编辑窗口" />
             <EditPostForm
               key={isOpen ? 'open' : 'closed'}
               initialTitle={initialTitle}
               initialContent={initialContent}
+              isAdvanced={isAdvanced}
               onCancel={() => onOpenChange(false)}
               onSave={onSave}
             />
@@ -49,11 +64,13 @@ export function EditPostDialog({
 function EditPostForm({
   initialTitle,
   initialContent,
+  isAdvanced,
   onCancel,
   onSave,
 }: {
   initialTitle?: string
   initialContent: string
+  isAdvanced: boolean
   onCancel: () => void
   onSave: (values: { title: string; content: string }) => void
 }) {
@@ -78,12 +95,20 @@ function EditPostForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+    <form
+      onSubmit={handleSubmit}
+      className={cn(
+        'flex min-h-0 flex-1 flex-col',
+        isAdvanced && 'mx-auto w-full max-w-3xl',
+      )}
+    >
       <Modal.Header>
         <Modal.Heading>{isThread ? '编辑主题' : '编辑回复'}</Modal.Heading>
       </Modal.Header>
 
-      <Modal.Body className="space-y-4">
+      <Modal.Body
+        className={cn('space-y-4', isAdvanced && 'flex min-h-0 flex-1 flex-col')}
+      >
         {isThread ? (
           <TextField
             fullWidth
@@ -106,7 +131,7 @@ function EditPostForm({
           </TextField>
         ) : null}
 
-        <div>
+        <div className={cn(isAdvanced && 'flex min-h-0 flex-1 flex-col')}>
           <MarkdownEditor
             value={content}
             onChange={(nextContent) => {
@@ -114,7 +139,8 @@ function EditPostForm({
               if (contentError) setContentError(null)
             }}
             defaultMode="markdown"
-            showModeSwitch={false}
+            showModeSwitch={isAdvanced}
+            fillHeight={isAdvanced}
           />
           {contentError ? (
             <p className="mt-1 text-xs text-danger" role="alert">

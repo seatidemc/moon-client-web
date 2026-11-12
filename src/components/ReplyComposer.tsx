@@ -1,7 +1,16 @@
-import { Button, TextArea } from '@heroui/react'
-import { Pin } from 'lucide-react'
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Button, Modal, TextArea } from '@heroui/react'
+import { Maximize2, Pin } from 'lucide-react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react'
 
+import { EditorExpandToggle } from '@/components/EditorExpandToggle'
+import { MarkdownEditor } from '@/components/MarkdownEditor'
 import { useForum } from '@/lib/forum-context'
 import { markdownToPlainText } from '@/lib/utils'
 
@@ -14,7 +23,29 @@ export function ReplyComposer({ threadId }: ReplyComposerProps) {
   const [content, setContent] = useState('')
   const [follow, setFollow] = useState(true)
   const [floating, setFloating] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Let the textarea grow with its content; the composer box caps the height
+  // and scrolls, so the action bar can stick to its bottom edge.
+  const resizeTextarea = useCallback(() => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    textarea.style.height = 'auto'
+    textarea.style.height = `${textarea.scrollHeight}px`
+  }, [])
+
+  useLayoutEffect(() => {
+    resizeTextarea()
+  }, [content, resizeTextarea])
+
+  useEffect(() => {
+    window.addEventListener('resize', resizeTextarea)
+
+    return () => window.removeEventListener('resize', resizeTextarea)
+  }, [resizeTextarea])
 
   useEffect(() => {
     if (!follow) return
@@ -31,9 +62,7 @@ export function ReplyComposer({ threadId }: ReplyComposerProps) {
     return () => observer.disconnect()
   }, [follow])
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
+  function submitReply() {
     if (!currentUser) {
       openLogin()
       return
@@ -43,6 +72,7 @@ export function ReplyComposer({ threadId }: ReplyComposerProps) {
 
     const reply = createReply({ threadId, content })
     setContent('')
+    setExpanded(false)
 
     if (reply) {
       requestAnimationFrame(() => {
@@ -53,47 +83,73 @@ export function ReplyComposer({ threadId }: ReplyComposerProps) {
     }
   }
 
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    submitReply()
+  }
+
   return (
     <>
       <div className={follow ? 'sticky bottom-0 z-20 mt-auto' : 'mt-auto'}>
         <div className="mx-auto w-full max-w-3xl px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           {currentUser ? (
-            <form onSubmit={handleSubmit} className="relative">
-              <TextArea
-                fullWidth
-                rows={4}
-                aria-label="跟帖内容"
-                placeholder="写下你的跟帖…支持 Markdown"
-                value={content}
-                onChange={(event) => setContent(event.target.value)}
-                className={`block max-h-56 min-h-28 resize-none rounded-2xl pb-12 [--field-border-hover:var(--field-border)] [--field-hover:var(--color-field)] ${
+            <form onSubmit={handleSubmit}>
+              <div
+                className={`group max-h-56 overflow-y-auto rounded-2xl border border-field-border bg-field transition duration-150 focus-within:border-field-border-focus focus-within:bg-field-focus focus-within:status-focused-field ${
                   follow && floating ? 'shadow-lg' : 'shadow-none'
                 }`}
-              />
-              <div className="absolute right-2 bottom-2 flex items-center gap-1">
-                <Button
-                  type="button"
-                  size="sm"
-                  isIconOnly
-                  variant="ghost"
-                  aria-label={follow ? '取消跟随' : '跟随滚动'}
-                  aria-pressed={follow}
-                  className={follow ? 'text-foreground' : 'text-muted'}
-                  onPress={() => setFollow((value) => !value)}
-                >
-                  <Pin
-                    className={`size-4 ${follow ? 'fill-current' : ''}`}
+              >
+                <TextArea
+                  ref={textareaRef}
+                  fullWidth
+                  rows={4}
+                  aria-label="跟帖内容"
+                  placeholder="写下你的跟帖…支持 Markdown"
+                  value={content}
+                  onChange={(event) => setContent(event.target.value)}
+                  className="block resize-none overflow-hidden border-0 bg-transparent px-4 pt-3 pb-2 shadow-none"
+                />
+                <div className="relative sticky bottom-0 z-10 bg-field pt-1 transition-colors group-focus-within:bg-field-focus">
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-x-0 -top-4 h-4 bg-gradient-to-t from-field to-transparent group-focus-within:from-field-focus"
                   />
-                </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  variant="primary"
-                  className="shrink-0"
-                  isDisabled={!markdownToPlainText(content)}
-                >
-                  发布
-                </Button>
+                  <div className="flex items-center justify-end gap-1 px-2 pb-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      isIconOnly
+                      variant="ghost"
+                      aria-label="高级编辑"
+                      onPress={() => setExpanded(true)}
+                    >
+                      <Maximize2 className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      isIconOnly
+                      variant="ghost"
+                      aria-label={follow ? '取消跟随' : '跟随滚动'}
+                      aria-pressed={follow}
+                      className={follow ? 'text-foreground' : 'text-muted'}
+                      onPress={() => setFollow((value) => !value)}
+                    >
+                      <Pin
+                        className={`size-4 ${follow ? 'fill-current' : ''}`}
+                      />
+                    </Button>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      variant="primary"
+                      className="shrink-0"
+                      isDisabled={!markdownToPlainText(content)}
+                    >
+                      发布
+                    </Button>
+                  </div>
+                </div>
               </div>
             </form>
           ) : (
@@ -112,6 +168,49 @@ export function ReplyComposer({ threadId }: ReplyComposerProps) {
         </div>
       </div>
       <div ref={sentinelRef} aria-hidden="true" className="h-px w-full" />
+
+      <Modal isOpen={expanded} onOpenChange={setExpanded}>
+        <Modal.Backdrop>
+          <Modal.Container size="full">
+            <Modal.Dialog>
+              <EditorExpandToggle
+                expanded
+                onToggle={() => setExpanded(false)}
+              />
+              <Modal.CloseTrigger aria-label="收起编辑器" />
+              <form
+                key={expanded ? 'open' : 'closed'}
+                onSubmit={handleSubmit}
+                className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col"
+              >
+                <Modal.Header>
+                  <Modal.Heading>发布跟帖</Modal.Heading>
+                </Modal.Header>
+
+                <Modal.Body className="flex min-h-0 flex-1 flex-col">
+                  <MarkdownEditor
+                    value={content}
+                    onChange={setContent}
+                    defaultMode="markdown"
+                    fillHeight
+                    showModeSwitch
+                  />
+                </Modal.Body>
+
+                <Modal.Footer>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    isDisabled={!markdownToPlainText(content)}
+                  >
+                    发布
+                  </Button>
+                </Modal.Footer>
+              </form>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
     </>
   )
 }
