@@ -12,6 +12,8 @@
   "dependencies": {
     "@heroui/react": "3.2.7",
     "@heroui/styles": "3.2.7",
+    "@tiptap/extension-image": "^3.33.1",
+    "@tiptap/extension-table": "^3.33.1",
     "@tiptap/markdown": "^3.33.1",
     "@tiptap/pm": "^3.33.1",
     "@tiptap/react": "^3.33.1",
