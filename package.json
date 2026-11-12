@@ -21,6 +21,7 @@
     "@tiptap/suggestion": "^3.33.1",
     "gemoji": "^8.1.0",
     "lucide-react": "^1.71.0",
+    "pixelarticons": "^2.4.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-markdown": "^10.1.0",

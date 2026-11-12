@@ -368,6 +368,19 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       })
     }
 
+    function updateUserAvatar(userId: string, avatarUrl: string | null) {
+      setData((previous) => {
+        if (!previous.users.some((user) => user.id === userId)) return previous
+
+        return {
+          ...previous,
+          users: previous.users.map((user) =>
+            user.id === userId ? { ...user, avatarUrl: avatarUrl ?? undefined } : user,
+          ),
+        }
+      })
+    }
+
     function togglePostLike(postKey: string) {
       if (!currentUser) return
 
@@ -438,6 +451,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       toggleUserLike,
       togglePostLike,
       setUserBackground,
+      updateUserAvatar,
       updateUserBio,
     }
   }, [currentUser, data, loginDialogOpen])

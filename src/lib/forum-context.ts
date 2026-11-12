@@ -41,6 +41,7 @@ export interface ForumContextValue {
   toggleUserLike: (userId: string) => void
   togglePostLike: (postKey: string) => void
   setUserBackground: (userId: string, background: string | null) => void
+  updateUserAvatar: (userId: string, avatarUrl: string | null) => void
   updateUserBio: (userId: string, bio: string) => void
 }
 

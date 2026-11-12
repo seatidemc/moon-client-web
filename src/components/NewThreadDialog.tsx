@@ -9,7 +9,7 @@ import {
   Select,
   TextField,
 } from '@heroui/react'
-import { useState, type FormEvent } from 'react'
+import { useState, type CSSProperties, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { EditorExpandToggle } from '@/components/EditorExpandToggle'
@@ -29,6 +29,7 @@ export function NewThreadDialog({
   onOpenChange,
   boardId,
 }: NewThreadDialogProps) {
+  const { boards } = useForum()
   const [isAdvanced, setIsAdvanced] = useState(false)
   const [formKey, setFormKey] = useState(0)
   const [wasOpen, setWasOpen] = useState(isOpen)
@@ -41,6 +42,19 @@ export function NewThreadDialog({
     }
   }
 
+  // 固定板块时，用板块色作为整个弹窗的主题色；派生色沿用主题的通用公式
+  const boardColor = boardId
+    ? boards.find((board) => board.id === boardId)?.color
+    : undefined
+  const themeStyle = boardColor
+    ? ({
+        '--accent': boardColor,
+        '--accent-hover':
+          'color-mix(in oklab, var(--accent) 90%, var(--accent-foreground) 10%)',
+        '--focus': 'var(--accent)',
+      } as CSSProperties)
+    : undefined
+
   function closeDialog() {
     onOpenChange(false)
   }
@@ -49,7 +63,7 @@ export function NewThreadDialog({
     <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
       <Modal.Backdrop>
         <Modal.Container size={isAdvanced ? 'full' : 'lg'}>
-          <Modal.Dialog>
+          <Modal.Dialog style={themeStyle}>
             <EditorExpandToggle
               expanded={isAdvanced}
               onToggle={() => setIsAdvanced((current) => !current)}

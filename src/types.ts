@@ -14,7 +14,7 @@ export interface Board {
   id: string
   name: string
   description: string
-  /** 板块图标标识，映射到 lucide 图标，见 src/lib/board-icons.ts */
+  /** 板块图标标识，映射到 pixelarticons 图标，见 src/lib/board-icons.ts */
   icon: BoardIconName
   /** 板块主题色（hex），用于图标底色和卡片强调 */
   color: string
