@@ -1,7 +1,7 @@
 import { makeExcerpt } from '@/lib/utils'
 import type { ForumThread, Reply, User } from '@/types'
 
-const EXCERPT_LENGTH = 10
+const EXCERPT_LENGTH = 16
 
 export interface ReplyReferenceOption {
   /** 0 表示主题帖本身 */

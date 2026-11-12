@@ -1,9 +1,10 @@
 import { ListBox, Surface } from '@heroui/react'
-import type { RefObject } from 'react'
+import { useRef, type RefObject } from 'react'
 
 import type { ReplyReferenceOption } from '@/lib/reply-reference-options'
 
 import type { ReferenceTrigger } from './editor-types'
+import { useScrollActiveOption } from './use-scroll-active-option'
 
 interface ReferencePickerProps {
   panelRef: RefObject<HTMLDivElement | null>
@@ -22,6 +23,9 @@ export function ReferencePicker({
   onChoose,
   onHover,
 }: ReferencePickerProps) {
+  const listRef = useRef<HTMLDivElement | null>(null)
+  useScrollActiveOption(listRef, activeIndex, options)
+
   return (
     <Surface
       ref={panelRef}
@@ -38,7 +42,7 @@ export function ReferencePicker({
         {trigger.query ? ` · #${trigger.query}` : ''}
       </p>
 
-      <div className="max-h-56 overflow-y-auto">
+      <div ref={listRef} className="max-h-56 overflow-y-auto">
         <ListBox
           aria-label="选择要回复的楼层"
           selectionMode="single"

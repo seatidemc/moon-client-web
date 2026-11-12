@@ -1,9 +1,10 @@
 import { ListBox, Surface } from '@heroui/react'
-import type { RefObject } from 'react'
+import { useRef, type RefObject } from 'react'
 
 import type { EmojiSuggestionItem } from '@/lib/emoji-suggestion'
 
 import type { EmojiSuggestionState } from './editor-types'
+import { useScrollActiveOption } from './use-scroll-active-option'
 
 interface EmojiPickerProps {
   panelRef: RefObject<HTMLDivElement | null>
@@ -21,6 +22,8 @@ export function EmojiPicker({
   onHover,
 }: EmojiPickerProps) {
   const activeItem = suggestion.items[activeIndex]
+  const listRef = useRef<HTMLDivElement | null>(null)
+  useScrollActiveOption(listRef, activeIndex, suggestion.items)
 
   return (
     <Surface
@@ -38,7 +41,7 @@ export function EmojiPicker({
         {suggestion.query ? ` · :${suggestion.query}` : ''}
       </p>
 
-      <div className="max-h-56 overflow-y-auto">
+      <div ref={listRef} className="max-h-56 overflow-y-auto">
         <ListBox
           aria-label="选择表情"
           selectionMode="single"
