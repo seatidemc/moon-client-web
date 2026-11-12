@@ -1,7 +1,7 @@
 import { Button, Tooltip } from '@heroui/react';
-import { LayoutGrid, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import { NewThreadDialog } from '@/components/NewThreadDialog';
 import { UserAvatar } from '@/components/UserAvatar';
@@ -13,7 +13,6 @@ const RECENT_REPLY_EXCERPT_LENGTH = 40;
 
 export function HomeSidebar() {
 	const { users, threads, replies, currentUser, openLogin } = useForum();
-	const navigate = useNavigate();
 	const [composerOpen, setComposerOpen] = useState(false);
 
 	const recentReplies = [...replies]
@@ -53,17 +52,6 @@ export function HomeSidebar() {
 				>
 					<Plus className="size-4" />
 					发布帖子
-				</Button>
-
-				<Button
-					type="button"
-					size="md"
-					variant="outline"
-					className="w-full"
-					onPress={() => navigate('/boards')}
-				>
-					<LayoutGrid className="size-4" />
-					板块
 				</Button>
 
 				<section aria-label="最近回复" className="rounded-2xl bg-surface p-4">

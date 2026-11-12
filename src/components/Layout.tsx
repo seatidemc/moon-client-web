@@ -1,7 +1,13 @@
-import { Button, Dropdown, SearchField } from '@heroui/react'
-import { LogOut, Search, User } from 'lucide-react'
+import { Button, cn, Dropdown, SearchField } from '@heroui/react'
+import { LayoutGrid, LogOut, Search, User } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import {
+  Link,
+  NavLink,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom'
 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { LoginDialog } from '@/components/LoginDialog'
@@ -48,6 +54,24 @@ export function Layout() {
           >
             {SITE_NAME}
           </Link>
+
+          <nav aria-label="主导航" className="flex shrink-0 items-center">
+            <NavLink
+              to="/boards"
+              aria-label="板块"
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm transition-colors',
+                  isActive
+                    ? 'bg-default-soft text-foreground'
+                    : 'text-muted hover:bg-default-soft hover:text-foreground',
+                )
+              }
+            >
+              <LayoutGrid className="size-4 shrink-0" />
+              <span className="hidden sm:inline">板块</span>
+            </NavLink>
+          </nav>
 
           {isSearchPage ? null : (
             <form
