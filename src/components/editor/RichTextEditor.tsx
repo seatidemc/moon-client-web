@@ -9,19 +9,22 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type PointerEvent,
 } from 'react'
 
+import { downloadHtml, downloadMarkdown } from '@/lib/export-document'
 import { expandEmojiShortcodes } from '@/lib/tiptap-emoji-shortcodes'
 import { setReplyReferenceFloors } from '@/lib/tiptap-reply-references'
 
 import { EditorToolbar } from './EditorToolbar'
 import { EmojiPicker } from './EmojiPicker'
 import { LinkPopover } from './LinkPopover'
-import { MarkdownFileMenu } from './MarkdownFileMenu'
 import { ReferencePicker } from './ReferencePicker'
 import { TableMenu } from './TableMenu'
 import { TablePicker } from './TablePicker'
 import {
+  COMPACT_EDITOR_HEIGHT,
+  COMPACT_EDITOR_MAX_HEIGHT,
   LINK_POPUP_HEIGHT,
   LINK_POPUP_WIDTH,
   TABLE_PICKER_WIDTH,
@@ -40,9 +43,8 @@ import type {
 } from './editor-types'
 import {
   anchorPopup,
-  downloadMarkdown,
   isCaretInsidePanel,
-  normalizeMarkdown,
+  normalizeExportedMarkdown,
 } from './editor-utils'
 import { useDismissOnOutside } from './use-dismiss-on-outside'
 import { useEditorToolbarState } from './use-editor-state'
@@ -55,6 +57,7 @@ export function RichTextEditor({
   fillHeight = false,
   ariaLabel = '正文',
   compact = false,
+  advanced = true,
   syncExternalValue = true,
   floorOptions = [],
   ref,
@@ -64,11 +67,15 @@ export function RichTextEditor({
     null,
   )
   const [tableMenu, setTableMenu] = useState<TablePanelPosition | null>(null)
+  const [compactHeight, setCompactHeight] = useState(COMPACT_EDITOR_HEIGHT)
+  const resizeStartRef = useRef<{ pointerY: number; height: number } | null>(
+    null,
+  )
 
   const onChangeRef = useRef(onChange)
   // Tracks what this editor emitted so external resets can be told apart from
   // the parent echoing our own changes back through `value`.
-  const lastEmittedMarkdownRef = useRef(value)
+  const lastEmittedHtmlRef = useRef(value)
   const richPanelRef = useRef<HTMLDivElement>(null)
   const referencePanelRef = useRef<HTMLDivElement>(null)
   const emojiPanelRef = useRef<HTMLDivElement>(null)
@@ -143,10 +150,12 @@ export function RichTextEditor({
       placeholder: compact ? '写下你的跟帖…输入 re# 可引用楼层' : undefined,
     }),
     content: value,
-    contentType: 'markdown',
+    contentType: 'html',
     editorProps: {
       attributes: {
-        class: 'moon-editor-content flex-1',
+        class: compact
+          ? 'moon-rich-text moon-editor-content moon-editor-content-compact flex-1'
+          : 'moon-rich-text moon-editor-content flex-1',
         'aria-label': ariaLabel,
       },
       handlePaste: handleImagePaste,
@@ -168,10 +177,10 @@ export function RichTextEditor({
       expandEmojiShortcodes(currentEditor)
     },
     onUpdate: ({ editor: currentEditor }) => {
-      const markdown = normalizeMarkdown(currentEditor.getMarkdown())
+      const html = currentEditor.getHTML()
 
-      lastEmittedMarkdownRef.current = markdown
-      onChangeRef.current(markdown)
+      lastEmittedHtmlRef.current = html
+      onChangeRef.current(html)
       reference.update(currentEditor)
     },
     onSelectionUpdate: ({ editor: currentEditor }) => {
@@ -208,10 +217,14 @@ export function RichTextEditor({
   // submit, or edits made in another editor bound to the same state).
   useEffect(() => {
     if (!syncExternalValue) return
-    if (value === lastEmittedMarkdownRef.current) return
+    if (value === lastEmittedHtmlRef.current) return
 
-    lastEmittedMarkdownRef.current = value
-    editor.commands.setContent(value, { contentType: 'markdown' })
+    lastEmittedHtmlRef.current = value
+    // The parent already has this exact HTML; re-emitting it would echo back.
+    editor.commands.setContent(value, {
+      contentType: 'html',
+      emitUpdate: false,
+    })
     expandEmojiShortcodes(editor)
   }, [editor, syncExternalValue, value])
 
@@ -319,6 +332,7 @@ export function RichTextEditor({
     setTablePicker(null)
   }
 
+  /** Markdown import is an explicit conversion into the rich-text document. */
   function importMarkdown(markdown: string) {
     if (!editor) return
 
@@ -327,7 +341,13 @@ export function RichTextEditor({
   }
 
   function exportMarkdown() {
-    downloadMarkdown(normalizeMarkdown(editor?.getMarkdown() ?? value))
+    if (!editor) return
+
+    downloadMarkdown(normalizeExportedMarkdown(editor.getMarkdown()))
+  }
+
+  function exportHtml() {
+    downloadHtml(editor?.getHTML() ?? value)
   }
 
   function handlePickerKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -335,6 +355,49 @@ export function RichTextEditor({
 
     if (emoji.handleKeyDown(event, editor)) return
     reference.handleKeyDown(event, editor)
+  }
+
+  function clampCompactHeight(height: number) {
+    return Math.min(
+      COMPACT_EDITOR_MAX_HEIGHT,
+      Math.max(COMPACT_EDITOR_HEIGHT, height),
+    )
+  }
+
+  function startResize(event: PointerEvent<HTMLDivElement>) {
+    event.preventDefault()
+    resizeStartRef.current = {
+      pointerY: event.clientY,
+      height: compactHeight,
+    }
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  function resizeByDrag(event: PointerEvent<HTMLDivElement>) {
+    const start = resizeStartRef.current
+    if (!start) return
+
+    // 上边缘拖动：指针上移时编辑器变高。
+    setCompactHeight(
+      clampCompactHeight(start.height + start.pointerY - event.clientY),
+    )
+  }
+
+  function endResize(event: PointerEvent<HTMLDivElement>) {
+    if (!resizeStartRef.current) return
+
+    resizeStartRef.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
+
+  function handleResizeKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+
+    event.preventDefault()
+    const step = event.key === 'ArrowUp' ? 16 : -16
+    setCompactHeight((height) => clampCompactHeight(height + step))
   }
 
   return (
@@ -345,12 +408,8 @@ export function RichTextEditor({
       )}
     >
       {compact ? null : (
-        <div className="mb-2 flex shrink-0 items-center justify-between gap-4">
+        <div className="mb-2 flex shrink-0 items-center">
           <span className="text-sm font-medium text-foreground">正文</span>
-          <MarkdownFileMenu
-            onImport={importMarkdown}
-            onExport={exportMarkdown}
-          />
         </div>
       )}
 
@@ -365,24 +424,48 @@ export function RichTextEditor({
               : 'h-[calc(20rem+2px)]',
         )}
       >
-        {compact ? null : (
-          <EditorToolbar
-            editor={editor}
-            state={editorState}
-            tableButtonRef={tableButtonRef}
-            tablePickerOpen={tablePicker !== null}
-            onToggleTablePicker={toggleTablePicker}
-            onOpenLink={openLinkFromToolbar}
-          />
-        )}
+        {compact ? (
+          <div
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="拖动调整编辑器高度"
+            tabIndex={0}
+            className="group flex h-2.5 shrink-0 cursor-ns-resize touch-none items-center justify-center rounded-t-2xl outline-none focus-visible:bg-default-soft"
+            onPointerDown={startResize}
+            onPointerMove={resizeByDrag}
+            onPointerUp={endResize}
+            onPointerCancel={endResize}
+            onKeyDown={handleResizeKeyDown}
+          >
+            <span
+              aria-hidden="true"
+              className="h-0.5 w-8 rounded-full bg-separator transition-colors group-hover:bg-muted"
+            />
+          </div>
+        ) : null}
+
+        <EditorToolbar
+          editor={editor}
+          state={editorState}
+          tableButtonRef={tableButtonRef}
+          tablePickerOpen={tablePicker !== null}
+          onToggleTablePicker={toggleTablePicker}
+          onOpenLink={openLinkFromToolbar}
+          onImportMarkdown={importMarkdown}
+          onExportMarkdown={exportMarkdown}
+          onExportHtml={exportHtml}
+          minimal={compact || !advanced}
+          className={compact ? 'px-2 pt-1.5' : 'mb-2'}
+        />
 
         <div
           className={cn(
             'flex min-h-0 flex-col',
             compact
-              ? 'max-h-44 min-h-32 overflow-y-auto'
+              ? 'overflow-y-auto'
               : 'flex-1 overflow-y-auto rounded-field border border-field-border bg-field shadow-field transition duration-150 hover:border-field-border-hover focus-within:border-field-border-focus focus-within:bg-field-focus focus-within:status-focused-field',
           )}
+          style={compact ? { height: compactHeight } : undefined}
           onKeyDownCapture={handlePickerKeyDown}
           onScroll={() => {
             setTableMenu(null)

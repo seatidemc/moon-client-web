@@ -24,6 +24,7 @@ import {
   TABLE_TOOLBAR_ACTIONS,
   type TableActionId,
 } from './editor-constants'
+import { DocumentFileMenu } from './DocumentFileMenu'
 import type { EditorToolbarState } from './editor-types'
 
 interface EditorToolbarProps {
@@ -33,6 +34,12 @@ interface EditorToolbarProps {
   tablePickerOpen: boolean
   onToggleTablePicker: () => void
   onOpenLink: () => void
+  onImportMarkdown: (markdown: string) => void
+  onExportMarkdown: () => void
+  onExportHtml: () => void
+  /** 未展开时只保留最基础的格式：粗体、斜体、删除线 */
+  minimal?: boolean
+  className?: string
 }
 
 export function EditorToolbar({
@@ -42,16 +49,17 @@ export function EditorToolbar({
   tablePickerOpen,
   onToggleTablePicker,
   onOpenLink,
+  onImportMarkdown,
+  onExportMarkdown,
+  onExportHtml,
+  minimal = false,
+  className,
 }: EditorToolbarProps) {
   const headingLabel =
     HEADING_LEVELS[state.headingLevel - 1]?.label ?? '正文'
 
-  return (
-    <div
-      role="toolbar"
-      aria-label="格式工具栏"
-      className="mb-2 flex shrink-0 flex-wrap items-center gap-0.5"
-    >
+  const basicButtons = (
+    <>
       <ToolbarButton
         label="粗体"
         active={state.isBold}
@@ -73,6 +81,31 @@ export function EditorToolbar({
       >
         <Strikethrough />
       </ToolbarButton>
+    </>
+  )
+
+  if (minimal) {
+    return (
+      <div
+        role="toolbar"
+        aria-label="格式工具栏"
+        className={cn(
+          'flex shrink-0 flex-wrap items-center gap-0.5',
+          className,
+        )}
+      >
+        {basicButtons}
+      </div>
+    )
+  }
+
+  return (
+    <div
+      role="toolbar"
+      aria-label="格式工具栏"
+      className="mb-2 flex shrink-0 flex-wrap items-center gap-0.5"
+    >
+      {basicButtons}
 
       <span className="mx-0.5 h-5 w-px bg-separator" aria-hidden="true" />
 
@@ -225,6 +258,14 @@ export function EditorToolbar({
       >
         <Redo2 />
       </ToolbarButton>
+
+      <span className="mx-0.5 h-5 w-px bg-separator" aria-hidden="true" />
+
+      <DocumentFileMenu
+        onImportMarkdown={onImportMarkdown}
+        onExportMarkdown={onExportMarkdown}
+        onExportHtml={onExportHtml}
+      />
     </div>
   )
 }

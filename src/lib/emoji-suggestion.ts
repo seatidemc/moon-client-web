@@ -9,8 +9,8 @@ export type EmojiSuggestionItem = {
 }
 
 /**
- * Emoji suggestions use the same GitHub shortcodes as the rest of the app, so
- * an emoji picked here round-trips through Markdown as `:smile:`.
+ * Emoji suggestions use GitHub shortcodes; a picked emoji is inserted as the
+ * emoji character itself.
  */
 export const emojiItems: EmojiSuggestionItem[] = gemoji.map((item) => ({
   name: item.names[0],

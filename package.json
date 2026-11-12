@@ -21,13 +21,14 @@
     "@tiptap/starter-kit": "^3.33.1",
     "@tiptap/suggestion": "^3.33.1",
     "gemoji": "^8.1.0",
+    "hast-util-from-html": "^2.1.0",
+    "hast-util-sanitize": "^5.0.2",
+    "hast-util-to-jsx-runtime": "^2.3.7",
     "lucide-react": "^1.71.0",
     "pixelarticons": "^2.4.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "react-markdown": "^10.1.0",
-    "react-router-dom": "^7.18.5",
-    "remark-gfm": "^4.0.1"
+    "react-router-dom": "^7.18.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.5",

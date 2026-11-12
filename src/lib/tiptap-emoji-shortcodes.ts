@@ -25,7 +25,7 @@ type EmojiShortcodesOptions = {
 
 /**
  * Adds `:` emoji suggestions and converts typed `:smile:` shortcodes into emoji
- * text. Emoji stay plain text, so Markdown keeps the characters the user sees.
+ * text, so the document always stores the emoji the user sees.
  */
 export const EmojiShortcodes = Extension.create<EmojiShortcodesOptions>({
   name: 'emojiShortcodes',
@@ -81,7 +81,7 @@ export const EmojiShortcodes = Extension.create<EmojiShortcodesOptions>({
 })
 
 /**
- * Expands shortcodes already in the document, e.g. after loading Markdown or
+ * Expands shortcodes already in the document, e.g. after importing Markdown or
  * switching into rich text. Code and links are skipped.
  */
 export function expandEmojiShortcodes(editor: Editor) {

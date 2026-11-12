@@ -11,8 +11,8 @@ import { useState, type FormEvent } from 'react'
 
 import { EditorExpandToggle } from '@/components/EditorExpandToggle'
 import { RichTextEditor } from '@/components/editor'
+import { hasRichTextContent } from '@/lib/html-content'
 import type { ReplyReferenceOption } from '@/lib/reply-reference-options'
-import { markdownToPlainText } from '@/lib/utils'
 
 interface EditPostDialogProps {
   isOpen: boolean
@@ -91,7 +91,7 @@ function EditPostForm({
     event.preventDefault()
 
     const nextTitleError = isThread && !title.trim() ? '请填写标题。' : null
-    const nextContentError = markdownToPlainText(content) ? null : '请填写正文。'
+    const nextContentError = hasRichTextContent(content) ? null : '请填写正文。'
 
     setTitleError(nextTitleError)
     setContentError(nextContentError)
@@ -146,6 +146,7 @@ function EditPostForm({
               if (contentError) setContentError(null)
             }}
             fillHeight={isAdvanced}
+            advanced={isAdvanced}
             floorOptions={floorOptions}
           />
           {contentError ? (

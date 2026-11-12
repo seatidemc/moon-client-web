@@ -2,5 +2,6 @@ export const SITE_NAME = 'Moon'
 
 export const DEMO_PASSWORD = 'moon123'
 
-export const FORUM_STORAGE_KEY = 'moon-forum:data:v1'
+// v2 stores rich-text HTML; Markdown is not a supported document format.
+export const FORUM_STORAGE_KEY = 'moon-forum:data:v2'
 export const SESSION_STORAGE_KEY = 'moon-forum:session:v1'

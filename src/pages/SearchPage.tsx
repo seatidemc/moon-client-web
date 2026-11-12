@@ -6,6 +6,7 @@ import { useSearchParams } from 'react-router-dom'
 import { TagList } from '@/components/TagList'
 import { ThreadListItem } from '@/components/ThreadListItem'
 import { useForum } from '@/lib/forum-context'
+import { htmlToPlainText } from '@/lib/html-content'
 import { usePageTitle } from '@/lib/use-page-title'
 
 export function SearchPage() {
@@ -42,12 +43,12 @@ export function SearchPage() {
             )
             const searchable = [
               thread.title,
-              thread.content,
+              htmlToPlainText(thread.content),
               ...thread.tags.flatMap((tag) => [tag, `#${tag}`]),
               author?.name ?? '',
               author?.handle ?? '',
               board?.name ?? '',
-              ...threadReplies.map((reply) => reply.content),
+              ...threadReplies.map((reply) => htmlToPlainText(reply.content)),
             ]
               .join('\n')
               .toLocaleLowerCase('zh-CN')

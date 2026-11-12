@@ -23,7 +23,10 @@ interface EditorExtensionOptions extends EmojiSuggestionHandlers {
   placeholder?: string
 }
 
-/** The rich-text schema. Markdown is only the storage/import/export format. */
+/**
+ * The rich-text schema. HTML is the document format; Markdown is only an
+ * import/export conversion.
+ */
 export function createEditorExtensions({
   update,
   hide,
@@ -40,7 +43,12 @@ export function createEditorExtensions({
       },
     }),
     TableKit.configure({
-      table: { resizable: true, lastColumnResizable: true },
+      table: {
+        resizable: true,
+        lastColumnResizable: true,
+        // Keep the same scroll container in the editor and in rendered posts.
+        renderWrapper: true,
+      },
     }),
     Image.configure({
       allowBase64: true,

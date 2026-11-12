@@ -23,7 +23,7 @@ export function setReplyReferenceFloors(
 
 /**
  * Renders valid `re#楼层号` references as chips while editing. Decorations are
- * view-only, so the Markdown serialization and the stored text never change.
+ * view-only, so the HTML serialization and the stored text never change.
  */
 export const ReplyReferenceChips = Extension.create({
   name: 'replyReferenceChips',
@@ -71,7 +71,7 @@ export const ReplyReferenceChips = Extension.create({
 
                 decorations.push(
                   Decoration.inline(from, to, {
-                    class: 'reply-reference-chip',
+                    class: 'reply-reference',
                     'data-floor': String(floor),
                   }),
                 )

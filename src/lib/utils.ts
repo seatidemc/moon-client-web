@@ -1,48 +1,7 @@
-import { replaceEmojiShortcodesInMarkdown } from '@/lib/emoji-shortcodes'
+import { htmlToPlainText } from '@/lib/html-content'
 
-const HASHTAG_PATTERN = /(^|[^\p{L}\p{N}_#])#([\p{L}\p{N}_][\p{L}\p{N}_-]{0,23})/gu
-
-export function extractTags(markdown: string): string[] {
-  const contentWithoutCode = markdown
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/~~~[\s\S]*?~~~/g, ' ')
-    .replace(/`[^`\n]*`/g, ' ')
-
-  const seen = new Set<string>()
-  const tags: string[] = []
-
-  for (const match of contentWithoutCode.matchAll(HASHTAG_PATTERN)) {
-    const tag = match[2]
-    const key = tag.toLocaleLowerCase('zh-CN')
-
-    if (!seen.has(key)) {
-      seen.add(key)
-      tags.push(tag)
-    }
-  }
-
-  return tags
-}
-
-export function markdownToPlainText(markdown: string): string {
-  return replaceEmojiShortcodesInMarkdown(markdown)
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/~~~[\s\S]*?~~~/g, ' ')
-    .replace(/`([^`]*)`/g, '$1')
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/^>\s?/gm, '')
-    .replace(/^\s*[-*+]\s+/gm, '')
-    .replace(/^\s*\d+\.\s+/gm, '')
-    .replace(/[*_~]/g, '')
-    .replace(/\r?\n/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-export function makeExcerpt(markdown: string, maxLength = 120): string {
-  const text = markdownToPlainText(markdown)
+export function makeExcerpt(html: string, maxLength = 120): string {
+  const text = htmlToPlainText(html)
   return text.length > maxLength ? `${text.slice(0, maxLength).trimEnd()}…` : text
 }
 

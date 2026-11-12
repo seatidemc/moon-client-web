@@ -1,8 +1,11 @@
 /** 匹配光标前刚输入的 re#楼层号（楼层号可以还没输入） */
 export const REFERENCE_QUERY_PATTERN = /(?:^|[^\p{L}\p{N}_])(re#(\d*))$/u
 
-/** Floor references use a non-breaking separator while editing; save a plain space. */
-export function normalizeMarkdown(markdown: string) {
+/**
+ * Floor references use a non-breaking separator while editing; the Markdown
+ * export uses a plain space.
+ */
+export function normalizeExportedMarkdown(markdown: string) {
   return markdown.replace(/(re#\d+) /g, '$1 ')
 }
 
@@ -22,24 +25,6 @@ export function readImageFileAsDataUrl(file: File) {
     reader.addEventListener('error', () => reject(reader.error))
     reader.readAsDataURL(file)
   })
-}
-
-/** 把 Markdown 作为文件下载到本地。 */
-export function downloadMarkdown(markdown: string, fileName = '正文.md') {
-  const blob = new Blob([markdown], {
-    type: 'text/markdown;charset=utf-8',
-  })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-
-  anchor.href = url
-  anchor.download = fileName
-  document.body.append(anchor)
-  anchor.click()
-  anchor.remove()
-
-  // 延迟释放，确保浏览器已经接住下载。
-  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
 /** 光标是否仍位于编辑器可视区域内。 */

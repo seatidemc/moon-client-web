@@ -19,6 +19,11 @@ export const TABLE_GRID_COLUMNS = 8
 export const TABLE_MENU_WIDTH = 224
 export const TABLE_MENU_MAX_HEIGHT = 480
 
+/** 快捷回复编辑器内容区的默认高度（px）。 */
+export const COMPACT_EDITOR_HEIGHT = 80
+/** 快捷回复编辑器拖动上边缘可达到的最大高度（px）。 */
+export const COMPACT_EDITOR_MAX_HEIGHT = 192
+
 export const HEADING_LEVELS = [
   { level: 1, label: '一级标题', icon: Heading1 },
   { level: 2, label: '二级标题', icon: Heading2 },

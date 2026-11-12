@@ -15,7 +15,7 @@ import { useNavigate } from 'react-router-dom'
 import { EditorExpandToggle } from '@/components/EditorExpandToggle'
 import { RichTextEditor } from '@/components/editor'
 import { useForum } from '@/lib/forum-context'
-import { markdownToPlainText } from '@/lib/utils'
+import { hasRichTextContent } from '@/lib/html-content'
 
 interface NewThreadDialogProps {
   isOpen: boolean
@@ -106,7 +106,7 @@ function NewThreadForm({
     event.preventDefault()
 
     const nextTitleError = title.trim() ? null : '请填写标题。'
-    const nextContentError = markdownToPlainText(content) ? null : '请填写正文。'
+    const nextContentError = hasRichTextContent(content) ? null : '请填写正文。'
 
     setTitleError(nextTitleError)
     setContentError(nextContentError)
@@ -171,6 +171,7 @@ function NewThreadForm({
               if (contentError) setContentError(null)
             }}
             fillHeight={isAdvanced}
+            advanced={isAdvanced}
           />
           {contentError ? (
             <p className="mt-1 text-xs text-danger" role="alert">

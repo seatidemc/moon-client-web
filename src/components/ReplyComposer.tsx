@@ -15,8 +15,8 @@ import {
   type RichTextEditorHandle,
 } from '@/components/editor'
 import { useForum } from '@/lib/forum-context'
+import { hasRichTextContent } from '@/lib/html-content'
 import { buildReplyReferenceOptions } from '@/lib/reply-reference-options'
-import { markdownToPlainText } from '@/lib/utils'
 
 export interface ReplyComposerHandle {
   /** 在跟帖末尾追加 re#楼层号，并聚焦输入框 */
@@ -79,7 +79,7 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
       return
     }
 
-    if (!markdownToPlainText(content)) return
+    if (!hasRichTextContent(content)) return
 
     const reply = createReply({ threadId, content })
     setContent('')
@@ -148,7 +148,7 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
                     size="sm"
                     variant="primary"
                     className="shrink-0"
-                    isDisabled={!markdownToPlainText(content)}
+                    isDisabled={!hasRichTextContent(content)}
                   >
                     发布
                   </Button>
@@ -205,7 +205,7 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
                   <Button
                     type="submit"
                     variant="primary"
-                    isDisabled={!markdownToPlainText(content)}
+                    isDisabled={!hasRichTextContent(content)}
                   >
                     发布
                   </Button>

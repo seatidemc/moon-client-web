@@ -10,15 +10,20 @@ export interface RichTextEditorHandle {
 }
 
 export interface RichTextEditorProps {
-  /** Markdown 内容。富文本编辑时自动与文档互相转换。 */
+  /** 富文本 HTML 内容。 */
   value: string
   onChange: (value: string) => void
   /** 撑满父容器高度 */
   fillHeight?: boolean
   /** 编辑区的无障碍名称 */
   ariaLabel?: string
-  /** 紧凑模式：用于快捷回复，隐藏标题、Markdown 菜单和工具栏 */
+  /** 紧凑模式：用于快捷回复，隐藏标题和文件菜单，工具栏只保留基础格式 */
   compact?: boolean
+  /**
+   * 展开（高级编辑）状态。未展开时工具栏只保留基础格式，并隐藏文件
+   * 导入/导出菜单。默认为展开。
+   */
+  advanced?: boolean
   /**
    * 是否响应外部传入的 `value` 变化。同一份状态绑定多个编辑器时，可让隐藏
    * 的那个暂不同步，等重新可见后再对齐。

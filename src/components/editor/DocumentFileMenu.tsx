@@ -1,20 +1,22 @@
 import { Dropdown } from '@heroui/react'
-import { ChevronDown, FileDown, FileText, FileUp } from 'lucide-react'
+import { FileCode2, FileDown, FileInput, FileUp } from 'lucide-react'
 import { useRef, type ChangeEvent } from 'react'
 
-interface MarkdownFileMenuProps {
-  onImport: (markdown: string) => void
-  onExport: () => void
+interface DocumentFileMenuProps {
+  onImportMarkdown: (markdown: string) => void
+  onExportMarkdown: () => void
+  onExportHtml: () => void
 }
 
 /**
- * Markdown import/export. The document itself is always edited as rich text;
+ * File conversions for the document. The document itself is always rich text;
  * Markdown is only read from or written to a local file here.
  */
-export function MarkdownFileMenu({
-  onImport,
-  onExport,
-}: MarkdownFileMenuProps) {
+export function DocumentFileMenu({
+  onImportMarkdown,
+  onExportMarkdown,
+  onExportHtml,
+}: DocumentFileMenuProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -25,7 +27,7 @@ export function MarkdownFileMenu({
 
     void file
       .text()
-      .then(onImport)
+      .then(onImportMarkdown)
       .catch(() => {
         // 无法读取的文件直接忽略。
       })
@@ -36,28 +38,31 @@ export function MarkdownFileMenu({
       <Dropdown>
         <Dropdown.Trigger
           type="button"
-          aria-label="导入或导出 Markdown"
-          className="inline-flex h-8 items-center gap-1 rounded-full px-3 text-xs font-medium whitespace-nowrap text-muted transition-colors hover:bg-default-soft hover:text-foreground"
+          aria-label="导入或导出文件"
+          className="inline-flex size-8 items-center justify-center rounded-full transition-colors hover:bg-default-soft"
         >
-          <FileText className="size-3.5" aria-hidden="true" />
-          <span>Markdown</span>
-          <ChevronDown className="size-3 opacity-60" aria-hidden="true" />
+          <FileInput className="size-4" aria-hidden="true" />
         </Dropdown.Trigger>
         <Dropdown.Popover placement="bottom end" className="min-w-44">
           <Dropdown.Menu
-            aria-label="Markdown 操作"
+            aria-label="文件操作"
             onAction={(key) => {
               if (key === 'import') fileInputRef.current?.click()
-              if (key === 'export') onExport()
+              if (key === 'export-markdown') onExportMarkdown()
+              if (key === 'export-html') onExportHtml()
             }}
           >
             <Dropdown.Item id="import" textValue="导入 Markdown">
               <FileUp className="size-4 text-muted" aria-hidden="true" />
               <span data-slot="label">导入 Markdown</span>
             </Dropdown.Item>
-            <Dropdown.Item id="export" textValue="导出 Markdown">
+            <Dropdown.Item id="export-markdown" textValue="导出 Markdown">
               <FileDown className="size-4 text-muted" aria-hidden="true" />
               <span data-slot="label">导出 Markdown</span>
+            </Dropdown.Item>
+            <Dropdown.Item id="export-html" textValue="导出 HTML">
+              <FileCode2 className="size-4 text-muted" aria-hidden="true" />
+              <span data-slot="label">导出 HTML</span>
             </Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown.Popover>

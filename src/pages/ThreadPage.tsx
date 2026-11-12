@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { EditPostDialog } from '@/components/EditPostDialog'
-import { MarkdownView } from '@/components/MarkdownView'
+import { PostContent } from '@/components/PostContent'
 import {
   ReplyComposer,
   type ReplyComposerHandle,
@@ -216,7 +216,7 @@ export function ThreadPage() {
                 ) : null}
               </div>
 
-              <MarkdownView className="mt-6">{thread.content}</MarkdownView>
+              <PostContent className="mt-6">{thread.content}</PostContent>
 
               <PostActions
                 postKey={threadPostKey(thread.id)}
@@ -298,7 +298,7 @@ export function ThreadPage() {
                         </div>
                       </header>
 
-                      <MarkdownView
+                      <PostContent
                         className="mt-5"
                         replyReferences={{
                           threadId: thread.id,
@@ -306,7 +306,7 @@ export function ThreadPage() {
                         }}
                       >
                         {reply.content}
-                      </MarkdownView>
+                      </PostContent>
 
                       <PostActions
                         postKey={replyPostKey(reply.id)}

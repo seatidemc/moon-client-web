@@ -26,8 +26,9 @@ import {
   type NewThreadInput,
   type UpdateThreadInput,
 } from '@/lib/forum-context'
+import { extractTags } from '@/lib/html-content'
 import { findReplyTargetFloor } from '@/lib/reply-references'
-import { createId, extractTags } from '@/lib/utils'
+import { createId } from '@/lib/utils'
 import type { Board, ForumData, ForumThread, Reply } from '@/types'
 
 function isForumData(value: unknown): value is ForumData {

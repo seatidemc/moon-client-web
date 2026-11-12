@@ -35,8 +35,11 @@ body {
       "MONO" 0;
   }
 
-  .moon-prose,
-  .moon-editor-content {
+  /*
+   * One typography system for both the editor and rendered posts. Every rule
+   * below must apply to both so authored content does not shift on publish.
+   */
+  .moon-rich-text {
     color: var(--foreground);
     font-size: 0.9375rem;
     line-height: 1.8;
@@ -46,6 +49,11 @@ body {
   .moon-editor-content {
     padding: 0.875rem 1rem;
     outline: none;
+  }
+
+  /* 快捷回复的工具栏紧贴编辑区，顶部留白相应收紧。 */
+  .moon-editor-content-compact {
+    padding-top: 0.5rem;
   }
 
   /* Node decoration from the Tiptap Placeholder extension. Inheriting the
@@ -59,106 +67,80 @@ body {
     color: var(--muted);
   }
 
-  .moon-prose > :first-child,
-  .moon-editor-content > :first-child {
+  .moon-rich-text > :first-child {
     margin-top: 0;
   }
 
-  .moon-prose > :last-child,
-  .moon-editor-content > :last-child {
+  .moon-rich-text > :last-child {
     margin-bottom: 0;
   }
 
-  .moon-prose p,
-  .moon-prose ul,
-  .moon-prose ol,
-  .moon-prose blockquote,
-  .moon-prose pre,
-  .moon-prose table,
-  .moon-prose hr,
-  .moon-editor-content p,
-  .moon-editor-content ul,
-  .moon-editor-content ol,
-  .moon-editor-content blockquote,
-  .moon-editor-content pre,
-  .moon-editor-content table,
-  .moon-editor-content hr {
+  .moon-rich-text p,
+  .moon-rich-text ul,
+  .moon-rich-text ol,
+  .moon-rich-text blockquote,
+  .moon-rich-text pre,
+  .moon-rich-text table,
+  .moon-rich-text hr {
     margin-block: 0.9em;
   }
 
-  .moon-prose h1,
-  .moon-prose h2,
-  .moon-prose h3,
-  .moon-prose h4,
-  .moon-prose h5,
-  .moon-prose h6,
-  .moon-editor-content h1,
-  .moon-editor-content h2,
-  .moon-editor-content h3,
-  .moon-editor-content h4,
-  .moon-editor-content h5,
-  .moon-editor-content h6 {
+  .moon-rich-text h1,
+  .moon-rich-text h2,
+  .moon-rich-text h3,
+  .moon-rich-text h4,
+  .moon-rich-text h5,
+  .moon-rich-text h6 {
     margin-block: 1.4em 0.5em;
     font-weight: 600;
     line-height: 1.35;
     letter-spacing: -0.01em;
   }
 
-  .moon-prose h1,
-  .moon-editor-content h1 {
+  .moon-rich-text h1 {
     font-size: 1.5em;
   }
 
-  .moon-prose h2,
-  .moon-editor-content h2 {
+  .moon-rich-text h2 {
     font-size: 1.3em;
   }
 
-  .moon-prose h3,
-  .moon-editor-content h3 {
+  .moon-rich-text h3 {
     font-size: 1.12em;
   }
 
-  .moon-prose h4,
-  .moon-editor-content h4 {
+  .moon-rich-text h4 {
     font-size: 1em;
   }
 
-  .moon-prose h5,
-  .moon-editor-content h5 {
+  .moon-rich-text h5 {
     font-size: 0.94em;
   }
 
-  .moon-prose h6,
-  .moon-editor-content h6 {
+  .moon-rich-text h6 {
     color: var(--muted);
     font-size: 0.9em;
   }
 
-  .moon-prose ul,
-  .moon-editor-content ul {
+  .moon-rich-text ul {
     list-style: disc;
     padding-left: 1.35em;
   }
 
-  .moon-prose ol,
-  .moon-editor-content ol {
+  .moon-rich-text ol {
     list-style: decimal;
     padding-left: 1.45em;
   }
 
-  .moon-prose li + li,
-  .moon-editor-content li + li {
+  .moon-rich-text li + li {
     margin-top: 0.25em;
   }
 
-  .moon-prose li > p,
-  .moon-editor-content li > p {
+  .moon-rich-text li > p {
     margin-block: 0;
   }
 
-  .moon-prose a,
-  .moon-editor-content a {
+  .moon-rich-text a {
     color: var(--link);
     text-decoration: underline;
     text-decoration-thickness: 1px;
@@ -166,8 +148,7 @@ body {
   }
 
   /* `re#楼层号` references render as chips in posts and in the rich editor. */
-  .moon-prose a.reply-reference,
-  .moon-editor-content .reply-reference-chip {
+  .moon-rich-text .reply-reference {
     display: inline-block;
     margin-inline: 0.1em;
     border: 1px solid var(--border);
@@ -182,24 +163,21 @@ body {
     white-space: nowrap;
   }
 
-  .moon-prose a.reply-reference:hover {
+  .moon-rich-text a.reply-reference:hover {
     border-color: var(--border-secondary);
   }
 
-  .moon-prose strong,
-  .moon-editor-content strong {
+  .moon-rich-text strong {
     font-weight: 600;
   }
 
-  .moon-prose blockquote,
-  .moon-editor-content blockquote {
+  .moon-rich-text blockquote {
     border-left: 2px solid var(--border-secondary);
     padding-left: 0.9rem;
     color: var(--muted);
   }
 
-  .moon-prose code,
-  .moon-editor-content code {
+  .moon-rich-text code {
     border: 1px solid var(--border);
     border-radius: 0.3rem;
     background: var(--surface-secondary);
@@ -209,8 +187,7 @@ body {
     font-size: 0.875em;
   }
 
-  .moon-prose pre,
-  .moon-editor-content pre {
+  .moon-rich-text pre {
     overflow-x: auto;
     border: 1px solid var(--border);
     border-radius: 0.5rem;
@@ -220,36 +197,31 @@ body {
     line-height: 1.65;
   }
 
-  .moon-prose pre code,
-  .moon-editor-content pre code {
+  .moon-rich-text pre code {
     border: 0;
     background: transparent;
     padding: 0;
     font-size: inherit;
   }
 
-  .moon-prose hr,
-  .moon-editor-content hr {
+  .moon-rich-text hr {
     border: 0;
     border-top: 1px solid var(--border);
   }
 
-  .moon-prose table,
-  .moon-editor-content table {
+  .moon-rich-text .tableWrapper {
+    overflow-x: auto;
+  }
+
+  .moon-rich-text table {
     width: 100%;
     table-layout: fixed;
     border-collapse: collapse;
     font-size: 0.92em;
   }
 
-  .moon-editor-content .tableWrapper {
-    overflow-x: auto;
-  }
-
-  .moon-prose th,
-  .moon-prose td,
-  .moon-editor-content th,
-  .moon-editor-content td {
+  .moon-rich-text th,
+  .moon-rich-text td {
     position: relative;
     box-sizing: border-box;
     min-width: 1em;
@@ -259,15 +231,12 @@ body {
     vertical-align: top;
   }
 
-  .moon-prose th > *,
-  .moon-prose td > *,
-  .moon-editor-content th > *,
-  .moon-editor-content td > * {
+  .moon-rich-text th > *,
+  .moon-rich-text td > * {
     margin-block: 0;
   }
 
-  .moon-prose th,
-  .moon-editor-content th {
+  .moon-rich-text th {
     background: var(--surface-secondary);
     font-weight: 600;
   }
@@ -297,11 +266,16 @@ body {
     cursor: col-resize;
   }
 
-  .moon-prose img,
-  .moon-editor-content img {
+  .moon-rich-text img {
     max-width: 100%;
     height: auto;
     border-radius: 0.5rem;
+  }
+
+  /* Images are block nodes in the editor; match its spacing in posts. */
+  .moon-rich-text > img {
+    display: block;
+    margin-block: 0.9em;
   }
 
   .moon-editor-content [data-resize-container] {
@@ -345,8 +319,7 @@ body {
     cursor: nesw-resize;
   }
 
-  .moon-prose :where(del),
-  .moon-editor-content :where(del) {
+  .moon-rich-text :where(del, s) {
     color: var(--muted);
   }
 }
