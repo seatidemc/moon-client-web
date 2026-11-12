@@ -1,4 +1,3 @@
-import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { getBoardIcon } from '@/lib/board-icons'
@@ -47,11 +46,6 @@ export function BoardsPage() {
                     {boardThreads.length} 个主题
                   </p>
                 </div>
-
-                <ChevronRight
-                  className="size-4 shrink-0 text-muted group-hover:text-foreground"
-                  aria-hidden="true"
-                />
               </Link>
             </li>
           )

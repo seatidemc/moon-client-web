@@ -9,6 +9,18 @@
   --link: color-mix(in oklab, var(--accent) 85%, var(--foreground) 15%);
 }
 
+/*
+ * 页面滚动条改为叠层指示条，不再挤占内容宽度。
+ * 内层滚动区域继承 body 的原生滚动条。
+ */
+html {
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+}
+
 body {
   margin: 0;
   min-width: 320px;

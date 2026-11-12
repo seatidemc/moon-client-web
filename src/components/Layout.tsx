@@ -11,6 +11,7 @@ import {
 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { LoginDialog } from '@/components/LoginDialog'
+import { OverlayScrollbar } from '@/components/OverlayScrollbar'
 import { UserAvatar } from '@/components/UserAvatar'
 import { SITE_NAME } from '@/lib/constants'
 import { useForum } from '@/lib/forum-context'
@@ -156,6 +157,7 @@ export function Layout() {
         <Outlet />
       </div>
 
+      <OverlayScrollbar />
       <LoginDialog />
       <ConfirmDialog
         isOpen={logoutOpen}
