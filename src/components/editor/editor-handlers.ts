@@ -21,10 +21,11 @@ export function handleSingleLinePaste(
     .trim()
   if (text === '') return true
 
-  const { state } = view
+  // 先删掉选区再按光标插入；全选时直接跨块替换会让粘贴规则的区间错位。
+  const tr = view.state.tr.deleteSelection()
   view.dispatch(
-    state.tr
-      .insertText(text, state.selection.from, state.selection.to)
+    tr
+      .insertText(text, tr.selection.from)
       // 标记为粘贴，让链接粘贴规则照常识别文本里的网址。
       .setMeta('uiEvent', 'paste')
       .scrollIntoView(),

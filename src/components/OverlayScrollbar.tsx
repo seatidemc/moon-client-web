@@ -12,7 +12,6 @@ const ELEMENT_TRACK_INSET = 2
 const EDGE_GAP = 2
 const THUMB_THICKNESS = 6
 const THUMB_MIN_LENGTH = 28
-const TRACK_HOVER_MARGIN = 4
 
 interface Thumb {
   /** 被滚动的元素；为 null 时表示页面本身 */
@@ -140,41 +139,17 @@ function elementThumb(element: HTMLElement): Thumb | null {
   }
 }
 
-/** 指针是否落在该指示条所在轨道的宽度范围内。 */
-function withinTrack(thumb: Thumb, x: number, y: number) {
-  const reach = THUMB_THICKNESS / 2 + TRACK_HOVER_MARGIN
-
-  return thumb.axis === 'y'
-    ? Math.abs(x - (thumb.left + THUMB_THICKNESS / 2)) <= reach
-    : Math.abs(y - (thumb.top + THUMB_THICKNESS / 2)) <= reach
-}
-
-function thumbAtPoint(hit: Element | null, x: number, y: number): Thumb | null {
-  let node = hit instanceof HTMLElement ? hit : null
-
-  while (node && node !== document.body && node !== document.documentElement) {
-    const thumb = elementThumb(node)
-    if (thumb && withinTrack(thumb, x, y)) return thumb
-    node = node.parentElement
-  }
-
-  const page = pageThumb()
-  return page && withinTrack(page, x, y) ? page : null
-}
-
-/** 全站滚动指示条，叠在内容之上，不占据布局宽度，滚动或指针接近轨道时出现。 */
+/** 全站滚动指示条，叠在内容之上，不占据布局宽度，滚动时出现。 */
 export function OverlayScrollbar() {
   const [thumb, setThumb] = useState<Thumb | null>(null)
   const [visible, setVisible] = useState(false)
   const idle = useRef(0)
-  const held = useRef(false)
   const drag = useRef<DragState | null>(null)
-  const thumbRef = useRef<HTMLDivElement>(null)
 
   const reveal = useCallback(() => {
     setVisible(true)
     window.clearTimeout(idle.current)
-    if (held.current) return
+    if (drag.current) return
     idle.current = window.setTimeout(() => setVisible(false), IDLE_MS)
   }, [])
 
@@ -206,75 +181,11 @@ export function OverlayScrollbar() {
     }
   }, [reveal])
 
-  useEffect(() => {
-    let frame = 0
-    let point: { x: number; y: number } | null = null
-
-    function leaveTrack() {
-      if (!held.current) return
-      held.current = false
-      reveal()
-    }
-
-    function onPointerMove(event: PointerEvent) {
-      if (drag.current) return
-
-      point = { x: event.clientX, y: event.clientY }
-      if (frame) return
-
-      frame = requestAnimationFrame(() => {
-        frame = 0
-        if (!point) return
-
-        const hit = document.elementFromPoint(point.x, point.y)
-        if (hit && hit === thumbRef.current) return
-
-        const hovered = thumbAtPoint(hit, point.x, point.y)
-        if (!hovered) {
-          leaveTrack()
-          return
-        }
-
-        held.current = true
-        window.clearTimeout(idle.current)
-        setVisible(true)
-        setThumb((previous) =>
-          previous?.target === hovered.target &&
-          previous.axis === hovered.axis
-            ? previous
-            : hovered,
-        )
-      })
-    }
-
-    function onPointerUp() {
-      if (drag.current) return
-      leaveTrack()
-    }
-
-    window.addEventListener('pointermove', onPointerMove, {
-      capture: true,
-      passive: true,
-    })
-    window.addEventListener('pointerup', onPointerUp, { passive: true })
-    document.addEventListener('pointerleave', onPointerUp, { passive: true })
-
-    return () => {
-      cancelAnimationFrame(frame)
-      window.removeEventListener('pointermove', onPointerMove, {
-        capture: true,
-      })
-      window.removeEventListener('pointerup', onPointerUp)
-      document.removeEventListener('pointerleave', onPointerUp)
-    }
-  }, [reveal])
-
   function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
     if (!thumb) return
 
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
-    held.current = true
     drag.current = {
       axis: thumb.axis,
       start: thumb.axis === 'y' ? event.clientY : event.clientX,
@@ -308,7 +219,6 @@ export function OverlayScrollbar() {
     if (!drag.current) return
 
     drag.current = null
-    held.current = false
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
@@ -319,7 +229,6 @@ export function OverlayScrollbar() {
 
   return (
     <div
-      ref={thumbRef}
       aria-hidden
       className="fixed z-[100002] rounded-full bg-foreground/25 transition-[opacity,background-color] duration-200 hover:bg-foreground/45 touch-none"
       style={{
@@ -334,15 +243,6 @@ export function OverlayScrollbar() {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
-      onPointerEnter={() => {
-        held.current = true
-        reveal()
-      }}
-      onPointerLeave={() => {
-        if (drag.current) return
-        held.current = false
-        reveal()
-      }}
     />
   )
 }

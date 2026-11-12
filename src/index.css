@@ -79,7 +79,7 @@ body {
 
   /* 单行状态上下留白对称，横向放不下时滚动查看，右侧留出发布按钮的位置。 */
   .moon-editor-content-quick {
-    margin-inline-end: 5.5rem;
+    margin-inline-end: 6.25rem;
     padding-block: 0.6875rem;
     white-space: nowrap;
     overflow-x: auto;

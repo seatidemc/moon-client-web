@@ -1,3 +1,5 @@
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
+
 /** 匹配光标前刚输入的 re#楼层号（楼层号可以还没输入） */
 export const REFERENCE_QUERY_PATTERN = /(?:^|[^\p{L}\p{N}_])(re#(\d*))$/u
 
@@ -17,6 +19,19 @@ export function readImageFileAsDataUrl(file: File) {
     reader.addEventListener('error', () => reject(reader.error))
     reader.readAsDataURL(file)
   })
+}
+
+/** 文档是否含换行：多个顶层块、硬换行，或代码块里的换行。 */
+export function hasDocLineBreak(doc: ProseMirrorNode) {
+  if (doc.childCount > 1 || doc.textContent.includes('\n')) return true
+
+  let hasHardBreak = false
+  doc.descendants((node) => {
+    if (node.type.name === 'hardBreak') hasHardBreak = true
+    return !hasHardBreak
+  })
+
+  return hasHardBreak
 }
 
 /** 光标是否仍位于编辑器可视区域内。 */

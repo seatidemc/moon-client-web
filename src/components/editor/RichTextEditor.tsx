@@ -1,5 +1,6 @@
 import { getMarkRange } from '@tiptap/core'
-import { EditorContent, useEditor } from '@tiptap/react'
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { EditorContent, useEditor, useEditorState } from '@tiptap/react'
 import { cn } from '@heroui/react'
 import {
   useCallback,
@@ -41,7 +42,7 @@ import type {
   RichTextEditorProps,
   TablePanelPosition,
 } from './editor-types'
-import { anchorPopup, isCaretInsidePanel } from './editor-utils'
+import { anchorPopup, hasDocLineBreak, isCaretInsidePanel } from './editor-utils'
 import { useDismissOnOutside } from './use-dismiss-on-outside'
 import { useEditorToolbarState } from './use-editor-state'
 import { useEmojiSuggestion } from './use-emoji-suggestion'
@@ -68,7 +69,6 @@ export function RichTextEditor({
   const resizeStartRef = useRef<{ pointerY: number; height: number } | null>(
     null,
   )
-  const quickSend = compact && compactHeight <= COMPACT_EDITOR_LINE_HEIGHT
 
   const onChangeRef = useRef(onChange)
   // Tracks what this editor emitted so external resets can be told apart from
@@ -162,6 +162,7 @@ export function RichTextEditor({
     },
     onCreate: ({ editor: currentEditor }) => {
       expandEmojiShortcodes(currentEditor)
+      raiseCompactHeightFor(currentEditor.state.doc)
     },
     onUpdate: ({ editor: currentEditor }) => {
       const html = currentEditor.getHTML()
@@ -169,6 +170,7 @@ export function RichTextEditor({
       lastEmittedHtmlRef.current = html
       onChangeRef.current(html)
       reference.update(currentEditor)
+      raiseCompactHeightFor(currentEditor.state.doc)
     },
     onSelectionUpdate: ({ editor: currentEditor }) => {
       reference.update(currentEditor)
@@ -192,6 +194,25 @@ export function RichTextEditor({
     },
   })
 
+  const hasLineBreak: boolean = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) =>
+      hasDocLineBreak(currentEditor.state.doc),
+  })
+  // 有换行时收成一行会藏住内容，收起的最小高度停在默认紧凑高度。
+  const minCompactHeight = hasLineBreak
+    ? COMPACT_EDITOR_HEIGHT
+    : COMPACT_EDITOR_LINE_HEIGHT
+  const quickSend: boolean =
+    compact && !hasLineBreak && compactHeight <= COMPACT_EDITOR_LINE_HEIGHT
+
+  /** 文档含换行时撑开高度，避免收到单行。 */
+  function raiseCompactHeightFor(doc: ProseMirrorNode) {
+    if (!hasDocLineBreak(doc)) return
+
+    setCompactHeight((height) => Math.max(height, COMPACT_EDITOR_HEIGHT))
+  }
+
   // Keep the document in sync when the value changes elsewhere (clearing after
   // submit, or edits made in another editor bound to the same state).
   useEffect(() => {
@@ -205,6 +226,7 @@ export function RichTextEditor({
       emitUpdate: false,
     })
     expandEmojiShortcodes(editor)
+    raiseCompactHeightFor(editor.state.doc)
   }, [editor, syncExternalValue, value])
 
   useImperativeHandle(
@@ -352,7 +374,7 @@ export function RichTextEditor({
   function clampCompactHeight(height: number) {
     return Math.min(
       COMPACT_EDITOR_MAX_HEIGHT,
-      Math.max(COMPACT_EDITOR_LINE_HEIGHT, height),
+      Math.max(minCompactHeight, height),
     )
   }
 
