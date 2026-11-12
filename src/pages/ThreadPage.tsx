@@ -3,7 +3,7 @@ import { Heart, MessageCircle, Pencil, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
-import { Breadcrumbs } from '@/components/Breadcrumbs'
+import { BoardIcon } from '@/components/BoardIcon'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { EditPostDialog } from '@/components/EditPostDialog'
 import { PostContent } from '@/components/PostContent'
@@ -13,6 +13,7 @@ import {
 } from '@/components/ReplyComposer'
 import { ThreadToc } from '@/components/ThreadToc'
 import { UserByline } from '@/components/UserByline'
+import { getBoardThemeStyle } from '@/lib/board-theme'
 import {
   replyPostKey,
   threadPostKey,
@@ -105,6 +106,7 @@ export function ThreadPage() {
   const author = thread
     ? users.find((user) => user.id === thread.authorId)
     : undefined
+  const themeStyle = getBoardThemeStyle(board?.color)
 
   usePageTitle(thread?.title)
 
@@ -154,24 +156,31 @@ export function ThreadPage() {
   }
 
   return (
-    <div className="flex min-h-[calc(100svh-3.5rem)] flex-col">
+    <div
+      className="flex min-h-[calc(100svh-3.5rem)] flex-col"
+      style={themeStyle}
+    >
       <main className="mx-auto w-full max-w-[57.25rem] flex-1 px-4 pt-8 pb-4 sm:pt-10">
-        <Breadcrumbs
-          items={[
-            { label: '板块', to: '/boards' },
-            ...(board
-              ? [{ label: board.name, to: `/topic/${board.id}` }]
-              : []),
-            { label: thread.title },
-          ]}
-        />
-
-        <div className="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,48rem)_6rem]">
+        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,48rem)_6rem]">
           <div className="min-w-0 space-y-5">
             <article
               id="thread-post"
               className="scroll-mt-6 rounded-2xl bg-surface p-4 sm:p-5"
             >
+              {board ? (
+                <Link
+                  to={`/topic/${board.id}`}
+                  className="mb-3 flex w-fit items-center gap-1.5 rounded text-sm text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/40"
+                >
+                  <BoardIcon
+                    icon={board.icon}
+                    color={board.color}
+                    className="size-4"
+                  />
+                  {board.name}
+                </Link>
+              ) : null}
+
               <h1 className="break-words font-minecraft-sc text-2xl leading-tight tracking-tight sm:text-3xl">
                 {thread.title}
               </h1>
@@ -332,6 +341,7 @@ export function ThreadPage() {
 
       <EditPostDialog
         isOpen={editTarget !== null}
+        boardColor={board?.color}
         onOpenChange={(isOpen) => {
           if (!isOpen) setEditTarget(null)
         }}

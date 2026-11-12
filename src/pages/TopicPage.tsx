@@ -7,7 +7,6 @@ import {
   BoardDecoration,
   type BoardDecorationVariant,
 } from '@/components/BoardDecoration'
-import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { NewThreadDialog } from '@/components/NewThreadDialog'
 import { ThreadListItem } from '@/components/ThreadListItem'
 import { useForum } from '@/lib/forum-context'
@@ -57,9 +56,7 @@ export function TopicPage() {
       />
 
       <main className="relative mx-auto w-full max-w-[69.25rem] px-4 py-8 sm:py-10">
-        <Breadcrumbs items={[{ label: '板块', to: '/boards' }, { label: board.name }]} />
-
-        <div className="mt-4 flex items-start justify-between gap-6">
+        <div className="flex items-start justify-between gap-6">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight">{board.name}</h1>
             <p className="mt-1.5 text-sm text-muted">{board.description}</p>

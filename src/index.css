@@ -5,6 +5,8 @@
 :root {
   --field-border-width: 1px;
   --field-border: var(--border);
+  /* 全站链接默认使用品牌蓝；少量混合前景色，保证浅色背景上的可读性 */
+  --link: color-mix(in oklab, var(--accent) 85%, var(--foreground) 15%);
 }
 
 body {
@@ -171,8 +173,8 @@ body {
     font-weight: 600;
   }
 
-  .moon-rich-text blockquote {
-    border-left: 2px solid var(--border-secondary);
+.moon-rich-text blockquote {
+    border-left: 2px solid var(--content-accent, var(--border-secondary));
     padding-left: 0.9rem;
     color: var(--muted);
   }
@@ -206,7 +208,12 @@ body {
 
   .moon-rich-text hr {
     border: 0;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid
+      color-mix(
+        in oklab,
+        var(--content-accent, var(--border)) 35%,
+        var(--border)
+      );
   }
 
   .moon-rich-text .tableWrapper {
@@ -236,8 +243,12 @@ body {
     margin-block: 0;
   }
 
-  .moon-rich-text th {
-    background: var(--surface-secondary);
+.moon-rich-text th {
+    background: color-mix(
+      in oklab,
+      var(--content-accent, var(--surface-secondary)) 10%,
+      var(--surface-secondary)
+    );
     font-weight: 600;
   }
 
@@ -246,7 +257,11 @@ body {
     position: absolute;
     inset: 0;
     z-index: 2;
-    background: color-mix(in srgb, var(--link) 18%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--content-accent, var(--link)) 18%,
+      transparent
+    );
     content: "";
     pointer-events: none;
   }
@@ -258,7 +273,7 @@ body {
     bottom: -2px;
     z-index: 10;
     width: 4px;
-    background: var(--link);
+    background: var(--content-accent, var(--link));
     pointer-events: none;
   }
 
@@ -287,7 +302,7 @@ body {
   }
 
   .moon-editor-content [data-resize-container].ProseMirror-selectednode img {
-    outline: 2px solid var(--link);
+    outline: 2px solid var(--content-accent, var(--link));
     outline-offset: 2px;
   }
 
@@ -296,7 +311,7 @@ body {
     height: 10px;
     border: 1.5px solid var(--background);
     border-radius: 3px;
-    background: var(--link);
+    background: var(--content-accent, var(--link));
     opacity: 0;
     transition: opacity 120ms ease;
   }
