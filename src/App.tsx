@@ -8,6 +8,7 @@ import {
 
 import { Layout } from '@/components/Layout'
 import { ForumProvider } from '@/lib/forum-store'
+import { scrollToAndEmphasize } from '@/lib/scroll'
 import { BoardsPage } from '@/pages/BoardsPage'
 import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
@@ -21,9 +22,9 @@ function ScrollToTop() {
 
   useEffect(() => {
     if (location.hash) {
-      const target = document.getElementById(location.hash.slice(1))
-      if (target) {
-        target.scrollIntoView()
+      const id = location.hash.slice(1)
+      if (document.getElementById(id)) {
+        scrollToAndEmphasize(id)
         return
       }
     }

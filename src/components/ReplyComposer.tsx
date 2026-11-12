@@ -3,23 +3,43 @@ import { Maximize2, Pin } from 'lucide-react'
 import {
   useCallback,
   useEffect,
+  useImperativeHandle,
   useLayoutEffect,
   useRef,
   useState,
   type FormEvent,
+  type Ref,
 } from 'react'
 
 import { EditorExpandToggle } from '@/components/EditorExpandToggle'
 import { MarkdownEditor } from '@/components/MarkdownEditor'
 import { useForum } from '@/lib/forum-context'
+import { buildReplyReferenceOptions } from '@/lib/reply-reference-options'
 import { markdownToPlainText } from '@/lib/utils'
+
+export interface ReplyComposerHandle {
+  /** 在跟帖末尾追加 re#楼层号，并聚焦输入框 */
+  appendReplyReference: (reference: string) => void
+}
 
 interface ReplyComposerProps {
   threadId: string
+  ref?: Ref<ReplyComposerHandle>
 }
 
-export function ReplyComposer({ threadId }: ReplyComposerProps) {
-  const { currentUser, openLogin, createReply } = useForum()
+export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
+  const { currentUser, openLogin, createReply, users, threads, replies } =
+    useForum()
+  const thread = threads.find((item) => item.id === threadId)
+  const floorOptions = thread
+    ? buildReplyReferenceOptions(
+        thread,
+        replies
+          .filter((reply) => reply.threadId === thread.id)
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+        users,
+      )
+    : []
   const [content, setContent] = useState('')
   const [follow, setFollow] = useState(true)
   const [floating, setFloating] = useState(false)
@@ -27,8 +47,34 @@ export function ReplyComposer({ threadId }: ReplyComposerProps) {
   const sentinelRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Let the textarea grow with its content; the composer box caps the height
-  // and scrolls, so the action bar can stick to its bottom edge.
+  useImperativeHandle(
+    ref,
+    () => ({
+      appendReplyReference(reference) {
+        setContent((previous) => {
+          const separator =
+            previous === '' || /\s$/.test(previous) ? '' : ' '
+
+          return `${previous}${separator}${reference} `
+        })
+
+        requestAnimationFrame(() => {
+          const textarea = textareaRef.current
+          if (!textarea) return
+
+          textarea.focus()
+          textarea.setSelectionRange(
+            textarea.value.length,
+            textarea.value.length,
+          )
+        })
+      },
+    }),
+    [],
+  )
+
+  // Let the textarea grow with its content up to its max height; past that it
+  // scrolls internally, which keeps the caret in view above the action bar.
   const resizeTextarea = useCallback(() => {
     const textarea = textareaRef.current
     if (!textarea) return
@@ -91,11 +137,11 @@ export function ReplyComposer({ threadId }: ReplyComposerProps) {
   return (
     <>
       <div className={follow ? 'sticky bottom-0 z-20 mt-auto' : 'mt-auto'}>
-        <div className="mx-auto w-full max-w-[69.25rem] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto w-full max-w-[57.25rem] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           {currentUser ? (
             <form onSubmit={handleSubmit} className="max-w-3xl">
               <div
-                className={`group max-h-56 overflow-y-auto rounded-2xl border border-field-border bg-field transition duration-150 focus-within:border-field-border-focus focus-within:bg-field-focus focus-within:status-focused-field ${
+                className={`flex flex-col overflow-hidden rounded-2xl border border-field-border bg-field transition duration-150 focus-within:border-field-border-focus focus-within:bg-field-focus focus-within:status-focused-field ${
                   follow && floating ? 'shadow-lg' : 'shadow-none'
                 }`}
               >
@@ -104,51 +150,44 @@ export function ReplyComposer({ threadId }: ReplyComposerProps) {
                   fullWidth
                   rows={4}
                   aria-label="跟帖内容"
-                  placeholder="写下你的跟帖…支持 Markdown"
+                  placeholder="写下你的跟帖…支持 Markdown，re#楼层号 可引用楼层"
                   value={content}
                   onChange={(event) => setContent(event.target.value)}
-                  className="block resize-none overflow-hidden border-0 bg-transparent px-4 pt-3 pb-2 shadow-none"
+                  className="block max-h-44 resize-none overflow-y-auto rounded-none border-0 bg-transparent px-4 pt-3 pb-2 shadow-none outline-none hover:bg-transparent focus:border-0 focus:bg-transparent focus:shadow-none focus:ring-0"
                 />
-                <div className="relative sticky bottom-0 z-10 bg-field pt-1 transition-colors group-focus-within:bg-field-focus">
-                  <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-x-0 -top-4 h-4 bg-gradient-to-t from-field to-transparent group-focus-within:from-field-focus"
-                  />
-                  <div className="flex items-center justify-end gap-1 px-2 pb-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      isIconOnly
-                      variant="ghost"
-                      aria-label="高级编辑"
-                      onPress={() => setExpanded(true)}
-                    >
-                      <Maximize2 className="size-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      isIconOnly
-                      variant="ghost"
-                      aria-label={follow ? '取消跟随' : '跟随滚动'}
-                      aria-pressed={follow}
-                      className={follow ? 'text-foreground' : 'text-muted'}
-                      onPress={() => setFollow((value) => !value)}
-                    >
-                      <Pin
-                        className={`size-4 ${follow ? 'fill-current' : ''}`}
-                      />
-                    </Button>
-                    <Button
-                      type="submit"
-                      size="sm"
-                      variant="primary"
-                      className="shrink-0"
-                      isDisabled={!markdownToPlainText(content)}
-                    >
-                      发布
-                    </Button>
-                  </div>
+                <div className="flex shrink-0 items-center justify-end gap-1 px-2 py-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    isIconOnly
+                    variant="ghost"
+                    aria-label="高级编辑"
+                    className="text-muted"
+                    onPress={() => setExpanded(true)}
+                  >
+                    <Maximize2 className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    isIconOnly
+                    variant="ghost"
+                    aria-label={follow ? '取消跟随' : '跟随滚动'}
+                    aria-pressed={follow}
+                    className={follow ? 'text-foreground' : 'text-muted'}
+                    onPress={() => setFollow((value) => !value)}
+                  >
+                    <Pin className={`size-4 ${follow ? 'fill-current' : ''}`} />
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    variant="primary"
+                    className="shrink-0"
+                    isDisabled={!markdownToPlainText(content)}
+                  >
+                    发布
+                  </Button>
                 </div>
               </div>
             </form>
@@ -194,6 +233,7 @@ export function ReplyComposer({ threadId }: ReplyComposerProps) {
                     defaultMode="markdown"
                     fillHeight
                     showModeSwitch
+                    floorOptions={floorOptions}
                   />
                 </Modal.Body>
 

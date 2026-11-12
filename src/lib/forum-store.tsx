@@ -19,11 +19,14 @@ import {
 } from '@/lib/constants'
 import {
   ForumContext,
+  replyPostKey,
+  threadPostKey,
   type ForumContextValue,
   type NewReplyInput,
   type NewThreadInput,
   type UpdateThreadInput,
 } from '@/lib/forum-context'
+import { findReplyTargetFloor } from '@/lib/reply-references'
 import { createId, extractTags } from '@/lib/utils'
 import type { Board, ForumData, ForumThread, Reply } from '@/types'
 
@@ -82,20 +85,18 @@ function normalizeBoards(value: unknown): Board[] {
   })
 }
 
-function normalizeUserLikes(value: unknown): Record<string, string[]> {
+function normalizeIdLists(value: unknown): Record<string, string[]> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
 
-  const userLikes: Record<string, string[]> = {}
+  const lists: Record<string, string[]> = {}
 
-  for (const [userId, likerIds] of Object.entries(value)) {
-    if (!Array.isArray(likerIds)) continue
+  for (const [key, ids] of Object.entries(value)) {
+    if (!Array.isArray(ids)) continue
 
-    userLikes[userId] = likerIds.filter(
-      (likerId): likerId is string => typeof likerId === 'string',
-    )
+    lists[key] = ids.filter((id): id is string => typeof id === 'string')
   }
 
-  return userLikes
+  return lists
 }
 
 function normalizeUserBackgrounds(value: unknown): Record<string, string> {
@@ -125,7 +126,8 @@ function loadForumData(): ForumData {
     return {
       ...parsed,
       boards: normalizeBoards(parsed.boards),
-      userLikes: normalizeUserLikes(parsed.userLikes),
+      userLikes: normalizeIdLists(parsed.userLikes),
+      postLikes: normalizeIdLists(parsed.postLikes),
       userBackgrounds: normalizeUserBackgrounds(parsed.userBackgrounds),
     }
   } catch {
@@ -254,10 +256,24 @@ export function ForumProvider({ children }: { children: ReactNode }) {
         const thread = previous.threads.find((item) => item.id === threadId)
         if (!thread || thread.authorId !== currentUser.id) return previous
 
+        const removedReplyIds = new Set(
+          previous.replies
+            .filter((reply) => reply.threadId === threadId)
+            .map((reply) => reply.id),
+        )
+        const postLikes = { ...previous.postLikes }
+        delete postLikes[threadPostKey(threadId)]
+        for (const replyId of removedReplyIds) {
+          delete postLikes[replyPostKey(replyId)]
+        }
+
         return {
           ...previous,
           threads: previous.threads.filter((item) => item.id !== threadId),
-          replies: previous.replies.filter((reply) => reply.threadId !== threadId),
+          replies: previous.replies.filter(
+            (reply) => !removedReplyIds.has(reply.id),
+          ),
+          postLikes,
         }
       })
     }
@@ -265,11 +281,20 @@ export function ForumProvider({ children }: { children: ReactNode }) {
     function createReply(input: NewReplyInput): Reply | null {
       if (!currentUser) return null
 
+      const threadReplyCount = data.replies.filter(
+        (reply) => reply.threadId === input.threadId,
+      ).length
+      const replyToFloor = findReplyTargetFloor(
+        input.content,
+        threadReplyCount,
+      )
+
       const reply: Reply = {
         id: createId('reply'),
         threadId: input.threadId,
         authorId: currentUser.id,
         content: input.content,
+        replyToFloor: replyToFloor ?? undefined,
         createdAt: new Date().toISOString(),
       }
 
@@ -286,23 +311,41 @@ export function ForumProvider({ children }: { children: ReactNode }) {
 
       setData((previous) => ({
         ...previous,
-        replies: previous.replies.map((reply) =>
-          reply.id === replyId && reply.authorId === currentUser.id
-            ? { ...reply, content }
-            : reply,
-        ),
+        replies: previous.replies.map((reply) => {
+          if (reply.id !== replyId || reply.authorId !== currentUser.id) {
+            return reply
+          }
+
+          const threadReplyCount = previous.replies.filter(
+            (item) => item.threadId === reply.threadId,
+          ).length
+
+          return {
+            ...reply,
+            content,
+            replyToFloor:
+              findReplyTargetFloor(content, threadReplyCount) ?? undefined,
+          }
+        }),
       }))
     }
 
     function deleteReply(replyId: string) {
       if (!currentUser) return
 
-      setData((previous) => ({
-        ...previous,
-        replies: previous.replies.filter(
-          (reply) => !(reply.id === replyId && reply.authorId === currentUser.id),
-        ),
-      }))
+      setData((previous) => {
+        const reply = previous.replies.find((item) => item.id === replyId)
+        if (!reply || reply.authorId !== currentUser.id) return previous
+
+        const postLikes = { ...previous.postLikes }
+        delete postLikes[replyPostKey(replyId)]
+
+        return {
+          ...previous,
+          replies: previous.replies.filter((item) => item.id !== replyId),
+          postLikes,
+        }
+      })
     }
 
     function toggleUserLike(userId: string) {
@@ -334,6 +377,24 @@ export function ForumProvider({ children }: { children: ReactNode }) {
           users: previous.users.map((user) =>
             user.id === userId ? { ...user, avatarUrl: avatarUrl ?? undefined } : user,
           ),
+        }
+      })
+    }
+
+    function togglePostLike(postKey: string) {
+      if (!currentUser) return
+
+      const likerId = currentUser.id
+
+      setData((previous) => {
+        const likers = previous.postLikes[postKey] ?? []
+        const nextLikers = likers.includes(likerId)
+          ? likers.filter((id) => id !== likerId)
+          : [...likers, likerId]
+
+        return {
+          ...previous,
+          postLikes: { ...previous.postLikes, [postKey]: nextLikers },
         }
       })
     }
@@ -373,6 +434,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       threads: data.threads,
       replies: data.replies,
       userLikes: data.userLikes,
+      postLikes: data.postLikes,
       userBackgrounds: data.userBackgrounds,
       currentUser,
       loginDialogOpen,
@@ -387,6 +449,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       updateReply,
       deleteReply,
       toggleUserLike,
+      togglePostLike,
       setUserBackground,
       updateUserAvatar,
       updateUserBio,

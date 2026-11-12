@@ -139,6 +139,27 @@ body {
     text-underline-offset: 2px;
   }
 
+  /* `re#楼层号` references render as chips in posts and in the rich editor. */
+  .moon-prose a.reply-reference,
+  .moon-editor-content .reply-reference-chip {
+    display: inline-block;
+    margin-inline: 0.1em;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-secondary);
+    padding: 0 0.45em;
+    color: var(--link);
+    font-size: 0.82em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.6;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .moon-prose a.reply-reference:hover {
+    border-color: var(--border-secondary);
+  }
+
   .moon-prose strong,
   .moon-editor-content strong {
     font-weight: 600;

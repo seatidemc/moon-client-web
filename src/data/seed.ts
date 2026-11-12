@@ -238,11 +238,21 @@ const userLikes: ForumData['userLikes'] = {
   u4: [],
 }
 
+const postLikes: ForumData['postLikes'] = {
+  'thread:t1': ['u1', 'u3', 'u4'],
+  'thread:t2': ['u2', 'u3'],
+  'thread:t5': ['u2', 'u3', 'u4'],
+  'reply:r1': ['u2', 'u4'],
+  'reply:r3': ['u1'],
+  'reply:r7': ['u3'],
+}
+
 export const seedData: ForumData = {
   users,
   boards,
   threads,
   replies,
   userLikes,
+  postLikes,
   userBackgrounds: {},
 }
