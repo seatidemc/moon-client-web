@@ -1,5 +1,5 @@
 import { Button, cn } from '@heroui/react'
-import { Heart, MessageCircle, Pencil, Trash2 } from 'lucide-react'
+import { CornerUpLeft, Heart, Pencil, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
@@ -21,6 +21,7 @@ import {
 } from '@/lib/forum-context'
 import { buildReplyReferenceOptions } from '@/lib/reply-reference-options'
 import { usePageTitle } from '@/lib/use-page-title'
+import { formatRelativeTime } from '@/lib/utils'
 import type { Reply } from '@/types'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
@@ -30,9 +31,15 @@ interface PostActionsProps {
   postKey: string
   postLabel: string
   onReply: () => void
+  className?: string
 }
 
-function PostActions({ postKey, postLabel, onReply }: PostActionsProps) {
+function PostActions({
+  postKey,
+  postLabel,
+  onReply,
+  className,
+}: PostActionsProps) {
   const { postLikes, currentUser, togglePostLike, openLogin } = useForum()
   const likers = postLikes[postKey] ?? []
   const liked = currentUser ? likers.includes(currentUser.id) : false
@@ -47,7 +54,7 @@ function PostActions({ postKey, postLabel, onReply }: PostActionsProps) {
   }
 
   return (
-    <div className="mt-4 flex items-center gap-1">
+    <div className={cn('flex items-center gap-1', className)}>
       <Button
         type="button"
         size="sm"
@@ -72,7 +79,7 @@ function PostActions({ postKey, postLabel, onReply }: PostActionsProps) {
         className="gap-1.5 px-2 text-xs text-muted hover:text-foreground"
         onPress={onReply}
       >
-        <MessageCircle aria-hidden="true" className="size-4" />
+        <CornerUpLeft aria-hidden="true" className="size-4" />
         回复
       </Button>
     </div>
@@ -89,6 +96,8 @@ export function ThreadPage() {
     replies,
     currentUser,
     openLogin,
+    postLikes,
+    togglePostLike,
     updateThread,
     deleteThread,
     updateReply,
@@ -112,6 +121,11 @@ export function ThreadPage() {
 
   if (!thread) return <NotFoundPage />
 
+  const threadKey = threadPostKey(thread.id)
+  const threadLikers = postLikes[threadKey] ?? []
+  const threadLiked = currentUser
+    ? threadLikers.includes(currentUser.id)
+    : false
   const threadReplies = replies
     .filter((reply) => reply.threadId === thread.id)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
@@ -122,12 +136,13 @@ export function ThreadPage() {
     users,
   )
   const tocItems = [
-    { id: 'thread-post', label: '主题' },
+    { id: 'thread-post', label: '主题', time: thread.createdAt },
     ...threadReplies.map((reply, index) => ({
       id: `reply-${reply.id}`,
       label: `#${index + 1} ${
         users.find((user) => user.id === reply.authorId)?.name ?? '未知用户'
       }`,
+      time: reply.createdAt,
     })),
   ]
 
@@ -155,13 +170,22 @@ export function ThreadPage() {
     run()
   }
 
+  function handleLikeThread() {
+    if (!currentUser) {
+      openLogin()
+      return
+    }
+
+    togglePostLike(threadKey)
+  }
+
   return (
     <div
       className="flex min-h-[calc(100svh-3.5rem)] flex-col"
       style={themeStyle}
     >
-      <main className="mx-auto w-full max-w-[57.25rem] flex-1 px-4 pt-8 pb-4 sm:pt-10">
-        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,48rem)_6rem]">
+      <main className="mx-auto w-full max-w-[69.25rem] flex-1 px-4 pt-8 pb-4 sm:pt-10">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,48rem)_18rem]">
           <div className="min-w-0 space-y-5">
             <article
               id="thread-post"
@@ -185,7 +209,7 @@ export function ThreadPage() {
                 {thread.title}
               </h1>
 
-              <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+              <div className="mt-5 min-w-0 lg:hidden">
                 {author ? (
                   <UserByline
                     user={author}
@@ -196,9 +220,25 @@ export function ThreadPage() {
                 ) : (
                   <span className="text-sm text-muted">未知用户</span>
                 )}
+              </div>
+
+              <PostContent className="mt-6">{thread.content}</PostContent>
+
+              <div
+                className={cn(
+                  'mt-4 flex items-end justify-between gap-3',
+                  !isThreadAuthor && 'lg:hidden',
+                )}
+              >
+                <PostActions
+                  className="lg:hidden"
+                  postKey={threadKey}
+                  postLabel="主题"
+                  onReply={() => handleReply(0)}
+                />
 
                 {isThreadAuthor ? (
-                  <div className="flex items-center">
+                  <div className="ml-auto flex items-center">
                     <Button
                       type="button"
                       size="sm"
@@ -224,14 +264,6 @@ export function ThreadPage() {
                   </div>
                 ) : null}
               </div>
-
-              <PostContent className="mt-6">{thread.content}</PostContent>
-
-              <PostActions
-                postKey={threadPostKey(thread.id)}
-                postLabel="主题"
-                onReply={() => handleReply(0)}
-              />
             </article>
 
             <section className="space-y-5" aria-label="跟帖">
@@ -318,6 +350,7 @@ export function ThreadPage() {
                       </PostContent>
 
                       <PostActions
+                        className="mt-4"
                         postKey={replyPostKey(reply.id)}
                         postLabel={`第 ${index + 1} 楼`}
                         onReply={() => handleReply(index + 1)}
@@ -333,7 +366,64 @@ export function ThreadPage() {
             </section>
           </div>
 
-          <ThreadToc items={tocItems} />
+          <aside className="hidden lg:block" aria-label="主题信息与目录">
+            <div className="space-y-4">
+              <Button
+                type="button"
+                size="md"
+                variant="primary"
+                className="w-full"
+                onPress={() => handleReply(0)}
+              >
+                <CornerUpLeft aria-hidden="true" className="size-4" />
+                回复
+              </Button>
+
+              <Button
+                type="button"
+                size="md"
+                variant="outline"
+                aria-pressed={threadLiked}
+                aria-label={threadLiked ? '取消主题的点赞' : '点赞主题'}
+                className="w-full justify-center gap-2"
+                onPress={handleLikeThread}
+              >
+                <Heart
+                  aria-hidden="true"
+                  className={cn(
+                    'size-4',
+                    threadLiked && 'fill-current text-danger',
+                  )}
+                />
+                点赞
+                <span className="tabular-nums">{threadLikers.length}</span>
+              </Button>
+
+              <section
+                aria-label="主题作者"
+                className="rounded-2xl bg-surface p-4"
+              >
+                {author ? (
+                  <UserByline
+                    user={author}
+                    date={thread.updatedAt ?? thread.createdAt}
+                    avatarSize="md"
+                    dateText={
+                      thread.updatedAt
+                        ? `最后编辑于 ${formatRelativeTime(thread.updatedAt)}`
+                        : `发布于 ${formatRelativeTime(thread.createdAt)}`
+                    }
+                  />
+                ) : (
+                  <span className="text-sm text-muted">未知用户</span>
+                )}
+              </section>
+            </div>
+
+            <div className="sticky top-6 mt-5">
+              <ThreadToc items={tocItems} />
+            </div>
+          </aside>
         </div>
       </main>
 

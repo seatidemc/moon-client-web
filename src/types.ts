@@ -28,6 +28,8 @@ export interface ForumThread {
   content: string
   tags: string[]
   createdAt: string
+  /** 最后编辑时间；从未编辑过时为空 */
+  updatedAt?: string
 }
 
 export interface Reply {

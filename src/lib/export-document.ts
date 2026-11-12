@@ -14,8 +14,8 @@ const EXPORT_STYLES = `
   --surface-secondary: #f4f4f5;
   --link: #2563eb;
   --accent: #2563eb;
-  --accent-soft: color-mix(in oklab, var(--accent) 15%, transparent);
-  --accent-soft-hover: color-mix(in oklab, var(--accent) 20%, transparent);
+  --accent-soft: color-mix(in oklab, var(--accent) 15%, var(--background));
+  --accent-soft-hover: color-mix(in oklab, var(--accent) 20%, var(--background));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -28,8 +28,8 @@ const EXPORT_STYLES = `
     --surface-secondary: #27272a;
     --link: #60a5fa;
     --accent: #60a5fa;
-    --accent-soft: color-mix(in oklab, var(--accent) 12%, transparent);
-    --accent-soft-hover: color-mix(in oklab, var(--accent) 16%, transparent);
+    --accent-soft: color-mix(in oklab, var(--accent) 12%, var(--background));
+    --accent-soft-hover: color-mix(in oklab, var(--accent) 16%, var(--background));
   }
 }
 

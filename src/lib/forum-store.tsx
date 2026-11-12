@@ -244,6 +244,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
                 title: input.title.trim(),
                 content: input.content,
                 tags: extractTags(input.content),
+                updatedAt: new Date().toISOString(),
               }
             : thread,
         ),

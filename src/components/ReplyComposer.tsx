@@ -117,7 +117,7 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
         className={follow ? 'sticky bottom-0 z-20 mt-auto' : 'mt-auto'}
         style={themeStyle}
       >
-        <div className="mx-auto w-full max-w-[57.25rem] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto w-full max-w-[69.25rem] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           {currentUser ? (
             <form onSubmit={handleSubmit} className="max-w-3xl">
               <div

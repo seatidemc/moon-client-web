@@ -6,6 +6,9 @@ import type { CSSProperties } from 'react'
  *
  * `--content-accent` 与正文前景色混合，保证彩色文字在当前明暗主题下都可读；
  * `--link` 指向它，让正文里的链接和 `re#` 引用一起跟随板块色。
+ *
+ * HeroUI 在 `:root` 上就把派生色算成了具体颜色，继承下来不会再跟随 `--accent`，
+ * 所以每个由 `--accent` 派生的变量都得在这里重算一遍。
  */
 export function getBoardThemeStyle(
   color: string | undefined,
@@ -16,6 +19,11 @@ export function getBoardThemeStyle(
     '--accent': color,
     '--accent-hover':
       'color-mix(in oklab, var(--accent) 90%, var(--accent-foreground) 10%)',
+    '--accent-soft': 'color-mix(in oklab, var(--accent) 15%, var(--surface))',
+    '--accent-soft-hover':
+      'color-mix(in oklab, var(--accent) 20%, var(--surface))',
+    '--accent-soft-foreground':
+      'color-mix(in oklab, var(--accent) 70%, var(--foreground) 30%)',
     '--focus': 'var(--accent)',
     '--content-accent':
       'color-mix(in oklab, var(--accent) 85%, var(--foreground) 15%)',

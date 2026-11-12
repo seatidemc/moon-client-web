@@ -9,6 +9,8 @@ import type { User } from '@/types'
 interface UserBylineProps {
   user: User
   date?: string
+  /** 覆盖日期区域的显示内容；仍以 date 作为 <time> 的值 */
+  dateText?: ReactNode
   showHandle?: boolean
   avatarSize?: 'sm' | 'md' | 'lg'
   badge?: ReactNode
@@ -18,6 +20,7 @@ interface UserBylineProps {
 export function UserByline({
   user,
   date,
+  dateText,
   showHandle = true,
   avatarSize = 'sm',
   badge,
@@ -47,7 +50,7 @@ export function UserByline({
             title={formatDateTime(date)}
             className="text-xs text-muted"
           >
-            {formatRelativeTime(date)}
+            {dateText ?? formatRelativeTime(date)}
           </time>
         ) : null}
       </div>
