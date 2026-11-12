@@ -13,7 +13,7 @@ import { useState, type CSSProperties, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { EditorExpandToggle } from '@/components/EditorExpandToggle'
-import { MarkdownEditor } from '@/components/MarkdownEditor'
+import { RichTextEditor } from '@/components/editor'
 import { useForum } from '@/lib/forum-context'
 import { markdownToPlainText } from '@/lib/utils'
 
@@ -164,14 +164,12 @@ function NewThreadForm({
         </TextField>
 
         <div className={cn(isAdvanced && 'flex min-h-0 flex-1 flex-col')}>
-          <MarkdownEditor
+          <RichTextEditor
             value={content}
             onChange={(nextContent) => {
               setContent(nextContent)
               if (contentError) setContentError(null)
             }}
-            defaultMode="markdown"
-            showModeSwitch={isAdvanced}
             fillHeight={isAdvanced}
           />
           {contentError ? (

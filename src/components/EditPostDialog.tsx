@@ -10,7 +10,7 @@ import {
 import { useState, type FormEvent } from 'react'
 
 import { EditorExpandToggle } from '@/components/EditorExpandToggle'
-import { MarkdownEditor } from '@/components/MarkdownEditor'
+import { RichTextEditor } from '@/components/editor'
 import type { ReplyReferenceOption } from '@/lib/reply-reference-options'
 import { markdownToPlainText } from '@/lib/utils'
 
@@ -139,14 +139,12 @@ function EditPostForm({
         ) : null}
 
         <div className={cn(isAdvanced && 'flex min-h-0 flex-1 flex-col')}>
-          <MarkdownEditor
+          <RichTextEditor
             value={content}
             onChange={(nextContent) => {
               setContent(nextContent)
               if (contentError) setContentError(null)
             }}
-            defaultMode="markdown"
-            showModeSwitch={isAdvanced}
             fillHeight={isAdvanced}
             floorOptions={floorOptions}
           />

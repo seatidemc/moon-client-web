@@ -48,6 +48,17 @@ body {
     outline: none;
   }
 
+  /* Node decoration from the Tiptap Placeholder extension. Inheriting the
+     paragraph's metrics keeps the hint on the caret's line, and floating it
+     keeps it out of the text flow. */
+  .moon-editor-content p.is-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+    color: var(--muted);
+  }
+
   .moon-prose > :first-child,
   .moon-editor-content > :first-child {
     margin-top: 0;

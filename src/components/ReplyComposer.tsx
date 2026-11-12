@@ -1,10 +1,8 @@
-import { Button, Modal, TextArea } from '@heroui/react'
+import { Button, Modal } from '@heroui/react'
 import { Maximize2, Pin } from 'lucide-react'
 import {
-  useCallback,
   useEffect,
   useImperativeHandle,
-  useLayoutEffect,
   useRef,
   useState,
   type FormEvent,
@@ -12,7 +10,10 @@ import {
 } from 'react'
 
 import { EditorExpandToggle } from '@/components/EditorExpandToggle'
-import { MarkdownEditor } from '@/components/MarkdownEditor'
+import {
+  RichTextEditor,
+  type RichTextEditorHandle,
+} from '@/components/editor'
 import { useForum } from '@/lib/forum-context'
 import { buildReplyReferenceOptions } from '@/lib/reply-reference-options'
 import { markdownToPlainText } from '@/lib/utils'
@@ -45,53 +46,17 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
   const [floating, setFloating] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const editorRef = useRef<RichTextEditorHandle>(null)
 
   useImperativeHandle(
     ref,
     () => ({
       appendReplyReference(reference) {
-        setContent((previous) => {
-          const separator =
-            previous === '' || /\s$/.test(previous) ? '' : ' '
-
-          return `${previous}${separator}${reference} `
-        })
-
-        requestAnimationFrame(() => {
-          const textarea = textareaRef.current
-          if (!textarea) return
-
-          textarea.focus()
-          textarea.setSelectionRange(
-            textarea.value.length,
-            textarea.value.length,
-          )
-        })
+        editorRef.current?.appendText(reference)
       },
     }),
     [],
   )
-
-  // Let the textarea grow with its content up to its max height; past that it
-  // scrolls internally, which keeps the caret in view above the action bar.
-  const resizeTextarea = useCallback(() => {
-    const textarea = textareaRef.current
-    if (!textarea) return
-
-    textarea.style.height = 'auto'
-    textarea.style.height = `${textarea.scrollHeight}px`
-  }, [])
-
-  useLayoutEffect(() => {
-    resizeTextarea()
-  }, [content, resizeTextarea])
-
-  useEffect(() => {
-    window.addEventListener('resize', resizeTextarea)
-
-    return () => window.removeEventListener('resize', resizeTextarea)
-  }, [resizeTextarea])
 
   useEffect(() => {
     if (!follow) return
@@ -141,19 +106,18 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
           {currentUser ? (
             <form onSubmit={handleSubmit} className="max-w-3xl">
               <div
-                className={`flex flex-col overflow-hidden rounded-2xl border border-field-border bg-field transition duration-150 focus-within:border-field-border-focus focus-within:bg-field-focus focus-within:status-focused-field ${
+                className={`flex flex-col rounded-2xl border border-field-border bg-field transition duration-150 focus-within:border-field-border-focus focus-within:bg-field-focus focus-within:status-focused-field ${
                   follow && floating ? 'shadow-lg' : 'shadow-none'
                 }`}
               >
-                <TextArea
-                  ref={textareaRef}
-                  fullWidth
-                  rows={4}
-                  aria-label="跟帖内容"
-                  placeholder="写下你的跟帖…支持 Markdown，re#楼层号 可引用楼层"
+                <RichTextEditor
+                  ref={editorRef}
+                  compact
                   value={content}
-                  onChange={(event) => setContent(event.target.value)}
-                  className="block max-h-44 resize-none overflow-y-auto rounded-none border-0 bg-transparent px-4 pt-3 pb-2 shadow-none outline-none hover:bg-transparent focus:border-0 focus:bg-transparent focus:shadow-none focus:ring-0"
+                  onChange={setContent}
+                  ariaLabel="跟帖内容"
+                  syncExternalValue={!expanded}
+                  floorOptions={floorOptions}
                 />
                 <div className="flex shrink-0 items-center justify-end gap-1 px-2 py-2">
                   <Button
@@ -227,12 +191,12 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
                 </Modal.Header>
 
                 <Modal.Body className="flex min-h-0 flex-1 flex-col">
-                  <MarkdownEditor
+                  <RichTextEditor
                     value={content}
                     onChange={setContent}
-                    defaultMode="markdown"
                     fillHeight
-                    showModeSwitch
+                    ariaLabel="跟帖内容"
+                    syncExternalValue={expanded}
                     floorOptions={floorOptions}
                   />
                 </Modal.Body>
