@@ -11,6 +11,7 @@ import { useState, type FormEvent } from 'react'
 
 import { EditorExpandToggle } from '@/components/EditorExpandToggle'
 import { RichTextEditor } from '@/components/editor'
+import { getBoardThemeStyle } from '@/lib/board-theme'
 import type { ReplyReferenceOption } from '@/lib/reply-reference-options'
 import { markdownToPlainText } from '@/lib/utils'
 
@@ -22,6 +23,8 @@ interface EditPostDialogProps {
   onSave: (values: { title: string; content: string }) => void
   /** 编辑跟帖时用于 re# 楼层提示 */
   floorOptions?: ReplyReferenceOption[]
+  /** 所属板块色，用于让编辑弹窗沿用板块主题色 */
+  boardColor?: string
 }
 
 export function EditPostDialog({
@@ -31,6 +34,7 @@ export function EditPostDialog({
   initialContent,
   onSave,
   floorOptions,
+  boardColor,
 }: EditPostDialogProps) {
   const [isAdvanced, setIsAdvanced] = useState(false)
   const [wasOpen, setWasOpen] = useState(isOpen)
@@ -44,7 +48,7 @@ export function EditPostDialog({
     <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
       <Modal.Backdrop>
         <Modal.Container size={isAdvanced ? 'full' : 'lg'}>
-          <Modal.Dialog>
+          <Modal.Dialog style={getBoardThemeStyle(boardColor)}>
             <EditorExpandToggle
               expanded={isAdvanced}
               onToggle={() => setIsAdvanced((current) => !current)}

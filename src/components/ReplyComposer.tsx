@@ -14,6 +14,7 @@ import {
   RichTextEditor,
   type RichTextEditorHandle,
 } from '@/components/editor'
+import { getBoardThemeStyle } from '@/lib/board-theme'
 import { useForum } from '@/lib/forum-context'
 import { buildReplyReferenceOptions } from '@/lib/reply-reference-options'
 import { markdownToPlainText } from '@/lib/utils'
@@ -29,9 +30,20 @@ interface ReplyComposerProps {
 }
 
 export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
-  const { currentUser, openLogin, createReply, users, threads, replies } =
-    useForum()
+  const {
+    boards,
+    currentUser,
+    openLogin,
+    createReply,
+    users,
+    threads,
+    replies,
+  } = useForum()
   const thread = threads.find((item) => item.id === threadId)
+  const boardColor = thread
+    ? boards.find((board) => board.id === thread.boardId)?.color
+    : undefined
+  const themeStyle = getBoardThemeStyle(boardColor)
   const floorOptions = thread
     ? buildReplyReferenceOptions(
         thread,
@@ -101,7 +113,10 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
 
   return (
     <>
-      <div className={follow ? 'sticky bottom-0 z-20 mt-auto' : 'mt-auto'}>
+      <div
+        className={follow ? 'sticky bottom-0 z-20 mt-auto' : 'mt-auto'}
+        style={themeStyle}
+      >
         <div className="mx-auto w-full max-w-[57.25rem] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           {currentUser ? (
             <form onSubmit={handleSubmit} className="max-w-3xl">
@@ -175,7 +190,7 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
       <Modal isOpen={expanded} onOpenChange={setExpanded}>
         <Modal.Backdrop>
           <Modal.Container size="full">
-            <Modal.Dialog>
+            <Modal.Dialog style={themeStyle}>
               <EditorExpandToggle
                 expanded
                 onToggle={() => setExpanded(false)}

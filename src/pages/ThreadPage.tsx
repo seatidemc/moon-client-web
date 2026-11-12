@@ -13,6 +13,7 @@ import {
 } from '@/components/ReplyComposer'
 import { ThreadToc } from '@/components/ThreadToc'
 import { UserByline } from '@/components/UserByline'
+import { getBoardThemeStyle } from '@/lib/board-theme'
 import {
   replyPostKey,
   threadPostKey,
@@ -105,6 +106,7 @@ export function ThreadPage() {
   const author = thread
     ? users.find((user) => user.id === thread.authorId)
     : undefined
+  const themeStyle = getBoardThemeStyle(board?.color)
 
   usePageTitle(thread?.title)
 
@@ -154,7 +156,10 @@ export function ThreadPage() {
   }
 
   return (
-    <div className="flex min-h-[calc(100svh-3.5rem)] flex-col">
+    <div
+      className="flex min-h-[calc(100svh-3.5rem)] flex-col"
+      style={themeStyle}
+    >
       <main className="mx-auto w-full max-w-[57.25rem] flex-1 px-4 pt-8 pb-4 sm:pt-10">
         <Breadcrumbs
           items={[
@@ -332,6 +337,7 @@ export function ThreadPage() {
 
       <EditPostDialog
         isOpen={editTarget !== null}
+        boardColor={board?.color}
         onOpenChange={(isOpen) => {
           if (!isOpen) setEditTarget(null)
         }}

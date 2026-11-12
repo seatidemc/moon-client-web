@@ -9,11 +9,12 @@ import {
   Select,
   TextField,
 } from '@heroui/react'
-import { useState, type CSSProperties, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { EditorExpandToggle } from '@/components/EditorExpandToggle'
 import { RichTextEditor } from '@/components/editor'
+import { getBoardThemeStyle } from '@/lib/board-theme'
 import { useForum } from '@/lib/forum-context'
 import { markdownToPlainText } from '@/lib/utils'
 
@@ -42,18 +43,11 @@ export function NewThreadDialog({
     }
   }
 
-  // 固定板块时，用板块色作为整个弹窗的主题色；派生色沿用主题的通用公式
+  // 固定板块时，用板块色作为整个弹窗的主题色
   const boardColor = boardId
     ? boards.find((board) => board.id === boardId)?.color
     : undefined
-  const themeStyle = boardColor
-    ? ({
-        '--accent': boardColor,
-        '--accent-hover':
-          'color-mix(in oklab, var(--accent) 90%, var(--accent-foreground) 10%)',
-        '--focus': 'var(--accent)',
-      } as CSSProperties)
-    : undefined
+  const themeStyle = getBoardThemeStyle(boardColor)
 
   function closeDialog() {
     onOpenChange(false)

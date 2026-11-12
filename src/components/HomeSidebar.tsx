@@ -96,7 +96,7 @@ export function HomeSidebar() {
 											) : null}
 											<span>{formatRelativeTime(reply.createdAt)}</span>
 											<span className="ml-2 text-foreground">{excerpt}</span>
-											<span className="mt-1 block">{thread.title}</span>
+											<span className="mt-1 block text-xs">{thread.title}</span>
 										</Link>
 									</li>
 								);

@@ -88,8 +88,8 @@ export function ThreadToc({ items }: { items: ThreadTocItem[] }) {
                   aria-hidden="true"
                   className={`h-0.5 shrink-0 rounded-full transition-all duration-200 ease-out ${
                     isActive
-                      ? 'w-6 bg-foreground/70'
-                      : 'w-3 bg-foreground/20 group-hover:w-6 group-hover:bg-foreground/40'
+                      ? 'w-6 bg-accent/70'
+                      : 'w-3 bg-accent/20 group-hover:w-6 group-hover:bg-accent/40'
                   }`}
                 />
                 <span className="max-w-0 truncate text-xs text-muted opacity-0 transition-[max-width,opacity] duration-200 ease-out group-hover:max-w-40 group-hover:opacity-100 group-focus-visible:max-w-40 group-focus-visible:opacity-100">
