@@ -144,8 +144,8 @@ export function ThreadPage() {
     setReplyToDelete(null)
   }
 
-  function handleReply(reference: string) {
-    const run = () => composerRef.current?.appendReplyReference(reference)
+  function handleReply(floor: number) {
+    const run = () => composerRef.current?.appendReplyReference(floor)
 
     if (!currentUser) {
       openLogin(() => requestAnimationFrame(run))
@@ -230,7 +230,7 @@ export function ThreadPage() {
               <PostActions
                 postKey={threadPostKey(thread.id)}
                 postLabel="主题"
-                onReply={() => handleReply('re#0')}
+                onReply={() => handleReply(0)}
               />
             </article>
 
@@ -320,7 +320,7 @@ export function ThreadPage() {
                       <PostActions
                         postKey={replyPostKey(reply.id)}
                         postLabel={`第 ${index + 1} 楼`}
-                        onReply={() => handleReply(`re#${index + 1}`)}
+                        onReply={() => handleReply(index + 1)}
                       />
                     </article>
                   )

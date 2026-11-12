@@ -5,8 +5,8 @@ import type { EmojiSuggestionItem } from '@/lib/emoji-suggestion'
 import type { ReplyReferenceOption } from '@/lib/reply-reference-options'
 
 export interface RichTextEditorHandle {
-  /** 在文档末尾追加文本并聚焦 */
-  appendText: (text: string) => void
+  /** 在文档末尾追加楼层引用 chip 并聚焦 */
+  appendReplyReference: (floor: number) => void
 }
 
 export interface RichTextEditorProps {

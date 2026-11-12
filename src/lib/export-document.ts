@@ -13,6 +13,9 @@ const EXPORT_STYLES = `
   --border-secondary: #d4d4d8;
   --surface-secondary: #f4f4f5;
   --link: #2563eb;
+  --accent: #2563eb;
+  --accent-soft: color-mix(in oklab, var(--accent) 15%, transparent);
+  --accent-soft-hover: color-mix(in oklab, var(--accent) 20%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -24,6 +27,9 @@ const EXPORT_STYLES = `
     --border-secondary: #52525b;
     --surface-secondary: #27272a;
     --link: #60a5fa;
+    --accent: #60a5fa;
+    --accent-soft: color-mix(in oklab, var(--accent) 12%, transparent);
+    --accent-soft-hover: color-mix(in oklab, var(--accent) 16%, transparent);
   }
 }
 
@@ -118,19 +124,33 @@ main {
   text-underline-offset: 2px;
 }
 
-.moon-rich-text a.reply-reference {
+.moon-rich-text .reply-reference {
   display: inline-block;
   margin-inline: 0.1em;
-  border: 1px solid var(--border);
   border-radius: 999px;
-  background: var(--surface-secondary);
-  padding: 0 0.45em;
-  color: var(--link);
-  font-size: 0.82em;
+  background: var(--accent-soft);
+  padding: 0.1em 0.55em;
+  color: var(--accent);
+  font-size: 0.95em;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
-  line-height: 1.6;
+  line-height: 1.5;
   text-decoration: none;
   white-space: nowrap;
+}
+
+.moon-rich-text .reply-reference::before {
+  content: "";
+  display: inline-block;
+  inline-size: 0.9em;
+  block-size: 0.9em;
+  margin-inline-end: 0.25em;
+  vertical-align: -0.1em;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 20v-7a4 4 0 0 0-4-4H4'/%3E%3Cpath d='m9 14-5-5 5-5'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 20v-7a4 4 0 0 0-4-4H4'/%3E%3Cpath d='m9 14-5-5 5-5'/%3E%3C/svg%3E")
+    center / contain no-repeat;
 }
 
 .moon-rich-text strong {

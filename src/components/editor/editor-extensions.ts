@@ -8,7 +8,7 @@ import type { SuggestionProps } from '@tiptap/suggestion'
 import type { EmojiSuggestionItem } from '@/lib/emoji-suggestion'
 import { EmojiShortcodes } from '@/lib/tiptap-emoji-shortcodes'
 import { MarkdownShortcuts } from '@/lib/tiptap-markdown-shortcuts'
-import { ReplyReferenceChips } from '@/lib/tiptap-reply-references'
+import { ReplyReference } from '@/lib/tiptap-reply-references'
 
 interface EmojiSuggestionHandlers {
   update: (
@@ -71,7 +71,7 @@ export function createEditorExtensions({
         }),
       },
     }),
-    ReplyReferenceChips,
+    ReplyReference,
     ...(placeholder
       ? [Placeholder.configure({ placeholder, showOnlyWhenEditable: true })]
       : []),

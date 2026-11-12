@@ -1,11 +1,7 @@
-import { richTextSegments } from '@/lib/html-content'
 import type { Reply } from '@/types'
 
-/**
- * Matches `re#楼层号`. The leading boundary keeps it from matching inside
- * words such as `are#1`; floor 0 refers to the thread post itself.
- */
-export const REPLY_REFERENCE_PATTERN = /(^|[^\p{L}\p{N}_])re#(\d+)/gu
+/** Atomic reference chips store their floor on the `data-floor` attribute. */
+const CHIP_FLOOR_PATTERN = /data-floor="(\d+)"/g
 
 export interface ReplyReferenceOptions {
   threadId: string
@@ -20,14 +16,10 @@ export interface ReplyReferenceOptions {
 export function findReplyFloors(html: string, maxFloor: number): number[] {
   const floors: number[] = []
 
-  for (const segment of richTextSegments(html)) {
-    if (segment.inCode || segment.inLink) continue
+  for (const match of html.matchAll(CHIP_FLOOR_PATTERN)) {
+    const floor = Number.parseInt(match[1], 10)
 
-    for (const match of segment.text.matchAll(REPLY_REFERENCE_PATTERN)) {
-      const floor = Number.parseInt(match[2], 10)
-
-      if (floor <= maxFloor && !floors.includes(floor)) floors.push(floor)
-    }
+    if (floor <= maxFloor && !floors.includes(floor)) floors.push(floor)
   }
 
   return floors

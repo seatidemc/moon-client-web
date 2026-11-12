@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core'
+import { TextSelection } from '@tiptap/pm/state'
 import {
   useCallback,
   useMemo,
@@ -107,16 +108,23 @@ export function useReferenceSuggestion({
     (currentEditor: Editor, option: ReplyReferenceOption) => {
       if (!trigger) return
 
-      // Insert literally instead of via HTML parsing. A non-breaking space
-      // keeps the separator from being swallowed at the end of a paragraph.
-      currentEditor.view.dispatch(
-        currentEditor.state.tr.insertText(
-          `re#${option.floor} `,
-          trigger.from,
-          trigger.to,
-        ),
+      const { state, view } = currentEditor
+      const chipType = state.schema.nodes.replyReference
+      if (!chipType) return
+
+      const chip = chipType.create({ floor: option.floor })
+      const transaction = state.tr.replaceWith(
+        trigger.from,
+        trigger.to,
+        chip,
       )
-      currentEditor.view.focus()
+
+      transaction.setSelection(
+        TextSelection.create(transaction.doc, trigger.from + chip.nodeSize),
+      )
+
+      view.dispatch(transaction)
+      view.focus()
       setTrigger(null)
     },
     [trigger],

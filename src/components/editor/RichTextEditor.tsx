@@ -5,7 +5,6 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
-  useMemo,
   useRef,
   useState,
   type KeyboardEvent,
@@ -14,7 +13,6 @@ import {
 
 import { downloadHtml, downloadMarkdown } from '@/lib/export-document'
 import { expandEmojiShortcodes } from '@/lib/tiptap-emoji-shortcodes'
-import { setReplyReferenceFloors } from '@/lib/tiptap-reply-references'
 
 import { EditorToolbar } from './EditorToolbar'
 import { EmojiPicker } from './EmojiPicker'
@@ -41,11 +39,7 @@ import type {
   RichTextEditorProps,
   TablePanelPosition,
 } from './editor-types'
-import {
-  anchorPopup,
-  isCaretInsidePanel,
-  normalizeExportedMarkdown,
-} from './editor-utils'
+import { anchorPopup, isCaretInsidePanel } from './editor-utils'
 import { useDismissOnOutside } from './use-dismiss-on-outside'
 import { useEditorToolbarState } from './use-editor-state'
 import { useEmojiSuggestion } from './use-emoji-suggestion'
@@ -83,20 +77,6 @@ export function RichTextEditor({
   const tableButtonRef = useRef<HTMLButtonElement>(null)
   const tablePanelRef = useRef<HTMLDivElement>(null)
   const tableMenuRef = useRef<HTMLDivElement>(null)
-
-  // Only existing floors turn into chips; the order is irrelevant, so sort the
-  // signature to avoid refreshing on reply-list churn.
-  const floorsSignature = floorOptions
-    .map((option) => option.floor)
-    .sort((a, b) => a - b)
-    .join(',')
-  const floorSet = useMemo(
-    () =>
-      new Set(
-        floorsSignature === '' ? [] : floorsSignature.split(',').map(Number),
-      ),
-    [floorsSignature],
-  )
 
   const reference = useReferenceSuggestion({
     panelRef: richPanelRef,
@@ -205,14 +185,6 @@ export function RichTextEditor({
     },
   })
 
-  // Floor chips depend on which floors exist, which can change while the
-  // editor is open.
-  useEffect(() => {
-    if (!editor) return
-
-    setReplyReferenceFloors(editor, floorSet)
-  }, [editor, floorSet])
-
   // Keep the document in sync when the value changes elsewhere (clearing after
   // submit, or edits made in another editor bound to the same state).
   useEffect(() => {
@@ -231,17 +203,23 @@ export function RichTextEditor({
   useImperativeHandle(
     ref,
     () => ({
-      appendText(text: string) {
-        const current = editor.getText()
-        const separator = current !== '' && !/\s$/.test(current) ? ' ' : ''
-
+      appendReplyReference(floor: number) {
         editor
           .chain()
           .focus('end')
           .command(({ state, tr, dispatch }) => {
-            if (dispatch) {
-              tr.insertText(`${separator}${text} `, state.selection.from)
-            }
+            if (!dispatch) return true
+
+            const { $from } = state.selection
+            const before = $from.parent.textBetween(0, $from.parentOffset)
+            const separator = before !== '' && !/\s$/.test(before) ? ' ' : ''
+            const chip = state.schema.nodes.replyReference.create({ floor })
+
+            tr.insert(state.selection.from, [
+              ...(separator ? [state.schema.text(separator)] : []),
+              chip,
+            ])
+
             return true
           })
           .run()
@@ -343,7 +321,7 @@ export function RichTextEditor({
   function exportMarkdown() {
     if (!editor) return
 
-    downloadMarkdown(normalizeExportedMarkdown(editor.getMarkdown()))
+    downloadMarkdown(editor.getMarkdown())
   }
 
   function exportHtml() {

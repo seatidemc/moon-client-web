@@ -20,8 +20,8 @@ import { hasRichTextContent } from '@/lib/html-content'
 import { buildReplyReferenceOptions } from '@/lib/reply-reference-options'
 
 export interface ReplyComposerHandle {
-  /** 在跟帖末尾追加 re#楼层号，并聚焦输入框 */
-  appendReplyReference: (reference: string) => void
+  /** 在跟帖末尾追加楼层引用 chip，并聚焦输入框 */
+  appendReplyReference: (floor: number) => void
 }
 
 interface ReplyComposerProps {
@@ -63,8 +63,8 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
   useImperativeHandle(
     ref,
     () => ({
-      appendReplyReference(reference) {
-        editorRef.current?.appendText(reference)
+      appendReplyReference(floor) {
+        editorRef.current?.appendReplyReference(floor)
       },
     }),
     [],

@@ -1,10 +1,7 @@
 import type { Element, Root, RootContent, Text } from 'hast'
 
 import { HASHTAG_PATTERN } from '@/lib/html-content'
-import {
-  REPLY_REFERENCE_PATTERN,
-  type ReplyReferenceOptions,
-} from '@/lib/reply-references'
+import type { ReplyReferenceOptions } from '@/lib/reply-references'
 
 /** Elements whose text must not be rewritten. */
 const SKIPPED_TAGS = new Set([
@@ -32,6 +29,37 @@ function link(
   }
 }
 
+/** Floor stored on an atomic reply-reference chip, if the element is one. */
+function chipFloor(element: Element): number | null {
+  const className = element.properties.className
+  if (!Array.isArray(className) || !className.includes('reply-reference')) {
+    return null
+  }
+
+  const floor = Number.parseInt(String(element.properties.dataFloor ?? ''), 10)
+  return Number.isFinite(floor) ? floor : null
+}
+
+function referenceLink(
+  floor: number,
+  anchors: Map<number, string> | null,
+  threadId: string | undefined,
+): Element | null {
+  if (!anchors || !threadId) return null
+
+  const anchorId = anchors.get(floor)
+  if (!anchorId) return null
+
+  return link(
+    {
+      href: `/thread/${threadId}#${anchorId}`,
+      title: `回复第 ${floor} 楼`,
+      className: ['reply-reference'],
+    },
+    `#${floor}`,
+  )
+}
+
 function referenceAnchors(options: ReplyReferenceOptions) {
   return new Map<number, string>([
     [0, 'thread-post'],
@@ -39,49 +67,6 @@ function referenceAnchors(options: ReplyReferenceOptions) {
       (reply, index) => [index + 1, `reply-${reply.id}`] as const,
     ),
   ])
-}
-
-/** Splits `re#楼层号` into links to existing floors. */
-function splitReferences(
-  value: string,
-  anchors: Map<number, string> | null,
-  threadId: string | undefined,
-): RootContent[] {
-  if (!anchors || !threadId) return [text(value)]
-
-  const nodes: RootContent[] = []
-  let cursor = 0
-
-  for (const match of value.matchAll(REPLY_REFERENCE_PATTERN)) {
-    const floor = Number.parseInt(match[2], 10)
-    const anchorId = anchors.get(floor)
-
-    if (!anchorId) continue
-
-    const start = (match.index ?? 0) + match[1].length
-    const labelLength = match[0].length - match[1].length
-    const label = value.slice(start, start + labelLength)
-
-    if (start > cursor) nodes.push(text(value.slice(cursor, start)))
-
-    nodes.push(
-      link(
-        {
-          href: `/thread/${threadId}#${anchorId}`,
-          title: `回复第 ${floor} 楼`,
-          className: ['reply-reference'],
-        },
-        label,
-      ),
-    )
-
-    cursor = start + labelLength
-  }
-
-  if (nodes.length === 0) return [text(value)]
-  if (cursor < value.length) nodes.push(text(value.slice(cursor)))
-
-  return nodes
 }
 
 /** Splits hashtags into links that search for the tag. */
@@ -111,16 +96,6 @@ function splitHashtags(value: string): RootContent[] {
   return nodes
 }
 
-function transformText(
-  value: string,
-  anchors: Map<number, string> | null,
-  threadId: string | undefined,
-): RootContent[] {
-  return splitReferences(value, anchors, threadId).flatMap((node) =>
-    node.type === 'text' ? splitHashtags(node.value) : [node],
-  )
-}
-
 function transformChildren(
   parent: Root | Element,
   anchors: Map<number, string> | null,
@@ -132,11 +107,18 @@ function transformChildren(
 
   for (const child of parent.children) {
     if (child.type === 'text') {
-      next.push(...transformText(child.value, anchors, threadId))
+      next.push(...splitHashtags(child.value))
       continue
     }
 
     if (child.type === 'element') {
+      // Chips already carry their floor; never re-process their label.
+      const floor = chipFloor(child)
+      if (floor !== null) {
+        next.push(referenceLink(floor, anchors, threadId) ?? child)
+        continue
+      }
+
       if (!SKIPPED_TAGS.has(child.tagName)) {
         transformChildren(child, anchors, threadId)
       }
@@ -151,8 +133,8 @@ function transformChildren(
 }
 
 /**
- * Applies the rich-text-only features that are stored as plain text — hashtag
- * links and `re#楼层号` chips — to an HTML syntax tree before it is rendered.
+ * Links hashtags and turns floor-reference chips into links to their floors
+ * before the HTML syntax tree is rendered.
  */
 export function applyRichTextFeatures(
   tree: Root,

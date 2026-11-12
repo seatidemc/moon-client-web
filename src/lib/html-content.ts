@@ -44,7 +44,7 @@ const BLOCK_TAGS = new Set([
 /** Elements whose contents are not part of the document's visible text. */
 const SKIPPED_TAGS = new Set(['script', 'style', 'template'])
 
-export interface RichTextSegment {
+interface RichTextSegment {
   text: string
   /** Code samples must not be treated as tags or reply references. */
   inCode: boolean
@@ -167,6 +167,9 @@ function collectSegments(
   const nextInCode = inCode || tag === 'code' || tag === 'pre'
   const nextInLink = inLink || tag === 'a'
 
+  // A chip's `#楼层号` label is not a hashtag.
+  if (element.classList.contains('reply-reference')) return
+
   for (const child of element.childNodes) {
     collectSegments(child, nextInCode, nextInLink, segments)
   }
@@ -176,7 +179,7 @@ function collectSegments(
  * Text runs with the context needed to avoid rewriting code samples or
  * existing links.
  */
-export function richTextSegments(html: string): RichTextSegment[] {
+function richTextSegments(html: string): RichTextSegment[] {
   const body = parseHtml(html)
   if (!body) {
     return [{ text: fallbackPlainText(html), inCode: false, inLink: false }]

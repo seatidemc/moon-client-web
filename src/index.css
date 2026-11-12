@@ -149,24 +149,47 @@ body {
     text-underline-offset: 2px;
   }
 
-  /* `re#楼层号` references render as chips in posts and in the rich editor. */
+  /*
+   * `re#楼层号` references render as button-like chips. In the editor the chip
+   * is an atomic node, so the label is the floor alone and the source syntax
+   * never shows.
+   */
   .moon-rich-text .reply-reference {
     display: inline-block;
     margin-inline: 0.1em;
-    border: 1px solid var(--border);
     border-radius: 999px;
-    background: var(--surface-secondary);
-    padding: 0 0.45em;
-    color: var(--link);
-    font-size: 0.82em;
+    background: var(--accent-soft);
+    padding: 0.1em 0.55em;
+    color: var(--accent);
+    font-size: 0.95em;
+    font-weight: 500;
     font-variant-numeric: tabular-nums;
-    line-height: 1.6;
+    line-height: 1.5;
     text-decoration: none;
     white-space: nowrap;
   }
 
+  /*
+   * A turning-back arrow, drawn with a mask so it follows the chip color. As an
+   * inline-block the chip keeps its text baseline, so it lines up with the
+   * surrounding content.
+   */
+  .moon-rich-text .reply-reference::before {
+    content: "";
+    display: inline-block;
+    inline-size: 0.9em;
+    block-size: 0.9em;
+    margin-inline-end: 0.25em;
+    vertical-align: -0.1em;
+    background-color: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 20v-7a4 4 0 0 0-4-4H4'/%3E%3Cpath d='m9 14-5-5 5-5'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 20v-7a4 4 0 0 0-4-4H4'/%3E%3Cpath d='m9 14-5-5 5-5'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+
   .moon-rich-text a.reply-reference:hover {
-    border-color: var(--border-secondary);
+    background: var(--accent-soft-hover);
   }
 
   .moon-rich-text strong {

@@ -1,14 +1,6 @@
 /** 匹配光标前刚输入的 re#楼层号（楼层号可以还没输入） */
 export const REFERENCE_QUERY_PATTERN = /(?:^|[^\p{L}\p{N}_])(re#(\d*))$/u
 
-/**
- * Floor references use a non-breaking separator while editing; the Markdown
- * export uses a plain space.
- */
-export function normalizeExportedMarkdown(markdown: string) {
-  return markdown.replace(/(re#\d+) /g, '$1 ')
-}
-
 /** 补全用户省略的协议，内部路径和锚点保持原样。 */
 export function normalizeLinkHref(value: string) {
   const href = value.trim()
