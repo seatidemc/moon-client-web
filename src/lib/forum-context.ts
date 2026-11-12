@@ -39,6 +39,7 @@ export interface ForumContextValue {
   deleteReply: (replyId: string) => void
   toggleUserLike: (userId: string) => void
   setUserBackground: (userId: string, background: string | null) => void
+  updateUserAvatar: (userId: string, avatarUrl: string | null) => void
   updateUserBio: (userId: string, bio: string) => void
 }
 

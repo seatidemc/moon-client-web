@@ -325,6 +325,19 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       })
     }
 
+    function updateUserAvatar(userId: string, avatarUrl: string | null) {
+      setData((previous) => {
+        if (!previous.users.some((user) => user.id === userId)) return previous
+
+        return {
+          ...previous,
+          users: previous.users.map((user) =>
+            user.id === userId ? { ...user, avatarUrl: avatarUrl ?? undefined } : user,
+          ),
+        }
+      })
+    }
+
     function updateUserBio(userId: string, bio: string) {
       setData((previous) => {
         if (!previous.users.some((user) => user.id === userId)) return previous
@@ -375,6 +388,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       deleteReply,
       toggleUserLike,
       setUserBackground,
+      updateUserAvatar,
       updateUserBio,
     }
   }, [currentUser, data, loginDialogOpen])

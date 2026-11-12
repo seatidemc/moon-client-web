@@ -1,8 +1,9 @@
 import { Button, TextArea, Tooltip, cn } from '@heroui/react'
-import { Brush, Heart, Pencil, Plus } from 'lucide-react'
+import { Brush, Camera, Heart, Pencil, Plus } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
+import { AvatarCropDialog } from '@/components/AvatarCropDialog'
 import { ProfileCustomizeDialog } from '@/components/ProfileCustomizeDialog'
 import { ThreadListItem } from '@/components/ThreadListItem'
 import { UserAvatar } from '@/components/UserAvatar'
@@ -33,6 +34,7 @@ export function UserPage() {
   } = useForum()
   const user = users.find((candidate) => candidate.id === id)
   const [customizeOpen, setCustomizeOpen] = useState(false)
+  const [avatarOpen, setAvatarOpen] = useState(false)
 
   usePageTitle(user ? `${user.name} 的主页` : '用户不存在')
 
@@ -46,7 +48,7 @@ export function UserPage() {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   const likers = userLikes[user.id] ?? []
   const liked = currentUser ? likers.includes(currentUser.id) : false
-  const canEditBio = currentUser?.id === user.id
+  const isSelf = currentUser?.id === user.id
   const background = userBackgrounds[user.id]
   const onBackgroundClass =
     background &&
@@ -64,11 +66,11 @@ export function UserPage() {
   }
 
   const profileBio =
-    user.bio || canEditBio ? (
+    user.bio || isSelf ? (
       <ProfileBio
         key={user.id}
         user={user}
-        canEdit={canEditBio}
+        canEdit={isSelf}
         onSave={(bio) => updateUserBio(user.id, bio)}
       />
     ) : null
@@ -155,11 +157,24 @@ export function UserPage() {
         )}
       >
         <header className="flex flex-wrap items-start gap-4">
-          <UserAvatar
-            user={user}
-            size="lg"
-            className={cn('size-20', background && 'relative z-10 -mt-9')}
-          />
+          <div
+            className={cn(
+              'relative shrink-0',
+              background && 'z-10 -mt-9',
+            )}
+          >
+            <UserAvatar user={user} size="lg" className="size-20" />
+            {isSelf ? (
+              <button
+                type="button"
+                aria-label="更换头像"
+                onClick={() => setAvatarOpen(true)}
+                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45 text-white opacity-0 transition-opacity focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground hover:opacity-100"
+              >
+                <Camera className="size-5" aria-hidden="true" />
+              </button>
+            ) : null}
+          </div>
           <div className={cn('min-w-48 flex-1', background && '-mt-2.5')}>
             <h1 className="text-2xl font-semibold tracking-tight">
               {user.name}
@@ -249,6 +264,12 @@ export function UserPage() {
         isOpen={customizeOpen}
         onOpenChange={setCustomizeOpen}
         userId={user.id}
+      />
+
+      <AvatarCropDialog
+        isOpen={avatarOpen}
+        onOpenChange={setAvatarOpen}
+        user={user}
       />
     </main>
   )
