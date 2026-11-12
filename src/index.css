@@ -10,14 +10,14 @@
 }
 
 /*
- * 页面滚动条改为叠层指示条，不再挤占内容宽度。
- * 内层滚动区域继承 body 的原生滚动条。
+ * 全站隐藏原生滚动条，页面与内层滚动区域统一由叠层指示条展示，
+ * 滚动或指针接近轨道时出现，不挤占内容宽度。
  */
-html {
+* {
   scrollbar-width: none;
 }
 
-html::-webkit-scrollbar {
+*::-webkit-scrollbar {
   display: none;
 }
 
@@ -63,11 +63,32 @@ body {
   .moon-editor-content {
     padding: 0.875rem 1rem;
     outline: none;
+    transition: padding 200ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .moon-editor-content {
+      transition: none;
+    }
   }
 
   /* 快捷回复的工具栏紧贴编辑区，顶部留白相应收紧。 */
   .moon-editor-content-compact {
     padding-top: 0.5rem;
+  }
+
+  /* 单行状态上下留白对称，横向放不下时滚动查看，右侧留出发布按钮的位置。 */
+  .moon-editor-content-quick {
+    margin-inline-end: 5.5rem;
+    padding-block: 0.6875rem;
+    white-space: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  /* 单行放不下时横向滚动查看，不换行；滚动条由叠层指示条代管。 */
+  .moon-editor-content-quick > * {
+    white-space: nowrap;
   }
 
   /* Node decoration from the Tiptap Placeholder extension. Inheriting the

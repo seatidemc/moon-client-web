@@ -31,6 +31,8 @@ export interface RichTextEditorProps {
   syncExternalValue?: boolean
   /** 传入后，输入 re# 会提示可引用的楼层 */
   floorOptions?: ReplyReferenceOption[]
+  /** 收起至单行时进入快速发送状态，由父级收起无关控件 */
+  onQuickSendChange?: (quickSend: boolean) => void
   ref?: Ref<RichTextEditorHandle>
 }
 

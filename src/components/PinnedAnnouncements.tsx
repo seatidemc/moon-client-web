@@ -115,7 +115,7 @@ export function PinnedAnnouncements() {
         <div className="min-h-0 overflow-hidden">
           <div
             ref={scrollerRef}
-            className="mt-5 snap-x snap-mandatory scroll-px-5 overflow-x-auto px-5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="mt-5 snap-x snap-mandatory scroll-px-5 overflow-x-auto px-5"
           >
             <div className="flex w-max gap-5">
               {pinnedAnnouncements.map((announcement) => {

@@ -22,6 +22,7 @@ import { TableMenu } from './TableMenu'
 import { TablePicker } from './TablePicker'
 import {
   COMPACT_EDITOR_HEIGHT,
+  COMPACT_EDITOR_LINE_HEIGHT,
   COMPACT_EDITOR_MAX_HEIGHT,
   LINK_POPUP_HEIGHT,
   LINK_POPUP_WIDTH,
@@ -32,6 +33,7 @@ import {
   handleCellContextMenu,
   handleImagePaste,
   handleLinkClick,
+  handleSingleLinePaste,
 } from './editor-handlers'
 import type {
   LinkPopoverState,
@@ -54,6 +56,7 @@ export function RichTextEditor({
   advanced = true,
   syncExternalValue = true,
   floorOptions = [],
+  onQuickSendChange,
   ref,
 }: RichTextEditorProps) {
   const [linkPopover, setLinkPopover] = useState<LinkPopoverState | null>(null)
@@ -65,6 +68,7 @@ export function RichTextEditor({
   const resizeStartRef = useRef<{ pointerY: number; height: number } | null>(
     null,
   )
+  const quickSend = compact && compactHeight <= COMPACT_EDITOR_LINE_HEIGHT
 
   const onChangeRef = useRef(onChange)
   // Tracks what this editor emitted so external resets can be told apart from
@@ -138,7 +142,10 @@ export function RichTextEditor({
           : 'moon-rich-text moon-editor-content flex-1',
         'aria-label': ariaLabel,
       },
-      handlePaste: handleImagePaste,
+      handlePaste: (view, event) =>
+        quickSend
+          ? handleSingleLinePaste(view, event)
+          : handleImagePaste(view, event),
       handleClick: (view, _pos, event) =>
         handleLinkClick(view, event, {
           openLinkPopover,
@@ -331,6 +338,13 @@ export function RichTextEditor({
   function handlePickerKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.nativeEvent.isComposing) return
 
+    // 单行状态下回车等同于单行输入框的提交，不产生换行。
+    if (quickSend && event.key === 'Enter') {
+      event.preventDefault()
+      event.currentTarget.closest('form')?.requestSubmit()
+      return
+    }
+
     if (emoji.handleKeyDown(event, editor)) return
     reference.handleKeyDown(event, editor)
   }
@@ -338,7 +352,7 @@ export function RichTextEditor({
   function clampCompactHeight(height: number) {
     return Math.min(
       COMPACT_EDITOR_MAX_HEIGHT,
-      Math.max(COMPACT_EDITOR_HEIGHT, height),
+      Math.max(COMPACT_EDITOR_LINE_HEIGHT, height),
     )
   }
 
@@ -378,6 +392,30 @@ export function RichTextEditor({
     setCompactHeight((height) => clampCompactHeight(height + step))
   }
 
+  useEffect(() => {
+    onQuickSendChange?.(quickSend)
+  }, [onQuickSendChange, quickSend])
+
+  useEffect(() => {
+    editor.view.dom.classList.toggle('moon-editor-content-quick', quickSend)
+  }, [editor, quickSend])
+
+  const toolbar = (
+    <EditorToolbar
+      editor={editor}
+      state={editorState}
+      tableButtonRef={tableButtonRef}
+      tablePickerOpen={tablePicker !== null}
+      onToggleTablePicker={toggleTablePicker}
+      onOpenLink={openLinkFromToolbar}
+      onImportMarkdown={importMarkdown}
+      onExportMarkdown={exportMarkdown}
+      onExportHtml={exportHtml}
+      minimal={compact || !advanced}
+      className={compact ? 'px-2 pt-1.5' : 'mb-2'}
+    />
+  )
+
   return (
     <div
       className={cn(
@@ -408,7 +446,7 @@ export function RichTextEditor({
             aria-orientation="horizontal"
             aria-label="拖动调整编辑器高度"
             tabIndex={0}
-            className="group flex h-2.5 shrink-0 cursor-ns-resize touch-none items-center justify-center rounded-t-2xl outline-none focus-visible:bg-default-soft"
+            className="group absolute top-0 left-1/2 z-10 flex h-2.5 w-24 -translate-x-1/2 cursor-ns-resize touch-none items-center justify-center outline-none focus-visible:bg-default-soft"
             onPointerDown={startResize}
             onPointerMove={resizeByDrag}
             onPointerUp={endResize}
@@ -422,19 +460,18 @@ export function RichTextEditor({
           </div>
         ) : null}
 
-        <EditorToolbar
-          editor={editor}
-          state={editorState}
-          tableButtonRef={tableButtonRef}
-          tablePickerOpen={tablePicker !== null}
-          onToggleTablePicker={toggleTablePicker}
-          onOpenLink={openLinkFromToolbar}
-          onImportMarkdown={importMarkdown}
-          onExportMarkdown={exportMarkdown}
-          onExportHtml={exportHtml}
-          minimal={compact || !advanced}
-          className={compact ? 'px-2 pt-1.5' : 'mb-2'}
-        />
+        {compact ? (
+          <div
+            inert={quickSend}
+            className={`grid transition-[grid-template-rows,opacity] duration-200 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none ${
+              quickSend ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
+            }`}
+          >
+            <div className="min-h-0 overflow-hidden">{toolbar}</div>
+          </div>
+        ) : (
+          toolbar
+        )}
 
         <div
           className={cn(

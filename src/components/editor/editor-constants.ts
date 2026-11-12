@@ -21,6 +21,8 @@ export const TABLE_MENU_MAX_HEIGHT = 480
 
 /** 快捷回复编辑器内容区的默认高度（px）。 */
 export const COMPACT_EDITOR_HEIGHT = 80
+/** 快捷回复编辑器只容一行文字时的高度（px）。 */
+export const COMPACT_EDITOR_LINE_HEIGHT = 49
 /** 快捷回复编辑器拖动上边缘可达到的最大高度（px）。 */
 export const COMPACT_EDITOR_MAX_HEIGHT = 192
 

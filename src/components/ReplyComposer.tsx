@@ -1,5 +1,5 @@
-import { Button, Modal } from '@heroui/react'
-import { Maximize2, Pin } from 'lucide-react'
+import { Button, Kbd, Modal } from '@heroui/react'
+import { CornerDownLeft, Maximize2, Pin } from 'lucide-react'
 import {
   useEffect,
   useImperativeHandle,
@@ -10,6 +10,7 @@ import {
 } from 'react'
 
 import { EditorExpandToggle } from '@/components/EditorExpandToggle'
+import { COMPACT_EDITOR_LINE_HEIGHT } from '@/components/editor/editor-constants'
 import {
   RichTextEditor,
   type RichTextEditorHandle,
@@ -56,6 +57,7 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
   const [content, setContent] = useState('')
   const [follow, setFollow] = useState(true)
   const [floating, setFloating] = useState(false)
+  const [quickSend, setQuickSend] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<RichTextEditorHandle>(null)
@@ -133,39 +135,73 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
                   ariaLabel="跟帖内容"
                   syncExternalValue={!expanded}
                   floorOptions={floorOptions}
+                  onQuickSendChange={setQuickSend}
                 />
-                <div className="flex shrink-0 items-center justify-end gap-1 px-2 py-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    isIconOnly
-                    variant="ghost"
-                    aria-label="高级编辑"
-                    className="text-muted"
-                    onPress={() => setExpanded(true)}
+                <div
+                  className={`flex items-center justify-end gap-1 transition-[height,margin] duration-200 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none ${
+                    quickSend ? 'pointer-events-none pr-1.5' : 'px-2 py-2'
+                  }`}
+                  style={
+                    quickSend
+                      ? {
+                          height: COMPACT_EDITOR_LINE_HEIGHT,
+                          marginTop: -COMPACT_EDITOR_LINE_HEIGHT,
+                        }
+                      : undefined
+                  }
+                >
+                  <div
+                    inert={quickSend}
+                    className={`grid shrink-0 transition-[grid-template-columns,opacity] duration-200 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none ${
+                      quickSend
+                        ? 'grid-cols-[0fr] opacity-0'
+                        : 'grid-cols-[1fr] opacity-100'
+                    }`}
                   >
-                    <Maximize2 className="size-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    isIconOnly
-                    variant="ghost"
-                    aria-label={follow ? '取消跟随' : '跟随滚动'}
-                    aria-pressed={follow}
-                    className={follow ? 'text-foreground' : 'text-muted'}
-                    onPress={() => setFollow((value) => !value)}
-                  >
-                    <Pin className={`size-4 ${follow ? 'fill-current' : ''}`} />
-                  </Button>
+                    <div className="flex min-w-0 items-center gap-1 overflow-hidden">
+                      <Button
+                        type="button"
+                        size="sm"
+                        isIconOnly
+                        variant="ghost"
+                        aria-label="高级编辑"
+                        className="shrink-0 text-muted"
+                        onPress={() => setExpanded(true)}
+                      >
+                        <Maximize2 className="size-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        isIconOnly
+                        variant="ghost"
+                        aria-label={follow ? '取消跟随' : '跟随滚动'}
+                        aria-pressed={follow}
+                        className={`shrink-0 ${follow ? 'text-foreground' : 'text-muted'}`}
+                        onPress={() => setFollow((value) => !value)}
+                      >
+                        <Pin
+                          className={`size-4 ${follow ? 'fill-current' : ''}`}
+                        />
+                      </Button>
+                    </div>
+                  </div>
                   <Button
                     type="submit"
                     size="sm"
                     variant="primary"
-                    className="shrink-0"
+                    className="pointer-events-auto shrink-0"
                     isDisabled={!hasRichTextContent(content)}
                   >
                     发布
+                    {quickSend ? (
+                      <Kbd
+                        aria-hidden="true"
+                        className="size-5 justify-center bg-current/20 p-0 text-current"
+                      >
+                        <CornerDownLeft className="size-3" />
+                      </Kbd>
+                    ) : null}
                   </Button>
                 </div>
               </div>

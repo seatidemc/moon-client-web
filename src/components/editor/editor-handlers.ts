@@ -9,6 +9,29 @@ import {
 import type { OpenLinkPopover, TablePanelPosition } from './editor-types'
 import { readImageFileAsDataUrl } from './editor-utils'
 
+/** 单行模式只保留一行文字，粘贴内容里的换行与连续空白压成空格。 */
+export function handleSingleLinePaste(
+  view: Editor['view'],
+  event: ClipboardEvent,
+) {
+  event.preventDefault()
+
+  const text = (event.clipboardData?.getData('text/plain') ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (text === '') return true
+
+  const { state } = view
+  view.dispatch(
+    state.tr
+      .insertText(text, state.selection.from, state.selection.to)
+      // 标记为粘贴，让链接粘贴规则照常识别文本里的网址。
+      .setMeta('uiEvent', 'paste')
+      .scrollIntoView(),
+  )
+  return true
+}
+
 /** Inserts pasted clipboard images as data URLs; other pastes fall through. */
 export function handleImagePaste(
   view: Editor['view'],
