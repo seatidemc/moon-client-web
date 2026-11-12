@@ -33,7 +33,7 @@ export function BoardsPage() {
                     color: board.color,
                   }}
                 >
-                  <BoardIcon className="size-5" aria-hidden="true" />
+                  <BoardIcon className="size-6" aria-hidden="true" />
                 </span>
 
                 <div className="min-w-0 flex-1">
