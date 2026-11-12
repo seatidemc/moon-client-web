@@ -325,6 +325,19 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       })
     }
 
+    function updateUserBio(userId: string, bio: string) {
+      setData((previous) => {
+        if (!previous.users.some((user) => user.id === userId)) return previous
+
+        return {
+          ...previous,
+          users: previous.users.map((user) =>
+            user.id === userId ? { ...user, bio: bio.trim() } : user,
+          ),
+        }
+      })
+    }
+
     function setUserBackground(userId: string, background: string | null) {
       setData((previous) => {
         if (!previous.users.some((user) => user.id === userId)) return previous
@@ -362,6 +375,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       deleteReply,
       toggleUserLike,
       setUserBackground,
+      updateUserBio,
     }
   }, [currentUser, data, loginDialogOpen])
 

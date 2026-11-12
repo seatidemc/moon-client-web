@@ -39,6 +39,7 @@ export interface ForumContextValue {
   deleteReply: (replyId: string) => void
   toggleUserLike: (userId: string) => void
   setUserBackground: (userId: string, background: string | null) => void
+  updateUserBio: (userId: string, bio: string) => void
 }
 
 export const ForumContext = createContext<ForumContextValue | null>(null)

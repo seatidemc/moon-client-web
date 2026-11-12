@@ -1,6 +1,6 @@
-import { Button, Tooltip, cn } from '@heroui/react'
-import { Brush, Heart } from 'lucide-react'
-import { useState } from 'react'
+import { Button, TextArea, Tooltip, cn } from '@heroui/react'
+import { Brush, Heart, Pencil, Plus } from 'lucide-react'
+import { useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { ProfileCustomizeDialog } from '@/components/ProfileCustomizeDialog'
@@ -16,6 +16,7 @@ import {
   makeExcerpt,
 } from '@/lib/utils'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import type { User } from '@/types'
 
 export function UserPage() {
   const { id } = useParams()
@@ -28,6 +29,7 @@ export function UserPage() {
     currentUser,
     openLogin,
     toggleUserLike,
+    updateUserBio,
   } = useForum()
   const user = users.find((candidate) => candidate.id === id)
   const [customizeOpen, setCustomizeOpen] = useState(false)
@@ -44,6 +46,7 @@ export function UserPage() {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   const likers = userLikes[user.id] ?? []
   const liked = currentUser ? likers.includes(currentUser.id) : false
+  const canEditBio = currentUser?.id === user.id
   const background = userBackgrounds[user.id]
   const onBackgroundClass =
     background &&
@@ -60,9 +63,15 @@ export function UserPage() {
     toggleUserLike(user.id)
   }
 
-  const profileBio = user.bio ? (
-    <p className="text-sm leading-6">{user.bio}</p>
-  ) : null
+  const profileBio =
+    user.bio || canEditBio ? (
+      <ProfileBio
+        key={user.id}
+        user={user}
+        canEdit={canEditBio}
+        onSave={(bio) => updateUserBio(user.id, bio)}
+      />
+    ) : null
 
   const actionButtons = (
     <div className="flex shrink-0 items-center gap-2">
@@ -242,5 +251,108 @@ export function UserPage() {
         userId={user.id}
       />
     </main>
+  )
+}
+
+function ProfileBio({
+  user,
+  canEdit,
+  onSave,
+}: {
+  user: User
+  canEdit: boolean
+  onSave: (bio: string) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(user.bio)
+
+  function beginEditing() {
+    setDraft(user.bio)
+    setEditing(true)
+  }
+
+  function save() {
+    onSave(draft.trim())
+    setEditing(false)
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    save()
+  }
+
+  if (editing) {
+    return (
+      <form onSubmit={handleSubmit} className="text-sm leading-6">
+        <TextArea
+          autoFocus
+          aria-label="个人介绍"
+          placeholder="介绍一下自己…"
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              setEditing(false)
+            } else if (
+              (event.metaKey || event.ctrlKey) &&
+              event.key === 'Enter'
+            ) {
+              event.preventDefault()
+              save()
+            }
+          }}
+          className="w-full"
+        />
+        <div className="mt-2 flex items-center justify-end gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="tertiary"
+            onPress={() => setEditing(false)}
+          >
+            取消
+          </Button>
+          <Button type="submit" size="sm" variant="primary">
+            保存
+          </Button>
+        </div>
+      </form>
+    )
+  }
+
+  if (!user.bio) {
+    if (!canEdit) return null
+
+    return (
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        className="gap-1.5 text-muted hover:text-foreground"
+        onPress={beginEditing}
+      >
+        <Plus className="size-3.5" aria-hidden="true" />
+        添加个人介绍
+      </Button>
+    )
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+      <p className="text-sm leading-6">{user.bio}</p>
+      {canEdit ? (
+        <Button
+          type="button"
+          size="sm"
+          isIconOnly
+          variant="ghost"
+          className="text-muted hover:text-foreground"
+          aria-label="编辑个人介绍"
+          onPress={beginEditing}
+        >
+          <Pencil className="size-3.5" aria-hidden="true" />
+        </Button>
+      ) : null}
+    </div>
   )
 }
