@@ -1,5 +1,7 @@
 import { Extension, markInputRule } from '@tiptap/core'
 
+import { canApplyFeature } from './tiptap-formatting-context'
+
 /**
  * StarterKit's inline Markdown input rules only fire after whitespace. These
  * additional rules keep the same behavior next to CJK text, where a space is
@@ -9,6 +11,7 @@ export const MarkdownShortcuts = Extension.create({
   name: 'markdownShortcuts',
 
   addInputRules() {
+    const editor = this.editor
     const bold = this.editor.schema.marks.bold
     const italic = this.editor.schema.marks.italic
     const strike = this.editor.schema.marks.strike
@@ -19,6 +22,7 @@ export const MarkdownShortcuts = Extension.create({
       markInputRule({
         find: /(\*\*(?!\s+\*\*)((?:[^*\n]+))\*\*(?!\s+\*\*))$/,
         type: bold,
+        getAttributes: () => (canApplyFeature(editor.state, 'bold') ? {} : false),
       }),
       markInputRule({
         find: /(?<!\*)(\*(?!\*)(?!\s+\*)((?:[^*\n]+))\*(?!\s+\*))$/,

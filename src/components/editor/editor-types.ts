@@ -3,6 +3,7 @@ import type { Ref } from 'react'
 
 import type { EmojiSuggestionItem } from '@/lib/emoji-suggestion'
 import type { ReplyReferenceOption } from '@/lib/reply-reference-options'
+import type { EditorCapabilities } from '@/lib/tiptap-formatting-context'
 
 export interface RichTextEditorHandle {
   /** 在文档末尾追加楼层引用 chip 并聚焦 */
@@ -83,6 +84,7 @@ export interface EditorToolbarState {
   isBold: boolean
   isItalic: boolean
   isStrike: boolean
+  isUnderline: boolean
   headingLevel: number
   isBulletList: boolean
   isOrderedList: boolean
@@ -95,4 +97,5 @@ export interface EditorToolbarState {
   canSplitCell: boolean
   canUndo: boolean
   canRedo: boolean
+  capabilities: EditorCapabilities
 }

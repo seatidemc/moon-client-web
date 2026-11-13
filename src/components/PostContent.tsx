@@ -49,7 +49,14 @@ function withAllowedClass(
  */
 const postSchema: Schema = {
   ...defaultSchema,
-  tagNames: [...(defaultSchema.tagNames ?? []), 'colgroup', 'col'],
+  tagNames: [
+    ...(defaultSchema.tagNames ?? []),
+    'colgroup',
+    'col',
+    // The editor's underline mark renders as `<u>`, which the default
+    // sanitizer schema does not allow.
+    'u',
+  ],
   attributes: {
     ...defaultSchema.attributes,
     a: withAllowedClass(

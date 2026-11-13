@@ -1,6 +1,8 @@
 import type { Editor } from '@tiptap/core'
 import { useEditorState } from '@tiptap/react'
 
+import { getEditorCapabilities } from '@/lib/tiptap-formatting-context'
+
 import type { EditorToolbarState } from './editor-types'
 
 export function useEditorToolbarState(editor: Editor): EditorToolbarState {
@@ -10,6 +12,7 @@ export function useEditorToolbarState(editor: Editor): EditorToolbarState {
       isBold: currentEditor.isActive('bold'),
       isItalic: currentEditor.isActive('italic'),
       isStrike: currentEditor.isActive('strike'),
+      isUnderline: currentEditor.isActive('underline'),
       headingLevel: currentEditor.isActive('heading')
         ? (currentEditor.getAttributes('heading').level as number)
         : 0,
@@ -24,6 +27,7 @@ export function useEditorToolbarState(editor: Editor): EditorToolbarState {
       canSplitCell: currentEditor.can().splitCell(),
       canUndo: currentEditor.can().undo(),
       canRedo: currentEditor.can().redo(),
+      capabilities: getEditorCapabilities(currentEditor.state),
     }),
   })
 }

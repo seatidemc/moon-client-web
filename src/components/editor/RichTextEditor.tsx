@@ -13,6 +13,7 @@ import {
 
 import { downloadHtml, downloadMarkdown } from '@/lib/export-document'
 import { expandEmojiShortcodes } from '@/lib/tiptap-emoji-shortcodes'
+import { canApplyFeature } from '@/lib/tiptap-formatting-context'
 
 import { EditorToolbar } from './EditorToolbar'
 import { EmojiPicker } from './EmojiPicker'
@@ -165,6 +166,14 @@ export function RichTextEditor({
     },
     onSelectionUpdate: ({ editor: currentEditor }) => {
       reference.update(currentEditor)
+
+      // Close panels whose action is no longer available for this caret.
+      if (!canApplyFeature(currentEditor.state, 'tableInsert')) {
+        setTablePicker(null)
+      }
+      if (!canApplyFeature(currentEditor.state, 'link')) {
+        setLinkPopover(null)
+      }
     },
     onBlur: ({ event }) => {
       // Keep the picker open while focus moves into it to choose an item.
@@ -287,6 +296,8 @@ export function RichTextEditor({
       return
     }
 
+    if (!editor) return
+
     const button = tableButtonRef.current
     const panel = richPanelRef.current
     if (!button || !panel) return
@@ -302,8 +313,13 @@ export function RichTextEditor({
   }
 
   function insertTableFromPicker(rows: number, cols: number) {
+    if (!editor) {
+      setTablePicker(null)
+      return
+    }
+
     editor
-      ?.chain()
+      .chain()
       .focus()
       .insertTable({ rows, cols, withHeaderRow: true })
       .run()
