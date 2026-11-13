@@ -322,7 +322,7 @@ function ProfileBio({
               save()
             }
           }}
-          className="w-full"
+          className="h-24 w-full resize-none"
         />
         <div className="mt-2 flex items-center justify-end gap-2">
           <Button

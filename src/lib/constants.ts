@@ -1,4 +1,4 @@
-export const SITE_NAME = 'Moon'
+export const SITE_NAME = 'Tide'
 
 export const DEMO_PASSWORD = 'moon123'
 

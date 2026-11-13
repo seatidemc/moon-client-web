@@ -3,7 +3,6 @@ import {
   cn,
   FieldError,
   Input,
-  Label,
   Modal,
   TextField,
 } from '@heroui/react'
@@ -150,7 +149,6 @@ function EditPostForm({
             isInvalid={Boolean(titleError)}
             className="text-left"
           >
-            <Label>标题</Label>
             <Input
               autoFocus
               maxLength={120}
@@ -174,7 +172,6 @@ function EditPostForm({
             }}
             fillHeight={isAdvanced}
             advanced={isAdvanced}
-            showLabel={isThread}
             floorOptions={floorOptions}
           />
           {contentError ? (

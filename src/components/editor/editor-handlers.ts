@@ -33,18 +33,14 @@ export function handleSingleLinePaste(
   return true
 }
 
-/** Inserts pasted clipboard images as data URLs; other pastes fall through. */
-export function handleImagePaste(
-  view: Editor['view'],
-  event: ClipboardEvent,
-) {
-  const files = Array.from(event.clipboardData?.files ?? []).filter((file) =>
+export function filterImageFiles(files: Iterable<File> | null | undefined) {
+  return Array.from(files ?? []).filter((file) =>
     file.type.startsWith('image/'),
   )
-  if (files.length === 0) return false
+}
 
-  event.preventDefault()
-
+/** Reads image files and inserts them as data URLs at the current selection. */
+export function insertImageFiles(view: Editor['view'], files: File[]) {
   // 暂时只把图片作为 data URL 插入文档，不做上传。
   void Promise.all(files.map(readImageFileAsDataUrl))
     .then((sources) => {
@@ -58,9 +54,51 @@ export function handleImagePaste(
       view.dispatch(tr.scrollIntoView())
     })
     .catch(() => {
-      // 无法读取的剪贴板图片直接忽略。
+      // 无法读取的图片直接忽略。
     })
+}
 
+/** Inserts pasted clipboard images as data URLs; other pastes fall through. */
+export function handleImagePaste(
+  view: Editor['view'],
+  event: ClipboardEvent,
+) {
+  const files = filterImageFiles(event.clipboardData?.files)
+  if (files.length === 0) return false
+
+  event.preventDefault()
+  insertImageFiles(view, files)
+  return true
+}
+
+/**
+ * Inserts dropped image files as data URLs. Without intercepting these drops
+ * the browser opens the file in a new tab instead. Moving nodes inside the
+ * editor (`moved`) is left to ProseMirror's own drop handling.
+ */
+export function handleImageDrop(
+  view: Editor['view'],
+  event: DragEvent,
+  moved: boolean,
+) {
+  if (moved) return false
+
+  const files = filterImageFiles(event.dataTransfer?.files)
+  if (files.length === 0) return false
+
+  event.preventDefault()
+
+  // 先把光标移到落点，异步读取文件后图片就插在这个位置。
+  const coords = view.posAtCoords({ left: event.clientX, top: event.clientY })
+  if (coords) {
+    view.dispatch(
+      view.state.tr.setSelection(
+        TextSelection.near(view.state.doc.resolve(coords.pos)),
+      ),
+    )
+  }
+
+  insertImageFiles(view, files)
   return true
 }
 

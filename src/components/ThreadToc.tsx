@@ -91,7 +91,7 @@ export function ThreadToc({ items }: { items: ThreadTocItem[] }) {
                   aria-hidden="true"
                   className={`h-0.5 shrink-0 rounded-full transition-all duration-200 ease-out ${
                     isActive
-                      ? 'w-6 bg-accent/70'
+                      ? 'w-10 bg-accent/70'
                       : 'w-3 bg-accent/20 group-hover:w-5 group-hover:bg-accent/40'
                   }`}
                 />

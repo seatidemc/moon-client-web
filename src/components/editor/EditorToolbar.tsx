@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Code,
   Code2,
+  Image as ImageIcon,
   Italic,
   Link as LinkIcon,
   List,
@@ -34,6 +35,9 @@ interface EditorToolbarProps {
   tableButtonRef: RefObject<HTMLButtonElement | null>
   tablePickerOpen: boolean
   onToggleTablePicker: () => void
+  imageButtonRef: RefObject<HTMLButtonElement | null>
+  imagePopoverOpen: boolean
+  onToggleImagePopover: () => void
   onOpenLink: () => void
   onImportMarkdown: (markdown: string) => void
   onExportMarkdown: () => void
@@ -49,6 +53,9 @@ export function EditorToolbar({
   tableButtonRef,
   tablePickerOpen,
   onToggleTablePicker,
+  imageButtonRef,
+  imagePopoverOpen,
+  onToggleImagePopover,
   onOpenLink,
   onImportMarkdown,
   onExportMarkdown,
@@ -218,6 +225,14 @@ export function EditorToolbar({
       >
         <LinkIcon />
       </ToolbarButton>
+      <ToolbarButton
+        label="插入图片"
+        active={imagePopoverOpen}
+        buttonRef={imageButtonRef}
+        onPress={onToggleImagePopover}
+      >
+        <ImageIcon />
+      </ToolbarButton>
 
       {state.isInTable ? (
         <Dropdown>
@@ -300,17 +315,20 @@ function ToolbarButton({
   label,
   active = false,
   disabled = false,
+  buttonRef,
   onPress,
   children,
 }: {
   label: string
   active?: boolean
   disabled?: boolean
+  buttonRef?: RefObject<HTMLButtonElement | null>
   onPress: () => void
   children: ReactNode
 }) {
   return (
     <Button
+      ref={buttonRef}
       type="button"
       size="sm"
       isIconOnly

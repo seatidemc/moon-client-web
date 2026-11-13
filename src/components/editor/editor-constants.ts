@@ -13,6 +13,7 @@ export const EMOJI_POPUP_WIDTH = 256
 export const EMOJI_POPUP_HEIGHT = 256
 export const LINK_POPUP_WIDTH = 320
 export const LINK_POPUP_HEIGHT = 232
+export const IMAGE_POPUP_WIDTH = 320
 export const TABLE_PICKER_WIDTH = 224
 export const TABLE_GRID_ROWS = 8
 export const TABLE_GRID_COLUMNS = 8

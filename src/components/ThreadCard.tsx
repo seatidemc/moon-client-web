@@ -96,7 +96,6 @@ export function ThreadCard({
             ) : (
               <span className="truncate">未知用户</span>
             )}
-            <span aria-hidden="true">·</span>
             <time
               dateTime={thread.createdAt}
               title={formatDateTime(thread.createdAt)}

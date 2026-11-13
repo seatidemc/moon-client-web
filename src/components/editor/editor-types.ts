@@ -24,11 +24,6 @@ export interface RichTextEditorProps {
   /** 紧凑模式：用于快捷回复，隐藏标题和文件菜单，工具栏只保留基础格式 */
   compact?: boolean
   /**
-   * 是否在编辑区上方显示“正文”标签。仅在表单里有标题、板块等其他输入框、
-   * 需要区分字段时才有意义；只有一个编辑区时应关闭。默认为显示。
-   */
-  showLabel?: boolean
-  /**
    * 展开（高级编辑）状态。未展开时工具栏只保留基础格式，并隐藏文件
    * 导入/导出菜单。默认为展开。
    */
@@ -76,10 +71,13 @@ export interface LinkPopoverState extends PopupAnchor {
   editing: boolean
 }
 
-export interface TablePanelPosition {
+/** Floating panel position relative to the editor panel. */
+export interface PopupPosition {
   left: number
   top: number
 }
+
+export type TablePanelPosition = PopupPosition
 
 export type OpenLinkPopover = (
   view: Editor['view'],

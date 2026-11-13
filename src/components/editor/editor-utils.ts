@@ -12,6 +12,15 @@ export function normalizeLinkHref(value: string) {
   return `https://${href}`
 }
 
+/** 补全图片地址省略的协议；允许 data:、schema 和站内相对路径。 */
+export function normalizeImageSrc(value: string) {
+  const src = value.trim()
+  if (!src) return ''
+  if (/^(?:[a-z][a-z0-9+.-]*:|\/|#)/i.test(src)) return src
+
+  return `https://${src}`
+}
+
 export function readImageFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader()

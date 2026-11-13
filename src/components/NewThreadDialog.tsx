@@ -143,7 +143,6 @@ function NewThreadForm({
           isInvalid={Boolean(titleError)}
           className="text-left"
         >
-          <Label>标题</Label>
           <Input
             autoFocus
             maxLength={120}

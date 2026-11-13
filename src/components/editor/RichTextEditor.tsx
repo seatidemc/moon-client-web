@@ -22,6 +22,7 @@ import {
 
 import { EditorToolbar } from './EditorToolbar'
 import { EmojiPicker } from './EmojiPicker'
+import { ImagePopover } from './ImagePopover'
 import { LinkPopover } from './LinkPopover'
 import { ReferencePicker } from './ReferencePicker'
 import { TableMenu } from './TableMenu'
@@ -30,6 +31,7 @@ import {
   COMPACT_EDITOR_HEIGHT,
   COMPACT_EDITOR_LINE_HEIGHT,
   COMPACT_EDITOR_MAX_HEIGHT,
+  IMAGE_POPUP_WIDTH,
   LINK_POPUP_HEIGHT,
   LINK_POPUP_WIDTH,
   TABLE_PICKER_WIDTH,
@@ -37,6 +39,7 @@ import {
 import { createEditorExtensions } from './editor-extensions'
 import {
   handleCellContextMenu,
+  handleImageDrop,
   handleImagePaste,
   handleLinkClick,
   handleSingleLinePaste,
@@ -44,6 +47,7 @@ import {
 import type {
   LinkPopoverState,
   OpenLinkPopover,
+  PopupPosition,
   RichTextEditorProps,
   TablePanelPosition,
 } from './editor-types'
@@ -59,7 +63,6 @@ export function RichTextEditor({
   fillHeight = false,
   ariaLabel = '正文',
   compact = false,
-  showLabel = true,
   advanced = true,
   syncExternalValue = true,
   floorOptions = [],
@@ -71,6 +74,7 @@ export function RichTextEditor({
     null,
   )
   const [tableMenu, setTableMenu] = useState<TablePanelPosition | null>(null)
+  const [imagePopover, setImagePopover] = useState<PopupPosition | null>(null)
   const [compactHeight, setCompactHeight] = useState(COMPACT_EDITOR_HEIGHT)
   const resizeStartRef = useRef<{ pointerY: number; height: number } | null>(
     null,
@@ -87,6 +91,8 @@ export function RichTextEditor({
   const tableButtonRef = useRef<HTMLButtonElement>(null)
   const tablePanelRef = useRef<HTMLDivElement>(null)
   const tableMenuRef = useRef<HTMLDivElement>(null)
+  const imageButtonRef = useRef<HTMLButtonElement>(null)
+  const imagePanelRef = useRef<HTMLDivElement>(null)
 
   const reference = useReferenceSuggestion({
     panelRef: richPanelRef,
@@ -152,6 +158,9 @@ export function RichTextEditor({
         quickSend
           ? handleSingleLinePaste(view, event)
           : handleImagePaste(view, event),
+      // Without this the browser opens a dropped image file in a new tab.
+      handleDrop: (view, event, _slice, moved) =>
+        handleImageDrop(view, event, moved),
       handleClick: (view, _pos, event) =>
         handleLinkClick(view, event, {
           openLinkPopover,
@@ -296,6 +305,13 @@ export function RichTextEditor({
   })
 
   useDismissOnOutside({
+    active: imagePopover !== null,
+    ignoreRefs: [imagePanelRef, imageButtonRef],
+    onDismiss: () => setImagePopover(null),
+    onEscape: () => editor?.view.focus(),
+  })
+
+  useDismissOnOutside({
     active: tableMenu !== null,
     ignoreRefs: [tableMenuRef],
     onDismiss: () => setTableMenu(null),
@@ -351,6 +367,28 @@ export function RichTextEditor({
     const maxLeft = Math.max(8, panelRect.width - TABLE_PICKER_WIDTH - 8)
 
     setTablePicker({
+      left: Math.min(Math.max(buttonRect.left - panelRect.left, 8), maxLeft),
+      top: buttonRect.bottom - panelRect.top + 6,
+    })
+  }
+
+  function toggleImagePopover() {
+    if (imagePopover) {
+      setImagePopover(null)
+      return
+    }
+
+    if (!editor) return
+
+    const button = imageButtonRef.current
+    const panel = richPanelRef.current
+    if (!button || !panel) return
+
+    const buttonRect = button.getBoundingClientRect()
+    const panelRect = panel.getBoundingClientRect()
+    const maxLeft = Math.max(8, panelRect.width - IMAGE_POPUP_WIDTH - 8)
+
+    setImagePopover({
       left: Math.min(Math.max(buttonRect.left - panelRect.left, 8), maxLeft),
       top: buttonRect.bottom - panelRect.top + 6,
     })
@@ -460,6 +498,9 @@ export function RichTextEditor({
       tableButtonRef={tableButtonRef}
       tablePickerOpen={tablePicker !== null}
       onToggleTablePicker={toggleTablePicker}
+      imageButtonRef={imageButtonRef}
+      imagePopoverOpen={imagePopover !== null}
+      onToggleImagePopover={toggleImagePopover}
       onOpenLink={openLinkFromToolbar}
       onImportMarkdown={importMarkdown}
       onExportMarkdown={exportMarkdown}
@@ -476,12 +517,6 @@ export function RichTextEditor({
         !compact && fillHeight && 'h-full min-h-0',
       )}
     >
-      {compact || !showLabel ? null : (
-        <div className="mb-2 flex shrink-0 items-center">
-          <span className="text-sm font-medium text-foreground">正文</span>
-        </div>
-      )}
-
       <div
         ref={richPanelRef}
         className={cn(
@@ -574,6 +609,15 @@ export function RichTextEditor({
             panelRef={tablePanelRef}
             position={tablePicker}
             onInsert={insertTableFromPicker}
+          />
+        ) : null}
+
+        {imagePopover && editor ? (
+          <ImagePopover
+            editor={editor}
+            position={imagePopover}
+            panelRef={imagePanelRef}
+            onClose={() => setImagePopover(null)}
           />
         ) : null}
 
