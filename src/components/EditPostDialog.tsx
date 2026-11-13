@@ -27,6 +27,11 @@ interface EditPostDialogProps {
   boardColor?: string
 }
 
+type EditSnapshot = Pick<
+  EditPostDialogProps,
+  'initialTitle' | 'initialContent' | 'floorOptions' | 'boardColor'
+>
+
 export function EditPostDialog({
   isOpen,
   onOpenChange,
@@ -38,28 +43,46 @@ export function EditPostDialog({
 }: EditPostDialogProps) {
   const [isAdvanced, setIsAdvanced] = useState(false)
   const [wasOpen, setWasOpen] = useState(isOpen)
+  // 弹窗关闭后还要播放退场动画，而调用方此时往往已经清空了正在编辑的内容。
+  // 记住打开时的快照，退场期间继续渲染它，避免闪成别人的内容。
+  const [snapshot, setSnapshot] = useState<EditSnapshot>({
+    initialTitle,
+    initialContent,
+    floorOptions,
+    boardColor,
+  })
+  // 每次打开都换一个 key 让表单重置；关闭时不换，防止退场途中重新挂载。
+  const [formInstance, setFormInstance] = useState(0)
 
   if (wasOpen !== isOpen) {
     setWasOpen(isOpen)
-    if (isOpen) setIsAdvanced(false)
+    if (isOpen) {
+      setIsAdvanced(false)
+      setSnapshot({ initialTitle, initialContent, floorOptions, boardColor })
+      setFormInstance((current) => current + 1)
+    }
   }
+
+  const active = isOpen
+    ? { initialTitle, initialContent, floorOptions, boardColor }
+    : snapshot
 
   return (
     <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
       <Modal.Backdrop>
         <Modal.Container size={isAdvanced ? 'full' : 'lg'}>
-          <Modal.Dialog style={getBoardThemeStyle(boardColor)}>
+          <Modal.Dialog style={getBoardThemeStyle(active.boardColor)}>
             <EditorExpandToggle
               expanded={isAdvanced}
               onToggle={() => setIsAdvanced((current) => !current)}
             />
             <Modal.CloseTrigger aria-label="关闭编辑窗口" />
             <EditPostForm
-              key={isOpen ? 'open' : 'closed'}
-              initialTitle={initialTitle}
-              initialContent={initialContent}
+              key={formInstance}
+              initialTitle={active.initialTitle}
+              initialContent={active.initialContent}
               isAdvanced={isAdvanced}
-              floorOptions={floorOptions}
+              floorOptions={active.floorOptions}
               onCancel={() => onOpenChange(false)}
               onSave={onSave}
             />
