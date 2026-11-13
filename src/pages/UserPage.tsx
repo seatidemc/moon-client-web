@@ -5,7 +5,7 @@ import { Link, useParams } from 'react-router-dom'
 
 import { AvatarCropDialog } from '@/components/AvatarCropDialog'
 import { ProfileCustomizeDialog } from '@/components/ProfileCustomizeDialog'
-import { ThreadListItem } from '@/components/ThreadListItem'
+import { ThreadCard } from '@/components/ThreadCard'
 import { UserAvatar } from '@/components/UserAvatar'
 import { useForum } from '@/lib/forum-context'
 import { usePageTitle } from '@/lib/use-page-title'
@@ -210,7 +210,7 @@ export function UserPage() {
           <div className="mt-4 space-y-5">
             {userThreads.length > 0 ? (
               userThreads.map((thread) => (
-                <ThreadListItem key={thread.id} thread={thread} showBoard />
+                <ThreadCard key={thread.id} thread={thread} showBoard />
               ))
             ) : (
               <p className="py-8 text-sm text-muted">还没有发布主题。</p>

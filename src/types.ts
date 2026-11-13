@@ -30,6 +30,8 @@ export interface ForumThread {
   createdAt: string
   /** 最后编辑时间；从未编辑过时为空 */
   updatedAt?: string
+  /** 是否为置顶主题；置顶主题出现在首页或所在板块顶部 */
+  pinned?: boolean
 }
 
 export interface Reply {
@@ -40,16 +42,6 @@ export interface Reply {
   /** 该跟帖回复的楼层号（0 表示主题帖）；未引用楼层时为空 */
   replyToFloor?: number
   createdAt: string
-}
-
-export interface PinnedAnnouncement {
-  id: string
-  title: string
-  content: string
-  publisherId: string
-  publishedAt: string
-  /** 所属板块 id；为空表示全站置顶 */
-  boardId?: string
 }
 
 export interface ForumData {

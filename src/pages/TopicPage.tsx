@@ -9,7 +9,7 @@ import {
 } from '@/components/BoardDecoration'
 import { FeedLayout } from '@/components/FeedLayout'
 import { NewThreadDialog } from '@/components/NewThreadDialog'
-import { ThreadListItem } from '@/components/ThreadListItem'
+import { ThreadCard } from '@/components/ThreadCard'
 import { getBoardThemeStyle } from '@/lib/board-theme'
 import { useForum } from '@/lib/forum-context'
 import { usePageTitle } from '@/lib/use-page-title'
@@ -44,6 +44,8 @@ export function TopicPage() {
   const boardThreads = threads
     .filter((thread) => thread.boardId === boardId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  // 置顶主题已在顶部轮播中展示，普通列表不再重复
+  const listedThreads = boardThreads.filter((thread) => !thread.pinned)
 
   function openComposer() {
     if (!currentUser) {
@@ -120,8 +122,8 @@ export function TopicPage() {
         <div className="mt-8 pb-10 sm:pb-12">
           <FeedLayout boardId={board.id} boardColor={board.color}>
             {boardThreads.length > 0 ? (
-              boardThreads.map((thread) => (
-                <ThreadListItem key={thread.id} thread={thread} />
+              listedThreads.map((thread) => (
+                <ThreadCard key={thread.id} thread={thread} />
               ))
             ) : (
               <div className="py-16 text-center">

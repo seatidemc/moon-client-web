@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 
 import { FeedLayout } from '@/components/FeedLayout'
-import { ThreadListItem } from '@/components/ThreadListItem'
+import { ThreadCard } from '@/components/ThreadCard'
 import { useForum } from '@/lib/forum-context'
 import { usePageTitle } from '@/lib/use-page-title'
 
@@ -9,16 +9,16 @@ export function HomePage() {
   const { boards, threads } = useForum()
   usePageTitle()
 
-  const recentThreads = [...threads].sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt),
-  )
+  const recentThreads = threads
+    .filter((thread) => !thread.pinned)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 
   return (
     <main className="pt-10 pb-10 sm:pt-12 sm:pb-12">
       <FeedLayout>
-        {recentThreads.length > 0 ? (
+        {threads.length > 0 ? (
           recentThreads.map((thread) => (
-            <ThreadListItem key={thread.id} thread={thread} />
+            <ThreadCard key={thread.id} thread={thread} />
           ))
         ) : (
           <div className="py-16 text-center">

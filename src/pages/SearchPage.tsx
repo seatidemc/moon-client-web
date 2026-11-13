@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { TagList } from '@/components/TagList'
-import { ThreadListItem } from '@/components/ThreadListItem'
+import { ThreadCard } from '@/components/ThreadCard'
 import { useForum } from '@/lib/forum-context'
 import { htmlToPlainText } from '@/lib/html-content'
 import { usePageTitle } from '@/lib/use-page-title'
@@ -107,7 +107,12 @@ export function SearchPage() {
           {results.length > 0 ? (
             <div className="mt-4 space-y-5">
               {results.map((thread) => (
-                <ThreadListItem key={thread.id} thread={thread} showBoard />
+                <ThreadCard
+                  key={thread.id}
+                  thread={thread}
+                  showBoard
+                  variant="compact"
+                />
               ))}
             </div>
           ) : (

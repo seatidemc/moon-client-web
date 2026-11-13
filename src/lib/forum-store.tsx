@@ -114,6 +114,27 @@ function normalizeUserBackgrounds(value: unknown): Record<string, string> {
   return userBackgrounds
 }
 
+/**
+ * Older saves predate pinned threads, so inherit the seed's pin flag for
+ * threads that already exist there instead of dropping the pinned section.
+ */
+function normalizeThreads(value: unknown): ForumThread[] {
+  if (!Array.isArray(value)) return seedData.threads
+
+  return value.map((item) => {
+    if (!item || typeof item !== 'object') return item
+
+    const thread = item as ForumThread
+    if (typeof thread.pinned === 'boolean') return thread
+
+    const seedThread = seedData.threads.find(
+      (candidate) => candidate.id === thread.id,
+    )
+
+    return { ...thread, pinned: seedThread?.pinned }
+  })
+}
+
 function loadForumData(): ForumData {
   try {
     const stored = window.localStorage.getItem(FORUM_STORAGE_KEY)
@@ -127,6 +148,7 @@ function loadForumData(): ForumData {
     return {
       ...parsed,
       boards: normalizeBoards(parsed.boards),
+      threads: normalizeThreads(parsed.threads),
       userLikes: normalizeIdLists(parsed.userLikes),
       postLikes: normalizeIdLists(parsed.postLikes),
       boardFollows: normalizeIdLists(parsed.boardFollows),

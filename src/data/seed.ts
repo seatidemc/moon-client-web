@@ -74,6 +74,7 @@ interface ThreadSeed {
   title: string
   content: string
   createdAt: string
+  pinned?: boolean
 }
 
 const threadSeeds: ThreadSeed[] = [
@@ -83,6 +84,7 @@ const threadSeeds: ThreadSeed[] = [
     authorId: 'u2',
     title: 'Moon 的第一帖：我们想在这里聊些什么？',
     createdAt: minutesAgo(2_940),
+    pinned: true,
     content: `<p>最近把 Moon 的框架搭起来了，想先问问大家：你希望在这里看到什么？</p>
 <p>我的想法很简单：<strong>少一点噪音，多一点具体的内容</strong>。</p>
 <ul>
@@ -98,6 +100,7 @@ const threadSeeds: ThreadSeed[] = [
     authorId: 'u1',
     title: '用纯 CSS 做一个轻量的明暗主题切换',
     createdAt: minutesAgo(1_560),
+    pinned: true,
     content: `<p>最近在整理项目的主题方案，顺手写了一个不依赖任何库的明暗切换。</p>
 <pre><code class="language-css">:root {
   color-scheme: light dark;
@@ -130,6 +133,7 @@ const threadSeeds: ThreadSeed[] = [
     authorId: 'u4',
     title: '搜索能否支持标签组合？',
     createdAt: minutesAgo(9_000),
+    pinned: true,
     content: `<p>现在用 #标签 搜索已经很好用了。之后会不会支持类似 <code>#前端 #CSS</code> 这样的标签组合？</p>
 <p>如果搜索能记住最近使用的标签，找旧帖应该会更方便。 #反馈 #搜索</p>`,
   },
