@@ -15,7 +15,10 @@ import {
 import { downloadHtml, downloadMarkdown } from '@/lib/export-document'
 import { expandEmojiShortcodes } from '@/lib/tiptap-emoji-shortcodes'
 import { canApplyFeature } from '@/lib/tiptap-formatting-context'
-import { hasReplyReference } from '@/lib/tiptap-reply-references'
+import {
+  hasReplyReference,
+  replyReferenceSpacing,
+} from '@/lib/tiptap-reply-references'
 
 import { EditorToolbar } from './EditorToolbar'
 import { EmojiPicker } from './EmojiPicker'
@@ -259,12 +262,13 @@ export function RichTextEditor({
 
             const { $from } = state.selection
             const before = $from.parent.textBetween(0, $from.parentOffset)
-            const separator = before !== '' && !/\s$/.test(before) ? ' ' : ''
+            const { leading, trailing } = replyReferenceSpacing(before, '')
             const chip = state.schema.nodes.replyReference.create({ floor })
 
             tr.insert(state.selection.from, [
-              ...(separator ? [state.schema.text(separator)] : []),
+              ...(leading ? [state.schema.text(leading)] : []),
               chip,
+              ...(trailing ? [state.schema.text(trailing)] : []),
             ])
 
             return true

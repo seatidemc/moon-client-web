@@ -61,6 +61,8 @@ export interface ForumData {
   userLikes: Record<string, string[]>
   /** 楼层点赞记录：帖子键（thread:<id> / reply:<id>）→ 点赞者 id 列表 */
   postLikes: Record<string, string[]>
+  /** 板块关注记录：板块 id → 关注者 id 列表 */
+  boardFollows: Record<string, string[]>
   /** 用户主页背景图：用户 id → 图片 data URL */
   userBackgrounds: Record<string, string>
 }

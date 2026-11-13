@@ -25,6 +25,7 @@ export interface ForumContextValue {
   replies: Reply[]
   userLikes: Record<string, string[]>
   postLikes: Record<string, string[]>
+  boardFollows: Record<string, string[]>
   userBackgrounds: Record<string, string>
   currentUser: User | null
   loginDialogOpen: boolean
@@ -40,6 +41,7 @@ export interface ForumContextValue {
   deleteReply: (replyId: string) => void
   toggleUserLike: (userId: string) => void
   togglePostLike: (postKey: string) => void
+  toggleBoardFollow: (boardId: string) => void
   setUserBackground: (userId: string, background: string | null) => void
   updateUserAvatar: (userId: string, avatarUrl: string | null) => void
   updateUserBio: (userId: string, bio: string) => void

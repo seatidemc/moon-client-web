@@ -1,6 +1,18 @@
 import { mergeAttributes, Node } from '@tiptap/core'
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 
+/**
+ * Spaces that keep an inserted chip separated from the surrounding text. The
+ * trailing side is the one the user types into next, so it is added even at
+ * the end of a line unless the following text already starts with whitespace.
+ */
+export function replyReferenceSpacing(before: string, after: string) {
+  return {
+    leading: before === '' || /\s$/.test(before) ? '' : ' ',
+    trailing: /^\s/.test(after) ? '' : ' ',
+  }
+}
+
 /** Whether the document already quotes this floor. */
 export function hasReplyReference(doc: ProseMirrorNode, floor: number) {
   let found = false

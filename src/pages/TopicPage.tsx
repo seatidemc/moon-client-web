@@ -1,4 +1,5 @@
-import { Button } from '@heroui/react'
+import { Button, cn } from '@heroui/react'
+import { Check, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 
@@ -9,6 +10,7 @@ import {
 import { FeedLayout } from '@/components/FeedLayout'
 import { NewThreadDialog } from '@/components/NewThreadDialog'
 import { ThreadListItem } from '@/components/ThreadListItem'
+import { getBoardThemeStyle } from '@/lib/board-theme'
 import { useForum } from '@/lib/forum-context'
 import { usePageTitle } from '@/lib/use-page-title'
 import { NotFoundPage } from '@/pages/NotFoundPage'
@@ -18,7 +20,14 @@ const DECORATION_VARIANT: BoardDecorationVariant = 'tiled'
 
 export function TopicPage() {
   const { id } = useParams()
-  const { boards, threads, currentUser, openLogin } = useForum()
+  const {
+    boards,
+    threads,
+    currentUser,
+    openLogin,
+    boardFollows,
+    toggleBoardFollow,
+  } = useForum()
   const [composerOpen, setComposerOpen] = useState(false)
   const board = boards.find((item) => item.id === id)
 
@@ -26,8 +35,14 @@ export function TopicPage() {
 
   if (!board) return <NotFoundPage />
 
+  const boardId = board.id
+  const following = currentUser
+    ? (boardFollows[boardId] ?? []).includes(currentUser.id)
+    : false
+  const themeStyle = getBoardThemeStyle(board.color)
+
   const boardThreads = threads
-    .filter((thread) => thread.boardId === board.id)
+    .filter((thread) => thread.boardId === boardId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 
   function openComposer() {
@@ -37,6 +52,15 @@ export function TopicPage() {
     }
 
     setComposerOpen(true)
+  }
+
+  function handleFollow() {
+    if (!currentUser) {
+      openLogin()
+      return
+    }
+
+    toggleBoardFollow(boardId)
   }
 
   return (
@@ -57,9 +81,39 @@ export function TopicPage() {
 
       <main className="relative">
         <div className="mx-auto w-full max-w-[69.25rem] px-4 pt-8 sm:pt-10">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight">{board.name}</h1>
-            <p className="mt-1.5 text-sm text-muted">{board.description}</p>
+          <div
+            className="flex items-start justify-between gap-4"
+            style={themeStyle}
+          >
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold tracking-tight">
+                {board.name}
+              </h1>
+              <p className="mt-1.5 text-sm text-muted">{board.description}</p>
+            </div>
+
+            <Button
+              type="button"
+              size="sm"
+              variant={following ? 'outline' : 'primary'}
+              aria-pressed={following}
+              aria-label={
+                following ? `取消关注 ${board.name}` : `关注 ${board.name}`
+              }
+              className={cn(
+                'shrink-0 gap-1.5',
+                following &&
+                  'border-accent/40 bg-white text-(--content-accent)',
+              )}
+              onPress={handleFollow}
+            >
+              {following ? (
+                <Check className="size-4" aria-hidden="true" />
+              ) : (
+                <Plus className="size-4" aria-hidden="true" />
+              )}
+              {following ? '已关注' : '关注'}
+            </Button>
           </div>
         </div>
 

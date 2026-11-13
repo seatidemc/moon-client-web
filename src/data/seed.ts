@@ -249,5 +249,6 @@ export const seedData: ForumData = {
   replies,
   userLikes,
   postLikes,
+  boardFollows: {},
   userBackgrounds: {},
 }

@@ -9,6 +9,7 @@ import {
 } from 'react'
 
 import type { ReplyReferenceOption } from '@/lib/reply-reference-options'
+import { replyReferenceSpacing } from '@/lib/tiptap-reply-references'
 
 import { POPUP_HEIGHT, POPUP_WIDTH } from './editor-constants'
 import type { ReferenceTrigger } from './editor-types'
@@ -113,14 +114,24 @@ export function useReferenceSuggestion({
       if (!chipType) return
 
       const chip = chipType.create({ floor: option.floor })
-      const transaction = state.tr.replaceWith(
-        trigger.from,
-        trigger.to,
-        chip,
+      // Keep typing after the chip separated from it, the same way a picked
+      // floor in the reply composer is.
+      const { $from } = state.selection
+      const after = $from.parent.textBetween(
+        $from.parentOffset,
+        $from.parent.content.size,
       )
+      const { trailing } = replyReferenceSpacing('', after)
+      const transaction = state.tr.replaceWith(trigger.from, trigger.to, [
+        chip,
+        ...(trailing ? [state.schema.text(trailing)] : []),
+      ])
 
       transaction.setSelection(
-        TextSelection.create(transaction.doc, trigger.from + chip.nodeSize),
+        TextSelection.create(
+          transaction.doc,
+          trigger.from + chip.nodeSize + trailing.length,
+        ),
       )
 
       view.dispatch(transaction)

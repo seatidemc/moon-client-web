@@ -129,6 +129,7 @@ function loadForumData(): ForumData {
       boards: normalizeBoards(parsed.boards),
       userLikes: normalizeIdLists(parsed.userLikes),
       postLikes: normalizeIdLists(parsed.postLikes),
+      boardFollows: normalizeIdLists(parsed.boardFollows),
       userBackgrounds: normalizeUserBackgrounds(parsed.userBackgrounds),
     }
   } catch {
@@ -401,6 +402,31 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       })
     }
 
+    function toggleBoardFollow(boardId: string) {
+      if (!currentUser) return
+
+      const followerId = currentUser.id
+
+      setData((previous) => {
+        if (!previous.boards.some((board) => board.id === boardId)) {
+          return previous
+        }
+
+        const followers = previous.boardFollows[boardId] ?? []
+        const nextFollowers = followers.includes(followerId)
+          ? followers.filter((id) => id !== followerId)
+          : [...followers, followerId]
+
+        return {
+          ...previous,
+          boardFollows: {
+            ...previous.boardFollows,
+            [boardId]: nextFollowers,
+          },
+        }
+      })
+    }
+
     function updateUserBio(userId: string, bio: string) {
       setData((previous) => {
         if (!previous.users.some((user) => user.id === userId)) return previous
@@ -437,6 +463,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       replies: data.replies,
       userLikes: data.userLikes,
       postLikes: data.postLikes,
+      boardFollows: data.boardFollows,
       userBackgrounds: data.userBackgrounds,
       currentUser,
       loginDialogOpen,
@@ -452,6 +479,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       deleteReply,
       toggleUserLike,
       togglePostLike,
+      toggleBoardFollow,
       setUserBackground,
       updateUserAvatar,
       updateUserBio,
