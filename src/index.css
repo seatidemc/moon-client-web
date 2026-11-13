@@ -126,7 +126,7 @@ body {
   .moon-rich-text h4,
   .moon-rich-text h5,
   .moon-rich-text h6 {
-    margin-block: 1.4em 0.5em;
+    margin-block: 0.9em;
     font-weight: 600;
     line-height: 1.35;
     letter-spacing: -0.01em;
@@ -390,7 +390,4 @@ body {
     cursor: nesw-resize;
   }
 
-  .moon-rich-text :where(del, s) {
-    color: var(--muted);
   }
-}

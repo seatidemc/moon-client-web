@@ -151,6 +151,7 @@ function EditPostForm({
             }}
             fillHeight={isAdvanced}
             advanced={isAdvanced}
+            showLabel={isThread}
             floorOptions={floorOptions}
           />
           {contentError ? (

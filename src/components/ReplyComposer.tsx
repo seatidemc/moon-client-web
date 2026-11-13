@@ -247,6 +247,7 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
                     onChange={setContent}
                     fillHeight
                     ariaLabel="跟帖内容"
+                    showLabel={false}
                     syncExternalValue={expanded}
                     floorOptions={floorOptions}
                   />

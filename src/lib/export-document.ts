@@ -86,7 +86,7 @@ main {
 .moon-rich-text h4,
 .moon-rich-text h5,
 .moon-rich-text h6 {
-  margin-block: 1.4em 0.5em;
+  margin-block: 0.9em;
   font-weight: 600;
   line-height: 1.35;
   letter-spacing: -0.01em;
@@ -157,10 +157,6 @@ main {
   font-weight: 600;
 }
 
-.moon-rich-text del,
-.moon-rich-text s {
-  color: var(--muted);
-}
 
 .moon-rich-text blockquote {
   border-left: 2px solid var(--border-secondary);

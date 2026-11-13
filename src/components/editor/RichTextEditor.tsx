@@ -55,6 +55,7 @@ export function RichTextEditor({
   fillHeight = false,
   ariaLabel = '正文',
   compact = false,
+  showLabel = true,
   advanced = true,
   syncExternalValue = true,
   floorOptions = [],
@@ -461,7 +462,7 @@ export function RichTextEditor({
         !compact && fillHeight && 'h-full min-h-0',
       )}
     >
-      {compact ? null : (
+      {compact || !showLabel ? null : (
         <div className="mb-2 flex shrink-0 items-center">
           <span className="text-sm font-medium text-foreground">正文</span>
         </div>
