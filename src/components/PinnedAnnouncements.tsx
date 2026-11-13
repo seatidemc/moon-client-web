@@ -19,14 +19,25 @@ import {
 
 const COLLAPSED_COOKIE = 'pinned-announcements-collapsed'
 
-export function PinnedAnnouncements() {
+interface PinnedAnnouncementsProps {
+  /** 只显示该板块的置顶；为空时显示全部（首页） */
+  boardId?: string
+}
+
+export function PinnedAnnouncements({ boardId }: PinnedAnnouncementsProps) {
   const { users } = useForum()
   const scrollerRef = useRef<HTMLDivElement>(null)
   const [collapsed, setCollapsed] = useState(
     () => readCookie(COLLAPSED_COOKIE) === '1',
   )
 
-  if (pinnedAnnouncements.length === 0) return null
+  const announcements = boardId
+    ? pinnedAnnouncements.filter(
+        (announcement) => announcement.boardId === boardId,
+      )
+    : pinnedAnnouncements
+
+  if (announcements.length === 0) return null
 
   function toggleCollapsed() {
     const next = !collapsed
@@ -34,21 +45,26 @@ export function PinnedAnnouncements() {
     writeCookie(COLLAPSED_COOKIE, next ? '1' : '0')
   }
 
-  function scrollByPage(direction: -1 | 1) {
+  function scrollByCard(direction: -1 | 1) {
     const scroller = scrollerRef.current
     if (!scroller) return
 
+    const card = scroller.querySelector<HTMLElement>('article')
+    if (!card) return
+
+    const gap = Number.parseFloat(
+      getComputedStyle(card.parentElement ?? scroller).columnGap,
+    )
+    const distance = card.offsetWidth + (Number.isFinite(gap) ? gap : 0)
+
     scroller.scrollBy({
-      left: direction * scroller.clientWidth * 0.8,
+      left: direction * distance,
       behavior: 'smooth',
     })
   }
 
   return (
-    <section
-      aria-labelledby="pinned-heading"
-      className="mb-5 pt-10 sm:pt-12"
-    >
+    <section aria-labelledby="pinned-heading">
       <div className="mx-auto flex w-full max-w-[69.25rem] items-center justify-between gap-3 px-4">
         <h2
           id="pinned-heading"
@@ -57,7 +73,7 @@ export function PinnedAnnouncements() {
           <Pin className="size-4 text-muted" aria-hidden="true" />
           置顶
           <span className="text-xs font-normal text-muted">
-            {pinnedAnnouncements.length}
+            {announcements.length}
           </span>
         </h2>
 
@@ -72,7 +88,7 @@ export function PinnedAnnouncements() {
               type="button"
               aria-label="向左滚动置顶信息"
               tabIndex={collapsed ? -1 : 0}
-              onClick={() => scrollByPage(-1)}
+              onClick={() => scrollByCard(-1)}
               className="flex size-7 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground"
             >
               <ChevronLeft className="size-4" />
@@ -81,7 +97,7 @@ export function PinnedAnnouncements() {
               type="button"
               aria-label="向右滚动置顶信息"
               tabIndex={collapsed ? -1 : 0}
-              onClick={() => scrollByPage(1)}
+              onClick={() => scrollByCard(1)}
               className="flex size-7 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground"
             >
               <ChevronRight className="size-4" />
@@ -118,7 +134,7 @@ export function PinnedAnnouncements() {
             className="mt-5 snap-x snap-mandatory scroll-px-5 overflow-x-auto px-5"
           >
             <div className="flex w-max gap-5">
-              {pinnedAnnouncements.map((announcement) => {
+              {announcements.map((announcement) => {
                 const publisher = users.find(
                   (user) => user.id === announcement.publisherId,
                 )

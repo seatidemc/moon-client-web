@@ -1,5 +1,4 @@
 import { Button } from '@heroui/react'
-import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 
@@ -7,6 +6,7 @@ import {
   BoardDecoration,
   type BoardDecorationVariant,
 } from '@/components/BoardDecoration'
+import { FeedLayout } from '@/components/FeedLayout'
 import { NewThreadDialog } from '@/components/NewThreadDialog'
 import { ThreadListItem } from '@/components/ThreadListItem'
 import { useForum } from '@/lib/forum-context'
@@ -55,51 +55,42 @@ export function TopicPage() {
         variant={DECORATION_VARIANT}
       />
 
-      <main className="relative mx-auto w-full max-w-[69.25rem] px-4 py-8 sm:py-10">
-        <div className="flex items-start justify-between gap-6">
+      <main className="relative">
+        <div className="mx-auto w-full max-w-[69.25rem] px-4 pt-8 sm:pt-10">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight">{board.name}</h1>
             <p className="mt-1.5 text-sm text-muted">{board.description}</p>
           </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="primary"
-            className="shrink-0 transition-[filter] hover:brightness-95 active:brightness-90"
-            style={{ backgroundColor: board.color }}
-            onPress={openComposer}
-          >
-            <Plus />
-            发帖
-          </Button>
         </div>
 
-        <div className="mt-8 space-y-5">
-          {boardThreads.length > 0 ? (
-            boardThreads.map((thread) => (
-              <ThreadListItem key={thread.id} thread={thread} />
-            ))
-          ) : (
-            <div className="py-16 text-center">
-              <p className="text-sm text-muted">这个板块还没有主题。</p>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="mt-4"
-                onPress={openComposer}
-              >
-                发布第一个主题
-              </Button>
-            </div>
-          )}
-        </div>
+        <div className="mt-8 pb-10 sm:pb-12">
+          <FeedLayout boardId={board.id} boardColor={board.color}>
+            {boardThreads.length > 0 ? (
+              boardThreads.map((thread) => (
+                <ThreadListItem key={thread.id} thread={thread} />
+              ))
+            ) : (
+              <div className="py-16 text-center">
+                <p className="text-sm text-muted">这个板块还没有主题。</p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="mt-4"
+                  onPress={openComposer}
+                >
+                  发布第一个主题
+                </Button>
+              </div>
+            )}
+          </FeedLayout>
 
-        <NewThreadDialog
-          isOpen={composerOpen}
-          onOpenChange={setComposerOpen}
-          boardId={board.id}
-        />
+          <NewThreadDialog
+            isOpen={composerOpen}
+            onOpenChange={setComposerOpen}
+            boardId={board.id}
+          />
+        </div>
       </main>
     </div>
   )

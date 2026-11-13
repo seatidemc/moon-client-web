@@ -48,6 +48,8 @@ export interface PinnedAnnouncement {
   content: string
   publisherId: string
   publishedAt: string
+  /** 所属板块 id；为空表示全站置顶 */
+  boardId?: string
 }
 
 export interface ForumData {

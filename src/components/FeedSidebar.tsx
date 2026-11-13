@@ -11,7 +11,14 @@ import { formatRelativeTime, makeExcerpt } from '@/lib/utils';
 const RECENT_REPLY_LIMIT = 5;
 const RECENT_REPLY_EXCERPT_LENGTH = 40;
 
-export function HomeSidebar() {
+interface FeedSidebarProps {
+	/** 只显示该板块下的最近回复；为空时显示全部（首页） */
+	boardId?: string;
+	/** 板块主题色，用于发帖按钮；为空时使用默认主色 */
+	boardColor?: string;
+}
+
+export function FeedSidebar({ boardId, boardColor }: FeedSidebarProps) {
 	const { users, threads, replies, currentUser, openLogin } = useForum();
 	const [composerOpen, setComposerOpen] = useState(false);
 
@@ -20,6 +27,7 @@ export function HomeSidebar() {
 		.flatMap(reply => {
 			const thread = threads.find(item => item.id === reply.threadId);
 			if (!thread) return [];
+			if (boardId && thread.boardId !== boardId) return [];
 
 			return [
 				{
@@ -47,7 +55,8 @@ export function HomeSidebar() {
 					type="button"
 					size="md"
 					variant="primary"
-					className="w-full"
+					className="w-full transition-[filter] hover:brightness-95 active:brightness-90"
+					style={boardColor ? { backgroundColor: boardColor } : undefined}
 					onPress={openComposer}
 				>
 					<Plus className="size-4" />
@@ -91,12 +100,18 @@ export function HomeSidebar() {
 							})}
 						</ul>
 					) : (
-						<p className="mt-3 text-sm text-muted">还没有回复。</p>
+						<p className="mt-3 text-sm text-muted">
+							{boardId ? '这个板块还没有回复。' : '还没有回复。'}
+						</p>
 					)}
 				</section>
 			</div>
 
-			<NewThreadDialog isOpen={composerOpen} onOpenChange={setComposerOpen} />
+			<NewThreadDialog
+				isOpen={composerOpen}
+				onOpenChange={setComposerOpen}
+				boardId={boardId}
+			/>
 		</aside>
 	);
 }

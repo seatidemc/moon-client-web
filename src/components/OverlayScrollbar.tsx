@@ -31,6 +31,8 @@ interface DragState {
   scroll: number
   ratio: number
   target: HTMLElement | null
+  /** 拖拽前的内联 scroll-snap-type，松手后恢复 */
+  snapType: string
 }
 
 function trackThumb(
@@ -86,6 +88,10 @@ function scrollsOn(element: HTMLElement, axis: 'x' | 'y') {
   const overflow = axis === 'x' ? style.overflowX : style.overflowY
 
   return overflow === 'auto' || overflow === 'scroll'
+}
+
+function setScrollSnapType(element: HTMLElement, value: string) {
+  element.style.scrollSnapType = value
 }
 
 function elementThumb(element: HTMLElement): Thumb | null {
@@ -186,6 +192,13 @@ export function OverlayScrollbar() {
 
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
+
+    const snapType = thumb.target?.style.scrollSnapType ?? ''
+    // 吸附容器会立即把拖拽中的位置吸回最近的卡片，拖动期间先禁用吸附。
+    if (thumb.target) {
+      setScrollSnapType(thumb.target, 'none')
+    }
+
     drag.current = {
       axis: thumb.axis,
       start: thumb.axis === 'y' ? event.clientY : event.clientX,
@@ -196,6 +209,7 @@ export function OverlayScrollbar() {
         : window.scrollY,
       ratio: thumb.ratio,
       target: thumb.target,
+      snapType,
     }
     reveal()
   }
@@ -216,9 +230,13 @@ export function OverlayScrollbar() {
   }
 
   function handlePointerUp(event: ReactPointerEvent<HTMLDivElement>) {
-    if (!drag.current) return
+    const state = drag.current
+    if (!state) return
 
     drag.current = null
+    if (state.target) {
+      setScrollSnapType(state.target, state.snapType)
+    }
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
