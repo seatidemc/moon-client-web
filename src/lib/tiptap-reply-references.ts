@@ -1,4 +1,20 @@
 import { mergeAttributes, Node } from '@tiptap/core'
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
+
+/** Whether the document already quotes this floor. */
+export function hasReplyReference(doc: ProseMirrorNode, floor: number) {
+  let found = false
+
+  doc.descendants((node) => {
+    if (node.type.name === 'replyReference' && node.attrs.floor === floor) {
+      found = true
+    }
+
+    return !found
+  })
+
+  return found
+}
 
 /**
  * An atomic `re#楼层号` chip. As a single inline node the cursor never enters

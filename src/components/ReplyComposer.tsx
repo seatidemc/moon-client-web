@@ -18,6 +18,7 @@ import {
 import { getBoardThemeStyle } from '@/lib/board-theme'
 import { useForum } from '@/lib/forum-context'
 import { hasRichTextContent } from '@/lib/html-content'
+import { pulseElement } from '@/lib/pulse'
 import { buildReplyReferenceOptions } from '@/lib/reply-reference-options'
 
 export interface ReplyComposerHandle {
@@ -60,16 +61,23 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
   const [quickSend, setQuickSend] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const replyAreaRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<RichTextEditorHandle>(null)
 
   useImperativeHandle(
     ref,
     () => ({
       appendReplyReference(floor) {
-        editorRef.current?.appendReplyReference(floor)
+        const appended = editorRef.current?.appendReplyReference(floor)
+
+        // 已经在回复该楼层：不再重复插入引用，改为强调输入区。
+        if (appended !== false || expanded) return
+
+        const area = replyAreaRef.current
+        if (area) pulseElement(area)
       },
     }),
-    [],
+    [expanded],
   )
 
   useEffect(() => {
@@ -123,6 +131,7 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
           {currentUser ? (
             <form onSubmit={handleSubmit} className="max-w-3xl">
               <div
+                ref={replyAreaRef}
                 className={`flex flex-col rounded-2xl border border-field-border bg-field transition duration-150 focus-within:border-field-border-focus focus-within:bg-field-focus focus-within:status-focused-field ${
                   follow && floating ? 'shadow-lg' : 'shadow-none'
                 }`}

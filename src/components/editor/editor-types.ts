@@ -6,8 +6,11 @@ import type { ReplyReferenceOption } from '@/lib/reply-reference-options'
 import type { EditorCapabilities } from '@/lib/tiptap-formatting-context'
 
 export interface RichTextEditorHandle {
-  /** 在文档末尾追加楼层引用 chip 并聚焦 */
-  appendReplyReference: (floor: number) => void
+  /**
+   * 在文档末尾追加楼层引用 chip 并聚焦。文档里已有该楼层的引用时不重复插入，
+   * 返回 `false`，由调用方决定如何提示。
+   */
+  appendReplyReference: (floor: number) => boolean
 }
 
 export interface RichTextEditorProps {

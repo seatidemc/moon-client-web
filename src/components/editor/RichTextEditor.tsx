@@ -15,6 +15,7 @@ import {
 import { downloadHtml, downloadMarkdown } from '@/lib/export-document'
 import { expandEmojiShortcodes } from '@/lib/tiptap-emoji-shortcodes'
 import { canApplyFeature } from '@/lib/tiptap-formatting-context'
+import { hasReplyReference } from '@/lib/tiptap-reply-references'
 
 import { EditorToolbar } from './EditorToolbar'
 import { EmojiPicker } from './EmojiPicker'
@@ -243,6 +244,13 @@ export function RichTextEditor({
     ref,
     () => ({
       appendReplyReference(floor: number) {
+        // The floor is already quoted: leave the document alone so the caller
+        // can emphasize the composer instead of adding a duplicate chip.
+        if (hasReplyReference(editor.state.doc, floor)) {
+          editor.commands.focus('end')
+          return false
+        }
+
         editor
           .chain()
           .focus('end')
@@ -262,6 +270,8 @@ export function RichTextEditor({
             return true
           })
           .run()
+
+        return true
       },
     }),
     [editor],

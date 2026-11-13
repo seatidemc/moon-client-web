@@ -1,31 +1,11 @@
-const PULSE_DURATION = 220
+import { cancelPulse, pulseElement } from './pulse'
 
 let pendingNavigation: (() => void) | null = null
-let activePulse: Animation | null = null
 
 function cancelScrollEffect() {
   pendingNavigation?.()
   pendingNavigation = null
-  activePulse?.cancel()
-  activePulse = null
-}
-
-function emphasize(element: HTMLElement) {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-
-  const animation = element.animate(
-    [
-      { transform: 'scale(1)' },
-      { transform: 'scale(1.08)', offset: 0.5 },
-      { transform: 'scale(1)' },
-    ],
-    { duration: PULSE_DURATION, easing: 'ease-in-out' },
-  )
-
-  activePulse = animation
-  animation.addEventListener('finish', () => {
-    if (activePulse === animation) activePulse = null
-  })
+  cancelPulse()
 }
 
 function waitForScrollEnd(callback: () => void) {
@@ -88,7 +68,7 @@ export function scrollToAndEmphasize(id: string) {
     Number.parseFloat(getComputedStyle(target).scrollMarginTop) || 0
 
   if (Math.abs(target.getBoundingClientRect().top - scrollMargin) < 2) {
-    emphasize(target)
+    pulseElement(target)
     return
   }
 
@@ -96,6 +76,6 @@ export function scrollToAndEmphasize(id: string) {
 
   pendingNavigation = waitForScrollEnd(() => {
     pendingNavigation = null
-    emphasize(target)
+    pulseElement(target)
   })
 }
