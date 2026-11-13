@@ -10,6 +10,17 @@ import { EmojiShortcodes } from '@/lib/tiptap-emoji-shortcodes'
 import { MarkdownShortcuts } from '@/lib/tiptap-markdown-shortcuts'
 import { ReplyReference } from '@/lib/tiptap-reply-references'
 
+import {
+  ContextualBlockquote,
+  ContextualBulletList,
+  ContextualCodeBlock,
+  ContextualHeading,
+  ContextualHorizontalRule,
+  ContextualOrderedList,
+} from './editor-contextual-blocks'
+import { ContextualBold, ContextualCode } from './editor-contextual-marks'
+import { FormattingGuards } from './editor-formatting-guards'
+
 interface EmojiSuggestionHandlers {
   update: (
     props: SuggestionProps<EmojiSuggestionItem, EmojiSuggestionItem>,
@@ -33,8 +44,21 @@ export function createEditorExtensions({
   placeholder,
 }: EditorExtensionOptions) {
   return [
+    // Bold and code are registered explicitly: bold needs guarded Markdown
+    // rules and code must coexist with other inline marks. Code stays after
+    // StarterKit so it gets the highest inline mark rank, which keeps
+    // `**`code`**` style Markdown serialization round-trippable. Block nodes
+    // with input rules are re-registered below for the same context guards.
+    ContextualBold,
     StarterKit.configure({
-      heading: { levels: [1, 2, 3, 4, 5, 6] },
+      blockquote: false,
+      bold: false,
+      bulletList: false,
+      code: false,
+      codeBlock: false,
+      heading: false,
+      horizontalRule: false,
+      orderedList: false,
       link: {
         openOnClick: false,
         autolink: true,
@@ -42,6 +66,13 @@ export function createEditorExtensions({
         defaultProtocol: 'https',
       },
     }),
+    ContextualCode,
+    ContextualHeading,
+    ContextualBulletList,
+    ContextualOrderedList,
+    ContextualBlockquote,
+    ContextualCodeBlock,
+    ContextualHorizontalRule,
     TableKit.configure({
       table: {
         resizable: true,
@@ -72,6 +103,7 @@ export function createEditorExtensions({
       },
     }),
     ReplyReference,
+    FormattingGuards,
     ...(placeholder
       ? [Placeholder.configure({ placeholder, showOnlyWhenEditable: true })]
       : []),

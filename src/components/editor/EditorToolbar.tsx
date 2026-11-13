@@ -14,6 +14,7 @@ import {
   Redo2,
   Strikethrough,
   Table as TableIcon,
+  Underline,
   Undo2,
 } from 'lucide-react'
 import type { ReactNode, RefObject } from 'react'
@@ -37,7 +38,7 @@ interface EditorToolbarProps {
   onImportMarkdown: (markdown: string) => void
   onExportMarkdown: () => void
   onExportHtml: () => void
-  /** 未展开时只保留最基础的格式：粗体、斜体、删除线 */
+  /** 未展开时只保留最基础的格式：粗体、斜体、下划线、删除线 */
   minimal?: boolean
   className?: string
 }
@@ -57,26 +58,38 @@ export function EditorToolbar({
 }: EditorToolbarProps) {
   const headingLabel =
     HEADING_LEVELS[state.headingLevel - 1]?.label ?? '正文'
+  const { capabilities } = state
 
   const basicButtons = (
     <>
       <ToolbarButton
         label="粗体"
-        active={state.isBold}
+        active={capabilities.bold && state.isBold}
+        disabled={!capabilities.bold}
         onPress={() => editor?.chain().focus().toggleBold().run()}
       >
         <Bold />
       </ToolbarButton>
       <ToolbarButton
         label="斜体"
-        active={state.isItalic}
+        active={capabilities.italic && state.isItalic}
+        disabled={!capabilities.italic}
         onPress={() => editor?.chain().focus().toggleItalic().run()}
       >
         <Italic />
       </ToolbarButton>
       <ToolbarButton
+        label="下划线"
+        active={capabilities.underline && state.isUnderline}
+        disabled={!capabilities.underline}
+        onPress={() => editor?.chain().focus().toggleUnderline().run()}
+      >
+        <Underline />
+      </ToolbarButton>
+      <ToolbarButton
         label="删除线"
-        active={state.isStrike}
+        active={capabilities.strike && state.isStrike}
+        disabled={!capabilities.strike}
         onPress={() => editor?.chain().focus().toggleStrike().run()}
       >
         <Strikethrough />
@@ -113,6 +126,7 @@ export function EditorToolbar({
         <Dropdown.Trigger
           type="button"
           aria-label="标题级别"
+          isDisabled={!capabilities.heading && !capabilities.paragraph}
           className={cn(
             'inline-flex h-8 items-center justify-center gap-1 rounded-full px-3 text-xs font-medium whitespace-nowrap transition-colors hover:bg-default-soft',
             state.headingLevel > 0 && 'bg-default text-foreground',
@@ -133,6 +147,7 @@ export function EditorToolbar({
                 key={level}
                 id={String(level)}
                 textValue={label}
+                isDisabled={!capabilities.heading}
               >
                 <HeadingIcon className="size-4 text-muted" />
                 <span data-slot="label">{label}</span>
@@ -141,7 +156,11 @@ export function EditorToolbar({
                 ) : null}
               </Dropdown.Item>
             ))}
-            <Dropdown.Item id="paragraph" textValue="正文">
+            <Dropdown.Item
+              id="paragraph"
+              textValue="正文"
+              isDisabled={!capabilities.paragraph}
+            >
               <span data-slot="label">正文</span>
             </Dropdown.Item>
           </Dropdown.Menu>
@@ -150,35 +169,40 @@ export function EditorToolbar({
 
       <ToolbarButton
         label="无序列表"
-        active={state.isBulletList}
+        active={capabilities.bulletList && state.isBulletList}
+        disabled={!capabilities.bulletList}
         onPress={() => editor?.chain().focus().toggleBulletList().run()}
       >
         <List />
       </ToolbarButton>
       <ToolbarButton
         label="有序列表"
-        active={state.isOrderedList}
+        active={capabilities.orderedList && state.isOrderedList}
+        disabled={!capabilities.orderedList}
         onPress={() => editor?.chain().focus().toggleOrderedList().run()}
       >
         <ListOrdered />
       </ToolbarButton>
       <ToolbarButton
         label="引用"
-        active={state.isBlockquote}
+        active={capabilities.blockquote && state.isBlockquote}
+        disabled={!capabilities.blockquote}
         onPress={() => editor?.chain().focus().toggleBlockquote().run()}
       >
         <Quote />
       </ToolbarButton>
       <ToolbarButton
         label="行内代码"
-        active={state.isCode}
+        active={capabilities.code && state.isCode}
+        disabled={!capabilities.code}
         onPress={() => editor?.chain().focus().toggleCode().run()}
       >
         <Code />
       </ToolbarButton>
       <ToolbarButton
         label="代码块"
-        active={state.isCodeBlock}
+        active={capabilities.codeBlock && state.isCodeBlock}
+        disabled={!capabilities.codeBlock}
         onPress={() => editor?.chain().focus().toggleCodeBlock().run()}
       >
         <Code2 />
@@ -188,7 +212,8 @@ export function EditorToolbar({
 
       <ToolbarButton
         label={state.isLink ? '编辑链接' : '插入链接'}
-        active={state.isLink}
+        active={capabilities.link && state.isLink}
+        disabled={!capabilities.link}
         onPress={onOpenLink}
       >
         <LinkIcon />
@@ -236,6 +261,7 @@ export function EditorToolbar({
           isIconOnly
           variant={tablePickerOpen ? 'secondary' : 'ghost'}
           aria-label="插入表格"
+          isDisabled={!capabilities.tableInsert}
           onPress={onToggleTablePicker}
         >
           <TableIcon />
