@@ -5,6 +5,12 @@
 :root {
   --field-border-width: 1px;
   --field-border: var(--border);
+  /*
+   * 聚焦态只由焦点环表达强调。HeroUI 默认聚焦时把字段边框换成更深的灰色，
+   * 叠在环内会显得脏；这里让它透明，所有取用该令牌的字段（含自定义编辑器、
+   * 回复框）都会自动生效。
+   */
+  --field-border-focus: transparent;
   /* 全站链接默认使用品牌蓝；少量混合前景色，保证浅色背景上的可读性 */
   --link: color-mix(in oklab, var(--accent) 85%, var(--foreground) 15%);
 }
@@ -391,3 +397,15 @@ body {
   }
 
   }
+
+/*
+ * 个别字段组件（如 SearchField、DateInputGroup）聚焦时不改边框色，只套用
+ * `status-focused-field` 焦点环。在环的定义里一并把边框设为透明，任何使用
+ * 标准焦点环的字段都会自动生效，无需逐个列举组件。
+ */
+@utility focus-field-ring {
+  @apply ring-2 ring-focus ring-offset-0 outline-none;
+  /* No separation - ring sits directly against the element */
+  --tw-ring-offset-width: 0px;
+  border-color: transparent;
+}

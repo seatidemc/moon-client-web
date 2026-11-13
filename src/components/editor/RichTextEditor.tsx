@@ -527,7 +527,7 @@ export function RichTextEditor({
             'flex min-h-0 flex-col',
             compact
               ? 'overflow-y-auto'
-              : 'flex-1 overflow-y-auto rounded-field border border-field-border bg-field shadow-field transition duration-150 hover:border-field-border-hover focus-within:border-field-border-focus focus-within:bg-field-focus focus-within:status-focused-field',
+              : 'flex-1 overflow-y-auto rounded-field border border-field-border bg-field shadow-field transition duration-150 hover:not-focus-within:border-field-border-hover focus-within:border-field-border-focus focus-within:bg-field-focus focus-within:status-focused-field',
           )}
           style={compact ? { height: compactHeight } : undefined}
           onKeyDownCapture={handlePickerKeyDown}
