@@ -134,6 +134,28 @@ export function handleLinkClick(
   return false
 }
 
+interface ImageClickHandlers {
+  openImageToolbar: (view: Editor['view'], pos: number) => void
+  closeImageToolbar: () => void
+}
+
+/** Opens the image alignment toolbar when the click lands on an image. */
+export function handleImageClick(
+  view: Editor['view'],
+  event: MouseEvent,
+  { openImageToolbar, closeImageToolbar }: ImageClickHandlers,
+) {
+  const target = event.target as HTMLElement | null
+  const image = target?.closest('img')
+
+  if (!image || !view.dom.contains(image)) {
+    closeImageToolbar()
+    return
+  }
+
+  openImageToolbar(view, view.posAtDOM(image, 0))
+}
+
 interface CellMenuHandlers {
   openTableMenu: (position: TablePanelPosition) => void
   closeTablePicker: () => void

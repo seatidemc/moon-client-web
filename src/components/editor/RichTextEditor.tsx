@@ -1,5 +1,6 @@
-import { getMarkRange } from '@tiptap/core'
+import { getMarkRange, type Editor } from '@tiptap/core'
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { NodeSelection } from '@tiptap/pm/state'
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react'
 import { cn } from '@heroui/react'
 import {
@@ -22,6 +23,7 @@ import {
 
 import { EditorToolbar } from './EditorToolbar'
 import { EmojiPicker } from './EmojiPicker'
+import { ImageAlignToolbar } from './ImageAlignToolbar'
 import { ImagePopover } from './ImagePopover'
 import { LinkPopover } from './LinkPopover'
 import { ReferencePicker } from './ReferencePicker'
@@ -31,6 +33,9 @@ import {
   COMPACT_EDITOR_HEIGHT,
   COMPACT_EDITOR_LINE_HEIGHT,
   COMPACT_EDITOR_MAX_HEIGHT,
+  IMAGE_ALIGN_TOOLBAR_HEIGHT,
+  IMAGE_ALIGN_TOOLBAR_WIDTH,
+  IMAGE_POPUP_HEIGHT,
   IMAGE_POPUP_WIDTH,
   LINK_POPUP_HEIGHT,
   LINK_POPUP_WIDTH,
@@ -39,19 +44,26 @@ import {
 import { createEditorExtensions } from './editor-extensions'
 import {
   handleCellContextMenu,
+  handleImageClick,
   handleImageDrop,
   handleImagePaste,
   handleLinkClick,
   handleSingleLinePaste,
 } from './editor-handlers'
 import type {
+  ImageAlignState,
+  ImagePopoverState,
   LinkPopoverState,
   OpenLinkPopover,
-  PopupPosition,
   RichTextEditorProps,
   TablePanelPosition,
 } from './editor-types'
-import { anchorPopup, hasDocLineBreak, isCaretInsidePanel } from './editor-utils'
+import {
+  anchorPopup,
+  hasDocLineBreak,
+  imageElementAt,
+  isCaretInsidePanel,
+} from './editor-utils'
 import { useDismissOnOutside } from './use-dismiss-on-outside'
 import { useEditorToolbarState } from './use-editor-state'
 import { useEmojiSuggestion } from './use-emoji-suggestion'
@@ -74,7 +86,10 @@ export function RichTextEditor({
     null,
   )
   const [tableMenu, setTableMenu] = useState<TablePanelPosition | null>(null)
-  const [imagePopover, setImagePopover] = useState<PopupPosition | null>(null)
+  const [imagePopover, setImagePopover] = useState<ImagePopoverState | null>(
+    null,
+  )
+  const [imageAlign, setImageAlign] = useState<ImageAlignState | null>(null)
   const [compactHeight, setCompactHeight] = useState(COMPACT_EDITOR_HEIGHT)
   const resizeStartRef = useRef<{ pointerY: number; height: number } | null>(
     null,
@@ -93,6 +108,7 @@ export function RichTextEditor({
   const tableMenuRef = useRef<HTMLDivElement>(null)
   const imageButtonRef = useRef<HTMLButtonElement>(null)
   const imagePanelRef = useRef<HTMLDivElement>(null)
+  const imageAlignPanelRef = useRef<HTMLDivElement>(null)
 
   const reference = useReferenceSuggestion({
     panelRef: richPanelRef,
@@ -161,11 +177,18 @@ export function RichTextEditor({
       // Without this the browser opens a dropped image file in a new tab.
       handleDrop: (view, event, _slice, moved) =>
         handleImageDrop(view, event, moved),
-      handleClick: (view, _pos, event) =>
-        handleLinkClick(view, event, {
+      handleClick: (view, _pos, event) => {
+        const openedLink = handleLinkClick(view, event, {
           openLinkPopover,
           closeLinkPopover: () => setLinkPopover(null),
-        }),
+        })
+
+        handleImageClick(view, event, {
+          openImageToolbar: openImageAlignToolbar,
+          closeImageToolbar: () => setImageAlign(null),
+        })
+        return openedLink
+      },
       handleDOMEvents: {
         contextmenu: (view, event) =>
           handleCellContextMenu(view, event, {
@@ -189,6 +212,16 @@ export function RichTextEditor({
     },
     onSelectionUpdate: ({ editor: currentEditor }) => {
       reference.update(currentEditor)
+
+      // 选区离开图片后关闭对齐工具条。
+      setImageAlign((current) => {
+        if (!current) return null
+        const { selection } = currentEditor.state
+        return selection instanceof NodeSelection &&
+          selection.from === current.pos
+          ? current
+          : null
+      })
 
       // Close panels whose action is no longer available for this caret.
       if (!canApplyFeature(currentEditor.state, 'tableInsert')) {
@@ -309,6 +342,15 @@ export function RichTextEditor({
     ignoreRefs: [imagePanelRef, imageButtonRef],
     onDismiss: () => setImagePopover(null),
     onEscape: () => editor?.view.focus(),
+    dismissOnScroll: true,
+  })
+
+  useDismissOnOutside({
+    active: imageAlign !== null,
+    ignoreRefs: [imageAlignPanelRef],
+    onDismiss: () => setImageAlign(null),
+    onEscape: () => editor?.view.focus(),
+    dismissOnScroll: true,
   })
 
   useDismissOnOutside({
@@ -321,8 +363,44 @@ export function RichTextEditor({
 
   const editorState = useEditorToolbarState(editor)
 
+  function openImageAlignToolbar(view: Editor['view'], pos: number) {
+    const image = imageElementAt(view, pos)
+    if (!image) return
+
+    const rect = image.getBoundingClientRect()
+    const maxLeft = Math.max(
+      8,
+      window.innerWidth - IMAGE_ALIGN_TOOLBAR_WIDTH - 8,
+    )
+    // 图片可能比编辑区宽，按视口内可见的部分居中。
+    const visibleLeft = Math.max(rect.left, 8)
+    const visibleRight = Math.min(rect.right, window.innerWidth - 8)
+    const centered =
+      (visibleLeft + visibleRight) / 2 - IMAGE_ALIGN_TOOLBAR_WIDTH / 2
+
+    // 优先放在图片上方；放不下时放到下方，并保证留在视口内。
+    let top = rect.top - IMAGE_ALIGN_TOOLBAR_HEIGHT - 8
+    if (top < 8) {
+      top = Math.min(
+        rect.bottom + 8,
+        window.innerHeight - IMAGE_ALIGN_TOOLBAR_HEIGHT - 8,
+      )
+    }
+
+    setLinkPopover(null)
+    setTablePicker(null)
+    setImagePopover(null)
+    setImageAlign({
+      pos,
+      left: Math.min(Math.max(centered, 8), maxLeft),
+      top: Math.max(top, 8),
+    })
+  }
+
   function openLinkFromToolbar() {
     if (!editor) return
+
+    setImageAlign(null)
 
     const { from, to } = editor.state.selection
     const markRange = editor.isActive('link')
@@ -366,6 +444,7 @@ export function RichTextEditor({
     const panelRect = panel.getBoundingClientRect()
     const maxLeft = Math.max(8, panelRect.width - TABLE_PICKER_WIDTH - 8)
 
+    setImageAlign(null)
     setTablePicker({
       left: Math.min(Math.max(buttonRect.left - panelRect.left, 8), maxLeft),
       top: buttonRect.bottom - panelRect.top + 6,
@@ -381,16 +460,28 @@ export function RichTextEditor({
     if (!editor) return
 
     const button = imageButtonRef.current
-    const panel = richPanelRef.current
-    if (!button || !panel) return
+    if (!button) return
 
     const buttonRect = button.getBoundingClientRect()
-    const panelRect = panel.getBoundingClientRect()
-    const maxLeft = Math.max(8, panelRect.width - IMAGE_POPUP_WIDTH - 8)
+    const maxLeft = Math.max(8, window.innerWidth - IMAGE_POPUP_WIDTH - 8)
+    const above =
+      buttonRect.bottom + IMAGE_POPUP_HEIGHT > window.innerHeight &&
+      buttonRect.top - IMAGE_POPUP_HEIGHT > 8
 
+    // 焦点在图片上时，浮窗直接显示该图片的调控选项。
+    const { selection } = editor.state
+    const imagePos =
+      selection instanceof NodeSelection &&
+      editor.state.doc.nodeAt(selection.from)?.type.name === 'image'
+        ? selection.from
+        : null
+
+    setImageAlign(null)
     setImagePopover({
-      left: Math.min(Math.max(buttonRect.left - panelRect.left, 8), maxLeft),
-      top: buttonRect.bottom - panelRect.top + 6,
+      imagePos,
+      above,
+      left: Math.min(Math.max(buttonRect.left, 8), maxLeft),
+      top: above ? buttonRect.top - 6 : buttonRect.bottom + 6,
     })
   }
 
@@ -565,13 +656,14 @@ export function RichTextEditor({
           className={cn(
             'flex min-h-0 flex-col',
             compact
-              ? 'overflow-y-auto'
-              : 'flex-1 overflow-y-auto rounded-field border border-field-border bg-field shadow-field transition duration-150 hover:not-focus-within:border-field-border-hover focus-within:border-field-border-focus focus-within:bg-field-focus focus-within:status-focused-field',
+              ? 'overflow-auto'
+              : 'flex-1 overflow-auto rounded-field border border-field-border bg-field shadow-field transition duration-150 hover:not-focus-within:border-field-border-hover focus-within:border-field-border-focus focus-within:bg-field-focus focus-within:status-focused-field',
           )}
           style={compact ? { height: compactHeight } : undefined}
           onKeyDownCapture={handlePickerKeyDown}
           onScroll={() => {
             setTableMenu(null)
+            setImageAlign(null)
 
             if (reference.trigger && editor) reference.update(editor)
 
@@ -615,9 +707,18 @@ export function RichTextEditor({
         {imagePopover && editor ? (
           <ImagePopover
             editor={editor}
-            position={imagePopover}
+            state={imagePopover}
             panelRef={imagePanelRef}
             onClose={() => setImagePopover(null)}
+          />
+        ) : null}
+
+        {imageAlign && editor ? (
+          <ImageAlignToolbar
+            key={imageAlign.pos}
+            editor={editor}
+            state={imageAlign}
+            panelRef={imageAlignPanelRef}
           />
         ) : null}
 

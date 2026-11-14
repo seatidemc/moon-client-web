@@ -1,4 +1,3 @@
-import Image from '@tiptap/extension-image'
 import { TableKit } from '@tiptap/extension-table'
 import { Placeholder } from '@tiptap/extensions'
 import { Markdown } from '@tiptap/markdown'
@@ -20,6 +19,7 @@ import {
 } from './editor-contextual-blocks'
 import { ContextualBold, ContextualCode } from './editor-contextual-marks'
 import { FormattingGuards } from './editor-formatting-guards'
+import { ContextualImage } from './editor-image'
 
 interface EmojiSuggestionHandlers {
   update: (
@@ -81,16 +81,7 @@ export function createEditorExtensions({
         renderWrapper: true,
       },
     }),
-    Image.configure({
-      allowBase64: true,
-      resize: {
-        enabled: true,
-        directions: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
-        minWidth: 80,
-        minHeight: 80,
-        alwaysPreserveAspectRatio: true,
-      },
-    }),
+    ContextualImage,
     Markdown,
     MarkdownShortcuts,
     EmojiShortcodes.configure({

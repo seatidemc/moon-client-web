@@ -349,6 +349,14 @@ body {
     border-radius: 0.5rem;
   }
 
+  /*
+   * 编辑器里的图片按真实尺寸显示，不被输入框宽度挤压；超出部分通过
+   * 编辑区的横向滚动平移。渲染出的帖子仍受 max-width: 100% 约束。
+   */
+  .moon-editor-content img {
+    max-width: none;
+  }
+
   /* Images are block nodes in the editor; match its spacing in posts. */
   .moon-rich-text > img {
     display: block;
@@ -394,6 +402,53 @@ body {
   .moon-editor-content [data-resize-handle="top-right"],
   .moon-editor-content [data-resize-handle="bottom-left"] {
     cursor: nesw-resize;
+  }
+
+  /* 边手柄只用扩大命中区域，视觉提示仍由四角圆点承担。 */
+  .moon-editor-content [data-resize-handle="top"],
+  .moon-editor-content [data-resize-handle="bottom"] {
+    width: auto;
+    height: 10px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    cursor: ns-resize;
+  }
+
+  .moon-editor-content [data-resize-handle="left"],
+  .moon-editor-content [data-resize-handle="right"] {
+    width: 10px;
+    height: auto;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    cursor: ew-resize;
+  }
+
+  /*
+   * 图片对齐：用 auto margin 而不是 justify-content。图片比编辑区宽时
+   * 负剩余空间会让 auto margin 归零，图片留在左侧、可以正常向右平移。
+   */
+  .moon-editor-content
+    [data-resize-container]:has(img[data-align="center"])
+    [data-resize-wrapper] {
+    margin-inline: auto;
+  }
+
+  .moon-editor-content
+    [data-resize-container]:has(img[data-align="right"])
+    [data-resize-wrapper] {
+    margin-inline-start: auto;
+  }
+
+  .moon-rich-text img[data-align="center"] {
+    display: block;
+    margin-inline: auto;
+  }
+
+  .moon-rich-text img[data-align="right"] {
+    display: block;
+    margin-inline-start: auto;
   }
 
   }

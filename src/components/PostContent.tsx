@@ -88,6 +88,8 @@ const postSchema: Schema = {
       ...(defaultSchema.attributes?.img ?? []),
       ['width', /^\d+$/] as AttributeDefinition,
       ['height', /^\d+$/] as AttributeDefinition,
+      // 图片对齐由编辑器写入；缺失时按左对齐处理。
+      ['dataAlign', /^(?:left|center|right)$/] as AttributeDefinition,
     ],
   },
   protocols: {

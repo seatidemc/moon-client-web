@@ -14,6 +14,15 @@ export const EMOJI_POPUP_HEIGHT = 256
 export const LINK_POPUP_WIDTH = 320
 export const LINK_POPUP_HEIGHT = 232
 export const IMAGE_POPUP_WIDTH = 320
+/** 插入/编辑浮窗的大致高度，用于决定向上还是向下展开。 */
+export const IMAGE_POPUP_HEIGHT = 360
+/** 图片对齐工具条的尺寸，用于定位与视口内收。 */
+export const IMAGE_ALIGN_TOOLBAR_WIDTH = 128
+export const IMAGE_ALIGN_TOOLBAR_HEIGHT = 40
+/** 编辑器内浮动层的层级（相对其挂载容器）。 */
+export const FLOATING_LAYER_Z_INDEX = 30
+/** 图片缩放的最小边长，与 Image 扩展的 resize 配置保持一致。 */
+export const IMAGE_RESIZE_MIN_SIZE = 80
 export const TABLE_PICKER_WIDTH = 224
 export const TABLE_GRID_ROWS = 8
 export const TABLE_GRID_COLUMNS = 8

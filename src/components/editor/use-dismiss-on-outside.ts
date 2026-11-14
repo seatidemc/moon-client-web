@@ -31,7 +31,7 @@ export function useDismissOnOutside({
   useEffect(() => {
     if (!active) return
 
-    function isInside(target: Node) {
+    function isInside(target: Node | null) {
       return latest.current.ignoreRefs.some((ref) =>
         ref.current?.contains(target),
       )
@@ -44,6 +44,8 @@ export function useDismissOnOutside({
 
     function handleScroll(event: Event) {
       if (!dismissOnScroll || isInside(event.target as Node)) return
+      // 键盘弹出等会让页面滚动；焦点仍在浮窗内时不关闭，避免打断输入。
+      if (isInside(document.activeElement)) return
       latest.current.onDismiss()
     }
 

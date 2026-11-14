@@ -79,6 +79,22 @@ export interface PopupPosition {
 
 export type TablePanelPosition = PopupPosition
 
+export type ImageAlignment = 'left' | 'center' | 'right'
+
+/** 选中图片后浮动的对齐工具条（视口坐标）。 */
+export interface ImageAlignState extends PopupPosition {
+  /** 图片节点在文档中的位置 */
+  pos: number
+}
+
+/** 工具栏图片按钮的浮窗（视口坐标）。 */
+export interface ImagePopoverState extends PopupPosition {
+  /** 浮窗位于触发按钮上方（否则在下方） */
+  above: boolean
+  /** 当前选中的图片位置；为空时是插入模式 */
+  imagePos: number | null
+}
+
 export type OpenLinkPopover = (
   view: Editor['view'],
   from: number,
