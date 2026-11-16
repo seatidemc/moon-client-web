@@ -1,10 +1,12 @@
+export type AvatarShape = 'circle' | 'square'
+
 export interface User {
   id: string
   name: string
   handle: string
   bio: string
   joinedAt: string
-  /** 自定义头像图片地址；为空时使用按 handle 生成的默认头像 */
+  /** 自定义头像图片地址；为空时使用按 handle 拉取的 Minecraft 默认头像 */
   avatarUrl?: string
 }
 
@@ -77,6 +79,8 @@ export interface ForumData {
   boardFollows: Record<string, string[]>
   /** 用户主页背景图：用户 id → 图片 data URL */
   userBackgrounds: Record<string, string>
+  /** 头像显示形状，全站统一 */
+  avatarShape: AvatarShape
   /** 已读通知 id 列表；通知内容本身由回复与点赞记录派生 */
   readNotificationIds: string[]
 }

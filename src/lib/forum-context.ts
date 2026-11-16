@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
 
-import type { Board, ForumThread, Reply, User } from '@/types'
+import type { AvatarShape, Board, ForumThread, Reply, User } from '@/types'
 
 export interface NewThreadInput {
   boardId: string
@@ -27,6 +27,7 @@ export interface ForumContextValue {
   postLikes: Record<string, string[]>
   boardFollows: Record<string, string[]>
   userBackgrounds: Record<string, string>
+  avatarShape: AvatarShape
   readNotificationIds: string[]
   currentUser: User | null
   loginDialogOpen: boolean
@@ -44,6 +45,7 @@ export interface ForumContextValue {
   togglePostLike: (postKey: string) => void
   toggleBoardFollow: (boardId: string) => void
   setUserBackground: (userId: string, background: string | null) => void
+  setAvatarShape: (shape: AvatarShape) => void
   updateUserAvatar: (userId: string, avatarUrl: string | null) => void
   updateUserBio: (userId: string, bio: string) => void
   markNotificationsRead: (notificationIds: string[]) => void

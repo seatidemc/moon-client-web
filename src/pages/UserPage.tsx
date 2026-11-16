@@ -7,6 +7,7 @@ import { AvatarCropDialog } from '@/components/AvatarCropDialog'
 import { ProfileCustomizeDialog } from '@/components/ProfileCustomizeDialog'
 import { ThreadCard } from '@/components/ThreadCard'
 import { UserAvatar } from '@/components/UserAvatar'
+import { getAvatarShapeClassName } from '@/lib/avatar'
 import { useForum } from '@/lib/forum-context'
 import { usePageTitle } from '@/lib/use-page-title'
 import {
@@ -27,6 +28,7 @@ export function UserPage() {
     replies,
     userLikes,
     userBackgrounds,
+    avatarShape,
     currentUser,
     openLogin,
     toggleUserLike,
@@ -169,7 +171,10 @@ export function UserPage() {
                 type="button"
                 aria-label="更换头像"
                 onClick={() => setAvatarOpen(true)}
-                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45 text-white opacity-0 transition-opacity focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground hover:opacity-100"
+                className={cn(
+                  'absolute inset-0 flex items-center justify-center bg-black/45 text-white opacity-0 transition-opacity focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground hover:opacity-100',
+                  getAvatarShapeClassName(avatarShape),
+                )}
               >
                 <Camera className="size-5" aria-hidden="true" />
               </button>

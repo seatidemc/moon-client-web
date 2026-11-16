@@ -29,7 +29,13 @@ import {
 import { extractTags } from '@/lib/html-content'
 import { findReplyTargetFloor } from '@/lib/reply-references'
 import { createId } from '@/lib/utils'
-import type { Board, ForumData, ForumThread, Reply } from '@/types'
+import type {
+  AvatarShape,
+  Board,
+  ForumData,
+  ForumThread,
+  Reply,
+} from '@/types'
 
 function isForumData(value: unknown): value is ForumData {
   if (!value || typeof value !== 'object') return false
@@ -141,6 +147,10 @@ function normalizeThreads(value: unknown): ForumThread[] {
   })
 }
 
+function normalizeAvatarShape(value: unknown): AvatarShape {
+  return value === 'square' ? 'square' : 'circle'
+}
+
 function loadForumData(): ForumData {
   try {
     const stored = window.localStorage.getItem(FORUM_STORAGE_KEY)
@@ -159,6 +169,7 @@ function loadForumData(): ForumData {
       postLikes: normalizeIdLists(parsed.postLikes),
       boardFollows: normalizeIdLists(parsed.boardFollows),
       userBackgrounds: normalizeUserBackgrounds(parsed.userBackgrounds),
+      avatarShape: normalizeAvatarShape(parsed.avatarShape),
       readNotificationIds: normalizeIdList(parsed.readNotificationIds),
     }
   } catch {
@@ -413,6 +424,10 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       })
     }
 
+    function setAvatarShape(avatarShape: AvatarShape) {
+      setData((previous) => ({ ...previous, avatarShape }))
+    }
+
     function togglePostLike(postKey: string) {
       if (!currentUser) return
 
@@ -511,6 +526,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       postLikes: data.postLikes,
       boardFollows: data.boardFollows,
       userBackgrounds: data.userBackgrounds,
+      avatarShape: data.avatarShape,
       readNotificationIds: data.readNotificationIds,
       currentUser,
       loginDialogOpen,
@@ -528,6 +544,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       togglePostLike,
       toggleBoardFollow,
       setUserBackground,
+      setAvatarShape,
       updateUserAvatar,
       updateUserBio,
       markNotificationsRead,

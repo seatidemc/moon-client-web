@@ -1,5 +1,5 @@
-import { Button, Modal, Slider, cn, toast } from '@heroui/react'
-import { ImagePlus, Trash2 } from 'lucide-react'
+import { Button, Modal, Slider, Tabs, cn, toast } from '@heroui/react'
+import { Circle, ImagePlus, Square, Trash2 } from 'lucide-react'
 import {
   useEffect,
   useRef,
@@ -9,6 +9,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 
+import { getAvatarUrl } from '@/lib/avatar'
 import { useForum } from '@/lib/forum-context'
 import {
   cropImageToSquareDataUrl,
@@ -151,6 +152,34 @@ function zoomView(
   }
 }
 
+/**
+ * 圆形头像时保留方形取景框，只把圆形以外的区域压暗，
+ * 让裁剪范围始终可见，与缩略图里的高亮一致。
+ */
+function CircleDimOverlay() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 100 100"
+      className="pointer-events-none absolute inset-0 size-full"
+    >
+      <path
+        d="M0 0H100V100H0Z M50 0.2A49.8 49.8 0 1 0 50 99.8A49.8 49.8 0 1 0 50 0.2Z"
+        fill="rgb(0 0 0 / 55%)"
+        fillRule="evenodd"
+      />
+      <circle
+        cx="50"
+        cy="50"
+        r="49.7"
+        fill="none"
+        stroke="rgb(255 255 255 / 80%)"
+        strokeWidth="0.4"
+      />
+    </svg>
+  )
+}
+
 function AvatarCropPanel({
   user,
   onClose,
@@ -158,7 +187,8 @@ function AvatarCropPanel({
   user: User
   onClose: () => void
 }) {
-  const { updateUserAvatar } = useForum()
+  const { updateUserAvatar, avatarShape, setAvatarShape } = useForum()
+  const [shape, setShape] = useState(avatarShape)
   const inputRef = useRef<HTMLInputElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{
@@ -366,19 +396,30 @@ function AvatarCropPanel({
   }
 
   function handleSave() {
-    if (!source || viewport <= 0) return
+    const shapeChanged = shape !== avatarShape
+    const hasSource = source !== null && viewport > 0
 
-    const { scale } = getDisplaySize(source.image, viewport, view.zoom)
+    if (!hasSource && !shapeChanged) return
 
     try {
-      const avatarUrl = cropImageToSquareDataUrl(source.image, {
-        x: -view.offset.x / scale,
-        y: -view.offset.y / scale,
-        size: viewport / scale,
-      })
+      if (source && viewport > 0) {
+        const { scale } = getDisplaySize(source.image, viewport, view.zoom)
 
-      updateUserAvatar(user.id, avatarUrl)
-      toast.success('头像已更新。')
+        updateUserAvatar(
+          user.id,
+          cropImageToSquareDataUrl(source.image, {
+            x: -view.offset.x / scale,
+            y: -view.offset.y / scale,
+            size: viewport / scale,
+          }),
+        )
+      }
+
+      if (shapeChanged) {
+        setAvatarShape(shape)
+      }
+
+      toast.success(source ? '头像已更新。' : '头像形状已更新。')
       onClose()
     } catch {
       setError('无法生成头像，请换一张图片试试。')
@@ -422,41 +463,44 @@ function AvatarCropPanel({
         >
           {source ? (
             <>
-              <div
-                ref={viewportRef}
-                role="group"
-                tabIndex={0}
-                aria-label="头像裁剪区域：拖动图片调整位置，使用方向键微调"
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={endDrag}
-                onPointerCancel={endDrag}
-                onLostPointerCapture={() => {
-                  dragRef.current = null
-                  setDragging(false)
-                }}
-                onKeyDown={handleKeyDown}
-                className={cn(
-                  'relative aspect-square w-full max-w-[24rem] touch-none overflow-hidden bg-surface select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground',
-                  dragging ? 'cursor-grabbing' : 'cursor-grab',
-                )}
-              >
-                <img
-                  src={source.objectUrl}
-                  alt=""
-                  draggable={false}
-                  className="pointer-events-none absolute top-0 left-0 max-w-none"
-                  style={{
-                    width: display?.width,
-                    height: display?.height,
-                    transform: `translate3d(${view.offset.x}px, ${view.offset.y}px, 0)`,
+              <div className="relative w-full max-w-[24rem]">
+                <div
+                  ref={viewportRef}
+                  role="group"
+                  tabIndex={0}
+                  aria-label="头像裁剪区域：拖动图片调整位置，使用方向键微调"
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={endDrag}
+                  onPointerCancel={endDrag}
+                  onLostPointerCapture={() => {
+                    dragRef.current = null
+                    setDragging(false)
                   }}
-                />
+                  onKeyDown={handleKeyDown}
+                  className={cn(
+                    'relative aspect-square w-full touch-none overflow-hidden bg-surface select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground',
+                    dragging ? 'cursor-grabbing' : 'cursor-grab',
+                  )}
+                >
+                  <img
+                    src={source.objectUrl}
+                    alt=""
+                    draggable={false}
+                    className="pointer-events-none absolute top-0 left-0 max-w-none"
+                    style={{
+                      width: display?.width,
+                      height: display?.height,
+                      transform: `translate3d(${view.offset.x}px, ${view.offset.y}px, 0)`,
+                    }}
+                  />
+                  {shape === 'circle' ? <CircleDimOverlay /> : null}
+                </div>
 
                 {thumbnail ? (
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute bottom-2.5 left-2.5 overflow-hidden rounded-sm border border-white/60 bg-black/30 shadow-md"
+                    className="pointer-events-none absolute bottom-2.5 left-2.5 overflow-hidden rounded-sm bg-black/30 shadow-md ring-1 ring-white/60"
                     style={{
                       width: thumbnail.width,
                       height: thumbnail.height,
@@ -469,7 +513,10 @@ function AvatarCropPanel({
                       className="block h-full w-full select-none"
                     />
                     <div
-                      className="absolute border border-white/90 shadow-[0_0_0_9999px_rgb(0_0_0/0.55)]"
+                      className={cn(
+                        'absolute border border-white/90 shadow-[0_0_0_9999px_rgb(0_0_0/0.55)]',
+                        shape === 'circle' ? 'rounded-full' : 'rounded-none',
+                      )}
                       style={{
                         left: thumbnail.left,
                         top: thumbnail.top,
@@ -526,21 +573,29 @@ function AvatarCropPanel({
                 }
               }}
               className={cn(
-                'flex aspect-square w-full max-w-[24rem] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl px-6 text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground',
-                'border border-dashed',
-                dropActive
-                  ? 'border-foreground bg-surface'
-                  : 'border-border hover:bg-surface',
+                'group relative aspect-square w-full max-w-[24rem] cursor-pointer overflow-hidden bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground',
+                dropActive && 'ring-2 ring-foreground ring-inset',
                 processing && 'pointer-events-none opacity-60',
               )}
             >
-              <ImagePlus
-                className="size-5 text-muted"
-                aria-hidden="true"
+              <img
+                src={getAvatarUrl(user)}
+                alt=""
+                draggable={false}
+                className="size-full object-cover"
               />
-              <span className="text-sm text-muted">拖拽或单击选择图片</span>
-              <span className="text-xs text-muted">
-                建议使用正方形图片，之后可以拖动和缩放裁剪
+              {shape === 'circle' ? <CircleDimOverlay /> : null}
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/45 text-white transition-opacity',
+                  dropActive
+                    ? 'opacity-100'
+                    : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100',
+                )}
+              >
+                <ImagePlus className="size-5" />
+                <span className="text-sm">拖拽或单击选择图片</span>
               </span>
             </div>
           )}
@@ -564,27 +619,60 @@ function AvatarCropPanel({
         </div>
       </Modal.Body>
 
-      <Modal.Footer>
-        {user.avatarUrl ? (
-          <Button
-            variant="ghost"
-            className="mr-auto text-danger"
-            onPress={handleReset}
+      <Modal.Footer className="flex-wrap">
+        <div className="mr-auto flex items-center gap-2">
+          <Tabs
+            selectedKey={shape}
+            onSelectionChange={(key) => {
+              if (key === 'circle' || key === 'square') {
+                setShape(key)
+              }
+            }}
           >
-            <Trash2 aria-hidden="true" />
-            删除头像
+            <Tabs.ListContainer>
+              <Tabs.List aria-label="头像形状">
+                <Tabs.Tab
+                  id="circle"
+                  aria-label="圆形头像"
+                  className="px-3"
+                >
+                  <Circle className="size-4" aria-hidden="true" />
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+                <Tabs.Tab
+                  id="square"
+                  aria-label="方形头像"
+                  className="px-3"
+                >
+                  <Square className="size-4" aria-hidden="true" />
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+              </Tabs.List>
+            </Tabs.ListContainer>
+          </Tabs>
+          {user.avatarUrl ? (
+            <Button
+              variant="ghost"
+              className="text-danger"
+              onPress={handleReset}
+            >
+              <Trash2 aria-hidden="true" />
+              删除头像
+            </Button>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="tertiary" onPress={onClose}>
+            取消
           </Button>
-        ) : null}
-        <Button variant="tertiary" onPress={onClose}>
-          取消
-        </Button>
-        <Button
-          variant="primary"
-          isDisabled={!source || processing || viewport <= 0}
-          onPress={handleSave}
-        >
-          保存
-        </Button>
+          <Button
+            variant="primary"
+            isDisabled={processing || (source ? viewport <= 0 : shape === avatarShape)}
+            onPress={handleSave}
+          >
+            保存
+          </Button>
+        </div>
       </Modal.Footer>
     </>
   )
