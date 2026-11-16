@@ -9,7 +9,7 @@ export function BoardsPage() {
   usePageTitle('板块')
 
   return (
-    <main className="mx-auto w-full max-w-[69.25rem] px-4 py-8 sm:py-10">
+    <main className="mx-auto w-full max-w-[69.25rem] px-4 py-10 sm:py-12">
       <h1 className="text-2xl font-semibold tracking-tight">板块</h1>
 
       <ul className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">

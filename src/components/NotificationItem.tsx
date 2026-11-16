@@ -47,7 +47,8 @@ export function NotificationItem({
   if (!actor || !thread) return null
 
   const isLike = notification.type !== 'reply'
-  const excerpt = makeExcerpt(notification.excerpt, compact ? 80 : 160)
+  // popover 里不放摘要，只保留动作和主题，列表更紧凑。
+  const excerpt = compact ? '' : makeExcerpt(notification.excerpt, 160)
 
   return (
     <Link
@@ -61,11 +62,11 @@ export function NotificationItem({
           : 'bg-accent-soft hover:bg-accent-soft-hover',
       )}
     >
-      <span className="relative shrink-0">
+      <span className="relative flex shrink-0 self-start">
         <UserAvatar user={actor} />
         <span
           className={cn(
-            'absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full bg-surface ring-1 ring-border',
+            'absolute -right-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-surface ring-1 ring-border',
             isLike ? 'text-danger' : 'text-accent',
           )}
           aria-hidden="true"
@@ -86,12 +87,6 @@ export function NotificationItem({
               {actionLabel(notification.type)}
             </span>
           </span>
-          {read ? null : (
-            <span
-              className="size-2 shrink-0 rounded-full bg-accent"
-              aria-hidden="true"
-            />
-          )}
           <time
             dateTime={notification.createdAt}
             title={formatDateTime(notification.createdAt)}
@@ -106,12 +101,7 @@ export function NotificationItem({
         </span>
 
         {excerpt ? (
-          <span
-            className={cn(
-              'mt-0.5 block text-xs leading-5 text-muted',
-              compact ? 'line-clamp-1' : 'line-clamp-2',
-            )}
-          >
+          <span className="mt-0.5 line-clamp-2 block text-xs leading-5 text-muted">
             {excerpt}
           </span>
         ) : null}

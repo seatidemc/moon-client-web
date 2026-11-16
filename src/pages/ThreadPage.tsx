@@ -184,7 +184,7 @@ export function ThreadPage() {
       className="flex min-h-[calc(100svh-3.5rem)] flex-col"
       style={themeStyle}
     >
-      <main className="mx-auto w-full max-w-[69.25rem] flex-1 px-4 pt-8 pb-4 sm:pt-10">
+      <main className="mx-auto w-full max-w-[69.25rem] flex-1 px-4 pt-10 pb-4 sm:pt-12">
         <div className="grid gap-5 lg:grid-cols-[minmax(0,48rem)_18rem]">
           <div className="min-w-0 space-y-5">
             <article

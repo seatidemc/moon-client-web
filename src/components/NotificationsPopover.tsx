@@ -1,4 +1,4 @@
-import { Popover } from '@heroui/react'
+import { Button, Popover } from '@heroui/react'
 import { Bell, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -50,24 +50,25 @@ export function NotificationsPopover() {
           aria-label="通知"
           className="overflow-hidden rounded-[inherit] p-0"
         >
-          <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+          <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">通知</span>
               {unreadCount > 0 ? (
-                <span className="min-w-4 rounded-full bg-accent px-1.5 py-0.5 text-center text-[10px] leading-none font-medium text-accent-foreground tabular-nums">
+                <span className="min-w-4 rounded-full bg-danger px-1.5 py-0.5 text-center text-[10px] leading-none font-medium text-danger-foreground tabular-nums">
                   {unreadCount}
                 </span>
               ) : null}
             </div>
 
             {unreadCount > 0 ? (
-              <button
-                type="button"
-                onClick={markAllRead}
-                className="rounded px-1 py-0.5 text-xs text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/40"
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-xs text-muted"
+                onPress={markAllRead}
               >
                 全部已读
-              </button>
+              </Button>
             ) : null}
           </div>
 

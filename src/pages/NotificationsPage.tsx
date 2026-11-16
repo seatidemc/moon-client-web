@@ -1,6 +1,6 @@
-import { Button, cn } from '@heroui/react'
+import { Button, Tabs } from '@heroui/react'
 import { Bell, BellOff } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 
 import { NotificationItem } from '@/components/NotificationItem'
 import { useForum } from '@/lib/forum-context'
@@ -18,7 +18,7 @@ export function NotificationsPage() {
 
   if (!currentUser) {
     return (
-      <main className="mx-auto w-full max-w-[48rem] px-4 py-10 sm:py-12">
+      <main className="mx-auto w-full max-w-[69.25rem] px-4 py-10 sm:py-12">
         <h1 className="text-2xl font-semibold tracking-tight">通知</h1>
         <div className="mt-8 rounded-2xl bg-surface px-6 py-16 text-center">
           <Bell className="mx-auto size-8 text-muted" aria-hidden="true" />
@@ -41,23 +41,39 @@ export function NotificationsPage() {
       : notifications
 
   return (
-    <main className="mx-auto w-full max-w-[48rem] px-4 py-10 sm:py-12">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">通知</h1>
-          <p className="mt-1 text-sm text-muted">
-            {notifications.length === 0
-              ? '收到回复或点赞后会显示在这里。'
-              : unreadCount > 0
-                ? `${unreadCount} 条未读通知`
-                : '全部通知都已读'}
-          </p>
-        </div>
+    <main className="mx-auto w-full max-w-[69.25rem] px-4 py-10 sm:py-12">
+      <h1 className="text-2xl font-semibold tracking-tight">通知</h1>
+
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <Tabs
+          selectedKey={filter}
+          onSelectionChange={(key) => setFilter(key as NotificationFilter)}
+        >
+          <Tabs.ListContainer>
+            <Tabs.List aria-label="通知筛选">
+              <Tabs.Tab id="all" className="gap-1.5 whitespace-nowrap">
+                全部
+                <span className="text-xs tabular-nums opacity-60">
+                  {notifications.length}
+                </span>
+                <Tabs.Indicator />
+              </Tabs.Tab>
+              <Tabs.Tab id="unread" className="gap-1.5 whitespace-nowrap">
+                未读
+                <span className="text-xs tabular-nums opacity-60">
+                  {unreadCount}
+                </span>
+                <Tabs.Indicator />
+              </Tabs.Tab>
+            </Tabs.List>
+          </Tabs.ListContainer>
+        </Tabs>
 
         {unreadCount > 0 ? (
           <Button
             size="sm"
-            variant="outline"
+            variant="ghost"
+            className="text-muted"
             onPress={() =>
               markNotificationsRead(
                 notifications.map((notification) => notification.id),
@@ -67,29 +83,6 @@ export function NotificationsPage() {
             全部标为已读
           </Button>
         ) : null}
-      </header>
-
-      <div
-        role="group"
-        className="mt-6 flex w-fit items-center gap-1 rounded-full bg-surface p-1"
-        aria-label="通知筛选"
-      >
-        <FilterButton
-          active={filter === 'all'}
-          onPress={() => setFilter('all')}
-        >
-          全部
-          <span className="text-xs text-muted tabular-nums">
-            {notifications.length}
-          </span>
-        </FilterButton>
-        <FilterButton
-          active={filter === 'unread'}
-          onPress={() => setFilter('unread')}
-        >
-          未读
-          <span className="text-xs text-muted tabular-nums">{unreadCount}</span>
-        </FilterButton>
       </div>
 
       <section
@@ -122,31 +115,5 @@ export function NotificationsPage() {
         )}
       </section>
     </main>
-  )
-}
-
-function FilterButton({
-  active,
-  onPress,
-  children,
-}: {
-  active: boolean
-  onPress: () => void
-  children: ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onPress}
-      className={cn(
-        'flex items-center gap-1.5 rounded-full px-3 py-1 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/40',
-        active
-          ? 'bg-default text-foreground'
-          : 'text-muted hover:text-foreground',
-      )}
-    >
-      {children}
-    </button>
   )
 }

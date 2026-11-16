@@ -82,7 +82,7 @@ export function TopicPage() {
       />
 
       <main className="relative">
-        <div className="mx-auto w-full max-w-[69.25rem] px-4 pt-8 sm:pt-10">
+        <div className="mx-auto w-full max-w-[69.25rem] px-4 pt-10 sm:pt-12">
           <div
             className="flex items-start justify-between gap-4"
             style={themeStyle}
