@@ -12,6 +12,7 @@ import {
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { LoginDialog } from '@/components/LoginDialog'
 import { OverlayScrollbar } from '@/components/OverlayScrollbar'
+import { SiteFooter } from '@/components/SiteFooter'
 import { UserAvatar } from '@/components/UserAvatar'
 import { SITE_NAME } from '@/lib/constants'
 import { useForum } from '@/lib/forum-context'
@@ -156,6 +157,8 @@ export function Layout() {
       <div className="flex-1">
         <Outlet />
       </div>
+
+      <SiteFooter />
 
       <OverlayScrollbar />
       <LoginDialog />
