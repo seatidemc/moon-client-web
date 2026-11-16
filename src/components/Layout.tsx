@@ -11,6 +11,7 @@ import {
 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { LoginDialog } from '@/components/LoginDialog'
+import { NotificationsPopover } from '@/components/NotificationsPopover'
 import { OverlayScrollbar } from '@/components/OverlayScrollbar'
 import { UserAvatar } from '@/components/UserAvatar'
 import { SITE_NAME } from '@/lib/constants'
@@ -103,42 +104,45 @@ export function Layout() {
             }`}
           >
             {currentUser ? (
-              <Dropdown>
-                <Dropdown.Trigger
-                  aria-label="账号菜单"
-                  className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm transition-colors hover:bg-default-soft"
-                >
-                  <UserAvatar user={currentUser} />
-                  <span className="hidden max-w-24 truncate sm:inline">
-                    {currentUser.name}
-                  </span>
-                </Dropdown.Trigger>
-                <Dropdown.Popover placement="bottom end" className="min-w-36">
-                  <Dropdown.Menu
+              <>
+                <NotificationsPopover />
+                <Dropdown>
+                  <Dropdown.Trigger
                     aria-label="账号菜单"
-                    onAction={(key) => {
-                      if (key === 'profile') {
-                        navigate(`/user/${currentUser.id}`)
-                      } else if (key === 'logout') {
-                        setLogoutOpen(true)
-                      }
-                    }}
+                    className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm transition-colors hover:bg-default-soft"
                   >
-                    <Dropdown.Item id="profile" textValue="我的主页">
-                      <User className="size-4 text-muted" />
-                      <span data-slot="label">我的主页</span>
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                      id="logout"
-                      textValue="退出登录"
-                      variant="danger"
+                    <UserAvatar user={currentUser} />
+                    <span className="hidden max-w-24 truncate sm:inline">
+                      {currentUser.name}
+                    </span>
+                  </Dropdown.Trigger>
+                  <Dropdown.Popover placement="bottom end" className="min-w-36">
+                    <Dropdown.Menu
+                      aria-label="账号菜单"
+                      onAction={(key) => {
+                        if (key === 'profile') {
+                          navigate(`/user/${currentUser.id}`)
+                        } else if (key === 'logout') {
+                          setLogoutOpen(true)
+                        }
+                      }}
                     >
-                      <LogOut className="size-4 text-danger" />
-                      <span data-slot="label">退出登录</span>
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown.Popover>
-              </Dropdown>
+                      <Dropdown.Item id="profile" textValue="我的主页">
+                        <User className="size-4 text-muted" />
+                        <span data-slot="label">我的主页</span>
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        id="logout"
+                        textValue="退出登录"
+                        variant="danger"
+                      >
+                        <LogOut className="size-4 text-danger" />
+                        <span data-slot="label">退出登录</span>
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown.Popover>
+                </Dropdown>
+              </>
             ) : (
               <Button
                 type="button"

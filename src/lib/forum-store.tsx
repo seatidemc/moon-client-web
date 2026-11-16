@@ -100,6 +100,12 @@ function normalizeIdLists(value: unknown): Record<string, string[]> {
   return lists
 }
 
+function normalizeIdList(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+
+  return value.filter((id): id is string => typeof id === 'string')
+}
+
 function normalizeUserBackgrounds(value: unknown): Record<string, string> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
 
@@ -153,6 +159,7 @@ function loadForumData(): ForumData {
       postLikes: normalizeIdLists(parsed.postLikes),
       boardFollows: normalizeIdLists(parsed.boardFollows),
       userBackgrounds: normalizeUserBackgrounds(parsed.userBackgrounds),
+      readNotificationIds: normalizeIdList(parsed.readNotificationIds),
     }
   } catch {
     return seedData
@@ -462,6 +469,23 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       })
     }
 
+    function markNotificationsRead(notificationIds: string[]) {
+      if (!currentUser) return
+
+      setData((previous) => {
+        const known = new Set(previous.readNotificationIds)
+        const additions = [...new Set(notificationIds)].filter(
+          (id) => !known.has(id),
+        )
+        if (additions.length === 0) return previous
+
+        return {
+          ...previous,
+          readNotificationIds: [...previous.readNotificationIds, ...additions],
+        }
+      })
+    }
+
     function setUserBackground(userId: string, background: string | null) {
       setData((previous) => {
         if (!previous.users.some((user) => user.id === userId)) return previous
@@ -487,6 +511,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       postLikes: data.postLikes,
       boardFollows: data.boardFollows,
       userBackgrounds: data.userBackgrounds,
+      readNotificationIds: data.readNotificationIds,
       currentUser,
       loginDialogOpen,
       openLogin,
@@ -505,6 +530,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       setUserBackground,
       updateUserAvatar,
       updateUserBio,
+      markNotificationsRead,
     }
   }, [currentUser, data, loginDialogOpen])
 
