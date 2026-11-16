@@ -11,6 +11,7 @@ import { ForumProvider } from '@/lib/forum-store'
 import { scrollToAndEmphasize } from '@/lib/scroll'
 import { BoardsPage } from '@/pages/BoardsPage'
 import { HomePage } from '@/pages/HomePage'
+import { NotificationsPage } from '@/pages/NotificationsPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { SearchPage } from '@/pages/SearchPage'
 import { ThreadPage } from '@/pages/ThreadPage'
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="topic/:id" element={<TopicPage />} />
           <Route path="thread/:id" element={<ThreadPage />} />
           <Route path="user/:id" element={<UserPage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="search" element={<SearchPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

@@ -246,6 +246,20 @@ const postLikes: ForumData['postLikes'] = {
   'reply:r7': ['u3'],
 }
 
+/**
+ * 演示数据里较早的几条通知预先标为已读，让通知中心和红点都能展示出
+ * 有未读、有已读的混合状态。
+ */
+const readNotificationIds: ForumData['readNotificationIds'] = [
+  'reply:r1',
+  'reply:r3',
+  'reply:r5',
+  'like-thread:t1:u1',
+  'like-thread:t2:u2',
+  'like-reply:r1:u2',
+  'like-reply:r3:u1',
+]
+
 export const seedData: ForumData = {
   users,
   boards,
@@ -255,4 +269,5 @@ export const seedData: ForumData = {
   postLikes,
   boardFollows: {},
   userBackgrounds: {},
+  readNotificationIds,
 }

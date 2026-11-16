@@ -27,6 +27,7 @@ export interface ForumContextValue {
   postLikes: Record<string, string[]>
   boardFollows: Record<string, string[]>
   userBackgrounds: Record<string, string>
+  readNotificationIds: string[]
   currentUser: User | null
   loginDialogOpen: boolean
   openLogin: (afterLogin?: () => void) => void
@@ -45,6 +46,7 @@ export interface ForumContextValue {
   setUserBackground: (userId: string, background: string | null) => void
   updateUserAvatar: (userId: string, avatarUrl: string | null) => void
   updateUserBio: (userId: string, bio: string) => void
+  markNotificationsRead: (notificationIds: string[]) => void
 }
 
 export const ForumContext = createContext<ForumContextValue | null>(null)

@@ -44,6 +44,26 @@ export interface Reply {
   createdAt: string
 }
 
+export type NotificationType = 'reply' | 'like-thread' | 'like-reply'
+
+/**
+ * 通知由回复和点赞记录派生，这里只保留展示所需的信息。
+ * 通知本身不落库，`readNotificationIds` 中保存已读状态。
+ */
+export interface Notification {
+  /** 稳定标识，用于记录已读状态 */
+  id: string
+  type: NotificationType
+  /** 触发通知的用户 id */
+  actorId: string
+  threadId: string
+  /** 回复通知中的跟帖，或点赞跟帖时的目标 */
+  replyId?: string
+  /** 回复内容或主题/跟帖正文的 HTML 摘要来源 */
+  excerpt: string
+  createdAt: string
+}
+
 export interface ForumData {
   users: User[]
   boards: Board[]
@@ -57,4 +77,6 @@ export interface ForumData {
   boardFollows: Record<string, string[]>
   /** 用户主页背景图：用户 id → 图片 data URL */
   userBackgrounds: Record<string, string>
+  /** 已读通知 id 列表；通知内容本身由回复与点赞记录派生 */
+  readNotificationIds: string[]
 }
