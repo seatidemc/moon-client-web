@@ -123,7 +123,10 @@ export function EditorToolbar({
     <div
       role="toolbar"
       aria-label="格式工具栏"
-      className="mb-2 flex shrink-0 flex-wrap items-center gap-0.5"
+      className={cn(
+        'flex shrink-0 flex-wrap items-center gap-0.5',
+        className,
+      )}
     >
       {basicButtons}
 

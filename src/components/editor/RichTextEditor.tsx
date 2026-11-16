@@ -597,7 +597,7 @@ export function RichTextEditor({
       onExportMarkdown={exportMarkdown}
       onExportHtml={exportHtml}
       minimal={compact || !advanced}
-      className={compact ? 'px-2 pt-1.5' : 'mb-2'}
+      className={compact ? 'px-2 pt-1.5' : 'mb-4'}
     />
   )
 
