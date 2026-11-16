@@ -151,6 +151,7 @@ export function PinnedThreads({ boardId }: PinnedThreadsProps) {
                   <ThreadCard
                     thread={thread}
                     variant="compact"
+                    showBoard={!boardId}
                     className="h-full"
                   />
                 </div>

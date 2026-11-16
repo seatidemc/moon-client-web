@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/core'
-import { Button, Input, Surface, Tabs, cn } from '@heroui/react'
+import { Button, Input, Surface, Tabs, cn, toast } from '@heroui/react'
 import { Upload } from 'lucide-react'
 import {
   useEffect,
@@ -18,7 +18,11 @@ import {
   IMAGE_POPUP_WIDTH,
 } from './editor-constants'
 import { ImageEditPanel } from './ImageEditPanel'
-import { filterImageFiles, insertImageFiles } from './editor-handlers'
+import {
+  filterImageFiles,
+  insertImageFiles,
+  notifyUnsupportedImages,
+} from './editor-handlers'
 import type { ImagePopoverState } from './editor-types'
 import {
   editableImageSrc,
@@ -56,7 +60,7 @@ export function ImagePopover({
   const [mode, setMode] = useState<ImageMode>(
     imagePos === null ? 'insert' : 'edit',
   )
-  const [source, setSource] = useState<ImageSource>('url')
+  const [source, setSource] = useState<ImageSource>('upload')
   const [srcInput, setSrcInput] = useState(editableSrc)
   const [altInput, setAltInput] = useState('')
   const [widthInput, setWidthInput] = useState('')
@@ -66,11 +70,12 @@ export function ImagePopover({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (mode === 'edit') return
+    // 外链面板默认不展示，只有切到该 tab 时才需要自动聚焦输入框。
+    if (mode === 'edit' || source !== 'url') return
 
     const frame = requestAnimationFrame(() => srcInputRef.current?.focus())
     return () => cancelAnimationFrame(frame)
-  }, [mode])
+  }, [mode, source])
 
   function applyImage() {
     const src = normalizeImageSrc(srcInput)
@@ -100,16 +105,24 @@ export function ImagePopover({
   }
 
   function insertFiles(files: File[]) {
-    const images = filterImageFiles(files)
-    if (images.length === 0) return
+    if (files.length === 0) return
 
     // 替换模式只取第一张图，原位替换来源。
     if (mode === 'replace' && imagePos !== null) {
+      const images = filterImageFiles(files)
+      if (images.length === 0) {
+        notifyUnsupportedImages(files.length)
+        return
+      }
+
       onClose()
       void readImageFileAsDataUrl(images[0])
         .then((src) => replaceImageSource(editor, imagePos, src))
-        .catch(() => {
-          // 读取失败时保留原图。
+        .catch((cause: unknown) => {
+          // 读取或解码失败时保留原图。
+          toast.danger(
+            cause instanceof Error ? cause.message : '无法读取这张图片。',
+          )
         })
       return
     }
@@ -117,7 +130,7 @@ export function ImagePopover({
     // 读取文件是异步的；先关闭浮窗并把焦点交回编辑器。
     onClose()
     editor.commands.focus()
-    insertImageFiles(editor.view, images)
+    insertImageFiles(editor.view, files)
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -183,16 +196,58 @@ export function ImagePopover({
         >
           <Tabs.ListContainer>
             <Tabs.List aria-label="图片来源" className="w-full">
-              <Tabs.Tab id="url" className="flex-1">
-                外链
-                <Tabs.Indicator />
-              </Tabs.Tab>
               <Tabs.Tab id="upload" className="flex-1">
                 拖拽上传
                 <Tabs.Indicator />
               </Tabs.Tab>
+              <Tabs.Tab id="url" className="flex-1">
+                外链
+                <Tabs.Indicator />
+              </Tabs.Tab>
             </Tabs.List>
           </Tabs.ListContainer>
+
+          <Tabs.Panel id="upload" className="mt-2 p-0">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <button
+              type="button"
+              aria-label="选择或拖拽图片"
+              className={cn(
+                'flex h-24 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed px-3 text-center transition-colors',
+                dragOver
+                  ? 'border-foreground/40 bg-default'
+                  : 'border-field-border hover:bg-default-soft',
+              )}
+              onClick={() => fileInputRef.current?.click()}
+              onDragEnter={(event) => {
+                event.preventDefault()
+                setDragOver(true)
+              }}
+              onDragOver={(event) => {
+                event.preventDefault()
+                setDragOver(true)
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+            >
+              <Upload className="size-5 text-muted" aria-hidden="true" />
+              <span className="text-xs text-foreground">
+                点击选择，或拖拽图片到这里
+              </span>
+              <span className="text-xs text-muted">
+                {mode === 'replace'
+                  ? '图片会替换当前图片'
+                  : '图片会内嵌到内容中保存'}
+              </span>
+            </button>
+          </Tabs.Panel>
 
           <Tabs.Panel id="url" className="mt-2 p-0">
             <div className="flex flex-col gap-2">
@@ -277,48 +332,6 @@ export function ImagePopover({
                 {mode === 'replace' ? '替换' : '确定'}
               </Button>
             </div>
-          </Tabs.Panel>
-
-          <Tabs.Panel id="upload" className="mt-2 p-0">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={handleFileChange}
-            />
-            <button
-              type="button"
-              aria-label="选择或拖拽图片"
-              className={cn(
-                'flex h-24 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed px-3 text-center transition-colors',
-                dragOver
-                  ? 'border-foreground/40 bg-default'
-                  : 'border-field-border hover:bg-default-soft',
-              )}
-              onClick={() => fileInputRef.current?.click()}
-              onDragEnter={(event) => {
-                event.preventDefault()
-                setDragOver(true)
-              }}
-              onDragOver={(event) => {
-                event.preventDefault()
-                setDragOver(true)
-              }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={handleDrop}
-            >
-              <Upload className="size-5 text-muted" aria-hidden="true" />
-              <span className="text-xs text-foreground">
-                点击选择，或拖拽图片到这里
-              </span>
-              <span className="text-xs text-muted">
-                {mode === 'replace'
-                  ? '图片会替换当前图片'
-                  : '图片会内嵌到内容中保存'}
-              </span>
-            </button>
           </Tabs.Panel>
         </Tabs>
       )}

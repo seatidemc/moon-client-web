@@ -54,7 +54,31 @@ export function floatingLayerContainer(view: Editor['view']) {
   )
 }
 
-export function readImageFileAsDataUrl(file: File) {
+function imageLoads(src: string) {
+  return new Promise<boolean>((resolve) => {
+    const image = new Image()
+    image.addEventListener('load', () => resolve(true))
+    image.addEventListener('error', () => resolve(false))
+    image.src = src
+  })
+}
+
+/**
+ * Reads an image file as a data URL, rejecting files the browser cannot
+ * decode. `file.type` only reports the declared MIME type, so formats such as
+ * HEIC pass an `image/*` check but render as broken images when embedded.
+ */
+export async function readImageFileAsDataUrl(file: File) {
+  const objectUrl = URL.createObjectURL(file)
+
+  try {
+    if (!(await imageLoads(objectUrl))) {
+      throw new Error('不支持的图片格式。')
+    }
+  } finally {
+    URL.revokeObjectURL(objectUrl)
+  }
+
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
     reader.addEventListener('load', () => resolve(String(reader.result)))

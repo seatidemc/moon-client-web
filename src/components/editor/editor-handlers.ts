@@ -1,6 +1,7 @@
 import type { Editor } from '@tiptap/core'
 import { TextSelection } from '@tiptap/pm/state'
 import { CellSelection } from '@tiptap/pm/tables'
+import { toast } from '@heroui/react'
 
 import {
   TABLE_MENU_MAX_HEIGHT,
@@ -39,23 +40,39 @@ export function filterImageFiles(files: Iterable<File> | null | undefined) {
   )
 }
 
+/** 类型不符或浏览器无法解码的文件不会插入，明确提示而不是静默丢弃。 */
+export function notifyUnsupportedImages(count: number) {
+  if (count <= 0) return
+
+  toast.danger(
+    count === 1
+      ? '不支持的图片格式。'
+      : `不支持的图片格式，已跳过 ${count} 个文件。`,
+  )
+}
+
 /** Reads image files and inserts them as data URLs at the current selection. */
 export function insertImageFiles(view: Editor['view'], files: File[]) {
-  // 暂时只把图片作为 data URL 插入文档，不做上传。
-  void Promise.all(files.map(readImageFileAsDataUrl))
-    .then((sources) => {
-      const imageType = view.state.schema.nodes.image
-      if (!imageType) return
+  const images = filterImageFiles(files)
+  const rejected = files.length - images.length
 
-      let tr = view.state.tr
-      for (const src of sources) {
-        tr = tr.replaceSelectionWith(imageType.create({ src }))
-      }
-      view.dispatch(tr.scrollIntoView())
-    })
-    .catch(() => {
-      // 无法读取的图片直接忽略。
-    })
+  // 暂时只把图片作为 data URL 插入文档，不做上传。
+  void Promise.allSettled(images.map(readImageFileAsDataUrl)).then((results) => {
+    const sources = results.flatMap((result) =>
+      result.status === 'fulfilled' ? [result.value] : [],
+    )
+    notifyUnsupportedImages(rejected + results.length - sources.length)
+    if (sources.length === 0) return
+
+    const imageType = view.state.schema.nodes.image
+    if (!imageType) return
+
+    let tr = view.state.tr
+    for (const src of sources) {
+      tr = tr.replaceSelectionWith(imageType.create({ src }))
+    }
+    view.dispatch(tr.scrollIntoView())
+  })
 }
 
 /** Inserts pasted clipboard images as data URLs; other pastes fall through. */
@@ -83,9 +100,10 @@ export function handleImageDrop(
 ) {
   if (moved) return false
 
-  const files = filterImageFiles(event.dataTransfer?.files)
+  const files = Array.from(event.dataTransfer?.files ?? [])
   if (files.length === 0) return false
 
+  // 拦住所有文件拖放，避免浏览器直接打开文件；不支持的格式由插入流程提示。
   event.preventDefault()
 
   // 先把光标移到落点，异步读取文件后图片就插在这个位置。
