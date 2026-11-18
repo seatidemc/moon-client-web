@@ -63,12 +63,19 @@ const postSchema: Schema = {
       defaultSchema.attributes?.a,
       'data-footnote-backref',
       'reply-reference',
+      'mention',
     ),
     // Chips pointing at floors that no longer exist stay spans; keep their
     // styling and floor. Existing floors are rewritten to links above.
     span: [
-      ...withAllowedClass(defaultSchema.attributes?.span, 'reply-reference'),
+      ...withAllowedClass(
+        defaultSchema.attributes?.span,
+        'reply-reference',
+        'mention',
+      ),
       ['dataFloor', /^\d+$/] as AttributeDefinition,
+      ['dataUserId', /^\w+$/] as AttributeDefinition,
+      ['dataHandle', /^[\w-]+$/] as AttributeDefinition,
     ],
     div: withAllowedClass(defaultSchema.attributes?.div, 'tableWrapper'),
     table: [

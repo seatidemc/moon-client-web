@@ -9,6 +9,8 @@ import {
 
 export const POPUP_WIDTH = 288
 export const POPUP_HEIGHT = 240
+export const MENTION_POPUP_WIDTH = 288
+export const MENTION_POPUP_HEIGHT = 280
 export const EMOJI_POPUP_WIDTH = 256
 export const EMOJI_POPUP_HEIGHT = 256
 export const LINK_POPUP_WIDTH = 320

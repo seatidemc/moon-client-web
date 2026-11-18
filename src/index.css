@@ -189,11 +189,13 @@ body {
   }
 
   /*
-   * `re#楼层号` references render as button-like chips. In the editor the chip
-   * is an atomic node, so the label is the floor alone and the source syntax
-   * never shows.
+   * `re#楼层号` references and `@用户名` mentions render as button-like chips.
+   * In the editor the chip is an atomic node, so the label is the reference
+   * alone and the source syntax never shows. Mentions keep the same shape
+   * with `@` in place of the reply arrow.
    */
-  .moon-rich-text .reply-reference {
+  .moon-rich-text .reply-reference,
+  .moon-rich-text .mention {
     display: inline-block;
     margin-inline: 0.1em;
     border-radius: 999px;
@@ -227,7 +229,8 @@ body {
       center / contain no-repeat;
   }
 
-  .moon-rich-text a.reply-reference:hover {
+  .moon-rich-text a.reply-reference:hover,
+  .moon-rich-text a.mention:hover {
     background: var(--accent-soft-hover);
   }
 

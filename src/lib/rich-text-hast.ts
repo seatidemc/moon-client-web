@@ -69,6 +69,31 @@ function referenceAnchors(options: ReplyReferenceOptions) {
   ])
 }
 
+/** Username and profile id stored on an atomic mention chip. */
+function mentionData(
+  element: Element,
+): { userId: string; handle: string } | null {
+  const className = element.properties.className
+  if (!Array.isArray(className) || !className.includes('mention')) {
+    return null
+  }
+
+  const userId = String(element.properties.dataUserId ?? '')
+  const handle = String(element.properties.dataHandle ?? '')
+
+  return userId && handle ? { userId, handle } : null
+}
+
+function mentionLink(element: Element): Element | null {
+  const mention = mentionData(element)
+  if (!mention) return null
+
+  return link(
+    { href: `/user/${mention.userId}`, className: ['mention'] },
+    `@${mention.handle}`,
+  )
+}
+
 /** Splits hashtags into links that search for the tag. */
 function splitHashtags(value: string): RootContent[] {
   const nodes: RootContent[] = []
@@ -112,6 +137,13 @@ function transformChildren(
     }
 
     if (child.type === 'element') {
+      // Mentions already carry their target user; render them as profile links.
+      const mention = mentionLink(child)
+      if (mention) {
+        next.push(mention)
+        continue
+      }
+
       // Chips already carry their floor; never re-process their label.
       const floor = chipFloor(child)
       if (floor !== null) {
@@ -133,8 +165,9 @@ function transformChildren(
 }
 
 /**
- * Links hashtags and turns floor-reference chips into links to their floors
- * before the HTML syntax tree is rendered.
+ * Links hashtags, turns floor-reference chips into links to their floors, and
+ * turns mention chips into user profile links before the HTML syntax tree is
+ * rendered.
  */
 export function applyRichTextFeatures(
   tree: Root,

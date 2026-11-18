@@ -4,6 +4,10 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 /** 匹配光标前刚输入的 re#楼层号（楼层号可以还没输入） */
 export const REFERENCE_QUERY_PATTERN = /(?:^|[^\p{L}\p{N}_])(re#(\d*))$/u
 
+/** 匹配光标前刚输入的 @用户名/昵称前缀（前缀可以还没输入） */
+export const MENTION_QUERY_PATTERN =
+  /(?:^|[^\p{L}\p{N}_@])(@([\p{L}\p{N}_-]{0,24}))$/u
+
 /** 补全用户省略的协议，内部路径和锚点保持原样。 */
 export function normalizeLinkHref(value: string) {
   const href = value.trim()

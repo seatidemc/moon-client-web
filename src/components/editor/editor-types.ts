@@ -55,6 +55,15 @@ export interface ReferenceTrigger extends PopupAnchor {
   query: string
 }
 
+export interface MentionTrigger extends PopupAnchor {
+  /** @ 在文档中的起始位置 */
+  from: number
+  /** 光标位置，也是查询词的结束位置 */
+  to: number
+  /** 已输入的用户名/昵称前缀 */
+  query: string
+}
+
 export interface EmojiSuggestionState extends PopupAnchor {
   items: EmojiSuggestionItem[]
   query: string

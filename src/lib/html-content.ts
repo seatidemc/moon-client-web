@@ -167,8 +167,13 @@ function collectSegments(
   const nextInCode = inCode || tag === 'code' || tag === 'pre'
   const nextInLink = inLink || tag === 'a'
 
-  // A chip's `#楼层号` label is not a hashtag.
-  if (element.classList.contains('reply-reference')) return
+  // A chip's `#楼层号` / `@用户名` label is not a hashtag.
+  if (
+    element.classList.contains('reply-reference') ||
+    element.classList.contains('mention')
+  ) {
+    return
+  }
 
   for (const child of element.childNodes) {
     collectSegments(child, nextInCode, nextInLink, segments)

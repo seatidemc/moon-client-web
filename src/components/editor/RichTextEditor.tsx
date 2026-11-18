@@ -14,6 +14,7 @@ import {
 } from 'react'
 
 import { downloadHtml, downloadMarkdown } from '@/lib/export-document'
+import { useForum } from '@/lib/forum-context'
 import { expandEmojiShortcodes } from '@/lib/tiptap-emoji-shortcodes'
 import { canApplyFeature } from '@/lib/tiptap-formatting-context'
 import {
@@ -26,6 +27,7 @@ import { EmojiPicker } from './EmojiPicker'
 import { ImageAlignToolbar } from './ImageAlignToolbar'
 import { ImagePopover } from './ImagePopover'
 import { LinkPopover } from './LinkPopover'
+import { MentionPicker } from './MentionPicker'
 import { ReferencePicker } from './ReferencePicker'
 import { TableMenu } from './TableMenu'
 import { TablePicker } from './TablePicker'
@@ -67,6 +69,7 @@ import {
 import { useDismissOnOutside } from './use-dismiss-on-outside'
 import { useEditorToolbarState } from './use-editor-state'
 import { useEmojiSuggestion } from './use-emoji-suggestion'
+import { useMentionSuggestion } from './use-mention-suggestion'
 import { useReferenceSuggestion } from './use-reference-suggestion'
 
 export function RichTextEditor({
@@ -91,6 +94,7 @@ export function RichTextEditor({
   )
   const [imageAlign, setImageAlign] = useState<ImageAlignState | null>(null)
   const [compactHeight, setCompactHeight] = useState(COMPACT_EDITOR_HEIGHT)
+  const { users } = useForum()
   const resizeStartRef = useRef<{ pointerY: number; height: number } | null>(
     null,
   )
@@ -101,6 +105,7 @@ export function RichTextEditor({
   const lastEmittedHtmlRef = useRef(value)
   const richPanelRef = useRef<HTMLDivElement>(null)
   const referencePanelRef = useRef<HTMLDivElement>(null)
+  const mentionPanelRef = useRef<HTMLDivElement>(null)
   const emojiPanelRef = useRef<HTMLDivElement>(null)
   const linkPanelRef = useRef<HTMLDivElement>(null)
   const tableButtonRef = useRef<HTMLButtonElement>(null)
@@ -113,6 +118,11 @@ export function RichTextEditor({
   const reference = useReferenceSuggestion({
     panelRef: richPanelRef,
     floorOptions,
+    allowOutsidePanel: compact,
+  })
+  const mention = useMentionSuggestion({
+    panelRef: richPanelRef,
+    users,
     allowOutsidePanel: compact,
   })
   const emoji = useEmojiSuggestion({
@@ -159,7 +169,7 @@ export function RichTextEditor({
   const editor = useEditor({
     extensions: createEditorExtensions({
       ...emoji,
-      placeholder: compact ? '写下你的跟帖…输入 re# 可引用楼层' : undefined,
+      placeholder: compact ? '写下你的跟帖…输入 @ 提及用户，re# 引用楼层' : undefined,
     }),
     content: value,
     contentType: 'html',
@@ -208,10 +218,12 @@ export function RichTextEditor({
       lastEmittedHtmlRef.current = html
       onChangeRef.current(html)
       reference.update(currentEditor)
+      mention.update(currentEditor)
       raiseCompactHeightFor(currentEditor.state.doc)
     },
     onSelectionUpdate: ({ editor: currentEditor }) => {
       reference.update(currentEditor)
+      mention.update(currentEditor)
 
       // 选区离开图片后关闭对齐工具条。
       setImageAlign((current) => {
@@ -237,11 +249,13 @@ export function RichTextEditor({
       const focusInPicker = Boolean(
         nextTarget &&
           (referencePanelRef.current?.contains(nextTarget) ||
+            mentionPanelRef.current?.contains(nextTarget) ||
             emojiPanelRef.current?.contains(nextTarget)),
       )
 
       if (!focusInPicker) {
         reference.hide()
+        mention.hide()
         emoji.hide()
       }
       if (!nextTarget || !linkPanelRef.current?.contains(nextTarget)) {
@@ -520,15 +534,15 @@ export function RichTextEditor({
   function handlePickerKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.nativeEvent.isComposing) return
 
+    if (emoji.handleKeyDown(event, editor)) return
+    if (mention.handleKeyDown(event, editor)) return
+    if (reference.handleKeyDown(event, editor)) return
+
     // 单行状态下回车等同于单行输入框的提交，不产生换行。
     if (quickSend && event.key === 'Enter') {
       event.preventDefault()
       event.currentTarget.closest('form')?.requestSubmit()
-      return
     }
-
-    if (emoji.handleKeyDown(event, editor)) return
-    reference.handleKeyDown(event, editor)
   }
 
   function clampCompactHeight(height: number) {
@@ -666,6 +680,7 @@ export function RichTextEditor({
             setImageAlign(null)
 
             if (reference.trigger && editor) reference.update(editor)
+            if (mention.trigger && editor) mention.update(editor)
 
             emoji.refreshPosition()
           }}
@@ -693,6 +708,19 @@ export function RichTextEditor({
               if (editor) reference.choose(editor, option)
             }}
             onHover={reference.setActiveIndex}
+          />
+        ) : null}
+
+        {mention.visible && mention.trigger ? (
+          <MentionPicker
+            panelRef={mentionPanelRef}
+            trigger={mention.trigger}
+            options={mention.options}
+            activeIndex={mention.activeIndex}
+            onChoose={(user) => {
+              if (editor) mention.choose(editor, user)
+            }}
+            onHover={mention.setActiveIndex}
           />
         ) : null}
 

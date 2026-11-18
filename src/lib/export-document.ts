@@ -124,7 +124,8 @@ main {
   text-underline-offset: 2px;
 }
 
-.moon-rich-text .reply-reference {
+.moon-rich-text .reply-reference,
+.moon-rich-text .mention {
   display: inline-block;
   margin-inline: 0.1em;
   border-radius: 999px;
