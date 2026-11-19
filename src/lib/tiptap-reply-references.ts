@@ -50,13 +50,16 @@ export const ReplyReference = Node.create({
   },
 
   parseHTML() {
-    return [{ tag: 'span.reply-reference' }]
+    return [{ tag: 'span[data-tag-type="reply"]' }]
   },
 
   renderHTML({ node, HTMLAttributes }) {
     return [
       'span',
-      mergeAttributes(HTMLAttributes, { class: 'reply-reference' }),
+      mergeAttributes(HTMLAttributes, {
+        class: 'reply-reference',
+        'data-tag-type': 'reply',
+      }),
       `#${node.attrs.floor}`,
     ]
   },

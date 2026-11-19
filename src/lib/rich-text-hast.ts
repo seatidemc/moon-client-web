@@ -31,8 +31,7 @@ function link(
 
 /** Floor stored on an atomic reply-reference chip, if the element is one. */
 function chipFloor(element: Element): number | null {
-  const className = element.properties.className
-  if (!Array.isArray(className) || !className.includes('reply-reference')) {
+  if (element.properties.dataTagType !== 'reply') {
     return null
   }
 
@@ -73,8 +72,7 @@ function referenceAnchors(options: ReplyReferenceOptions) {
 function mentionData(
   element: Element,
 ): { userId: string; handle: string } | null {
-  const className = element.properties.className
-  if (!Array.isArray(className) || !className.includes('mention')) {
+  if (element.properties.dataTagType !== 'mention') {
     return null
   }
 

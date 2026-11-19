@@ -30,13 +30,16 @@ export const Mention = Node.create({
   },
 
   parseHTML() {
-    return [{ tag: 'span.mention' }]
+    return [{ tag: 'span[data-tag-type="mention"]' }]
   },
 
   renderHTML({ node, HTMLAttributes }) {
     return [
       'span',
-      mergeAttributes(HTMLAttributes, { class: 'mention' }),
+      mergeAttributes(HTMLAttributes, {
+        class: 'mention',
+        'data-tag-type': 'mention',
+      }),
       `@${node.attrs.handle}`,
     ]
   },

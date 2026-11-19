@@ -168,10 +168,8 @@ function collectSegments(
   const nextInLink = inLink || tag === 'a'
 
   // A chip's `#楼层号` / `@用户名` label is not a hashtag.
-  if (
-    element.classList.contains('reply-reference') ||
-    element.classList.contains('mention')
-  ) {
+  const tagType = element.getAttribute('data-tag-type')
+  if (tagType === 'reply' || tagType === 'mention') {
     return
   }
 

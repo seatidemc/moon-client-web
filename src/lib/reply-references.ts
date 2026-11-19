@@ -1,7 +1,8 @@
 import type { Reply } from '@/types'
 
-/** Atomic reference chips store their floor on the `data-floor` attribute. */
-const CHIP_FLOOR_PATTERN = /data-floor="(\d+)"/g
+/** Atomic reference chips are spans marked with `data-tag-type="reply"`. */
+const CHIP_TAG_PATTERN = /<span\b[^>]*\bdata-tag-type="reply"[^>]*>/gi
+const CHIP_FLOOR_PATTERN = /\bdata-floor="(\d+)"/i
 
 export interface ReplyReferenceOptions {
   threadId: string
@@ -16,8 +17,11 @@ export interface ReplyReferenceOptions {
 export function findReplyFloors(html: string, maxFloor: number): number[] {
   const floors: number[] = []
 
-  for (const match of html.matchAll(CHIP_FLOOR_PATTERN)) {
-    const floor = Number.parseInt(match[1], 10)
+  for (const match of html.matchAll(CHIP_TAG_PATTERN)) {
+    const floorMatch = CHIP_FLOOR_PATTERN.exec(match[0])
+    if (!floorMatch) continue
+
+    const floor = Number.parseInt(floorMatch[1], 10)
 
     if (floor <= maxFloor && !floors.includes(floor)) floors.push(floor)
   }

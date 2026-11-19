@@ -66,13 +66,14 @@ const postSchema: Schema = {
       'mention',
     ),
     // Chips pointing at floors that no longer exist stay spans; keep their
-    // styling and floor. Existing floors are rewritten to links above.
+    // styling, type and floor. Existing floors are rewritten to links above.
     span: [
       ...withAllowedClass(
         defaultSchema.attributes?.span,
         'reply-reference',
         'mention',
       ),
+      ['dataTagType', /^(?:reply|mention)$/] as AttributeDefinition,
       ['dataFloor', /^\d+$/] as AttributeDefinition,
       ['dataUserId', /^\w+$/] as AttributeDefinition,
       ['dataHandle', /^[\w-]+$/] as AttributeDefinition,
