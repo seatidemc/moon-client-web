@@ -9,14 +9,15 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 
-import { getAvatarUrl } from '@/lib/avatar'
-import { useForum } from '@/lib/forum-context'
+import { uploadImage } from '@/lib/api'
+import { getAvatarShape, getAvatarUrl, hasCustomAvatar } from '@/lib/avatar'
+import { useBindAvatar, useSetAvatarShape } from '@/lib/queries'
 import {
-  cropImageToSquareDataUrl,
+  cropImageToSquareBlob,
   loadAvatarImage,
   type LoadedImage,
 } from '@/lib/image'
-import type { User } from '@/types'
+import type { UserSummary } from '@/types'
 
 const MIN_ZOOM = 1
 const MAX_ZOOM = 3
@@ -36,7 +37,7 @@ interface CropView {
 interface AvatarCropDialogProps {
   isOpen: boolean
   onOpenChange: (isOpen: boolean) => void
-  user: User
+  user: UserSummary
 }
 
 export function AvatarCropDialog({
@@ -184,11 +185,13 @@ function AvatarCropPanel({
   user,
   onClose,
 }: {
-  user: User
+  user: UserSummary
   onClose: () => void
 }) {
-  const { updateUserAvatar, avatarShape, setAvatarShape } = useForum()
-  const [shape, setShape] = useState(avatarShape)
+  const bindAvatar = useBindAvatar()
+  const setAvatarShape = useSetAvatarShape()
+  const currentShape = getAvatarShape(user)
+  const [shape, setShape] = useState(currentShape)
   const inputRef = useRef<HTMLInputElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{
@@ -395,41 +398,58 @@ function AvatarCropPanel({
     }))
   }
 
-  function handleSave() {
-    const shapeChanged = shape !== avatarShape
+  async function handleSave() {
+    const shapeChanged = shape !== currentShape
     const hasSource = source !== null && viewport > 0
 
     if (!hasSource && !shapeChanged) return
+    if (processing) return
+
+    setProcessing(true)
+    setError(null)
 
     try {
       if (source && viewport > 0) {
         const { scale } = getDisplaySize(source.image, viewport, view.zoom)
-
-        updateUserAvatar(
-          user.id,
-          cropImageToSquareDataUrl(source.image, {
-            x: -view.offset.x / scale,
-            y: -view.offset.y / scale,
-            size: viewport / scale,
-          }),
-        )
+        const blob = await cropImageToSquareBlob(source.image, {
+          x: -view.offset.x / scale,
+          y: -view.offset.y / scale,
+          size: viewport / scale,
+        })
+        const upload = await uploadImage(blob, 'avatar')
+        await bindAvatar.mutateAsync(upload.id)
       }
 
       if (shapeChanged) {
-        setAvatarShape(shape)
+        await setAvatarShape.mutateAsync(shape)
       }
 
       toast.success(source ? '头像已更新。' : '头像形状已更新。')
       onClose()
-    } catch {
-      setError('无法生成头像，请换一张图片试试。')
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : '无法保存头像，请换一张图片试试。',
+      )
+    } finally {
+      setProcessing(false)
     }
   }
 
-  function handleReset() {
-    updateUserAvatar(user.id, null)
-    toast.success('头像已删除。')
-    onClose()
+  async function handleReset() {
+    setProcessing(true)
+    try {
+      await bindAvatar.mutateAsync(null)
+      toast.success('头像已删除。')
+      onClose()
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : '无法删除头像。',
+      )
+    } finally {
+      setProcessing(false)
+    }
   }
 
   const display = source
@@ -650,11 +670,12 @@ function AvatarCropPanel({
               </Tabs.List>
             </Tabs.ListContainer>
           </Tabs>
-          {user.avatarUrl ? (
+          {hasCustomAvatar(user) ? (
             <Button
               variant="ghost"
               className="text-danger"
-              onPress={handleReset}
+              isDisabled={processing}
+              onPress={() => void handleReset()}
             >
               <Trash2 aria-hidden="true" />
               删除头像
@@ -667,8 +688,10 @@ function AvatarCropPanel({
           </Button>
           <Button
             variant="primary"
-            isDisabled={processing || (source ? viewport <= 0 : shape === avatarShape)}
-            onPress={handleSave}
+            isDisabled={
+              processing || (source ? viewport <= 0 : shape === currentShape)
+            }
+            onPress={() => void handleSave()}
           >
             保存
           </Button>

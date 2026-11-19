@@ -75,8 +75,7 @@ const postSchema: Schema = {
       ),
       ['dataTagType', /^(?:reply|mention)$/] as AttributeDefinition,
       ['dataFloor', /^\d+$/] as AttributeDefinition,
-      ['dataUserId', /^\w+$/] as AttributeDefinition,
-      ['dataHandle', /^[\w-]+$/] as AttributeDefinition,
+      ['dataUserId', /^\d+$/] as AttributeDefinition,
     ],
     div: withAllowedClass(defaultSchema.attributes?.div, 'tableWrapper'),
     table: [
@@ -102,8 +101,11 @@ const postSchema: Schema = {
   },
   protocols: {
     ...defaultSchema.protocols,
-    // Pasted images are stored as data URLs until uploads exist.
-    src: [...(defaultSchema.protocols?.src ?? []), 'data'],
+    // 正文图片必须先上传；data: URL 只允许出现在编辑器粘贴阶段并被清理，
+    // 渲染服务端内容时不再放行。
+    src: (defaultSchema.protocols?.src ?? []).filter(
+      (protocol) => protocol !== 'data',
+    ),
   },
 }
 

@@ -12,4 +12,12 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    proxy: {
+      '/forum-v1': {
+        target: 'http://localhost:45678',
+        changeOrigin: true,
+      },
+    },
+  },
 })

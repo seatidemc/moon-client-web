@@ -15,11 +15,11 @@ import { NotificationsPopover } from '@/components/NotificationsPopover'
 import { OverlayScrollbar } from '@/components/OverlayScrollbar'
 import { SiteFooter } from '@/components/SiteFooter'
 import { UserAvatar } from '@/components/UserAvatar'
-import { SITE_NAME } from '@/lib/constants'
 import { useForum } from '@/lib/forum-context'
+import { getDisplayName } from '@/lib/user'
 
 export function Layout() {
-  const { currentUser, logout, openLogin } = useForum()
+  const { site, currentUser, logout, openLogin } = useForum()
   const location = useLocation()
   const navigate = useNavigate()
   const locationKey = `${location.pathname}${location.search}`
@@ -53,9 +53,9 @@ export function Layout() {
           <Link
             to="/"
             className="brand-logo shrink-0 text-lg tracking-tight"
-            aria-label={`${SITE_NAME} 首页`}
+            aria-label={`${site.siteName} 首页`}
           >
-            {SITE_NAME}
+            {site.siteName}
           </Link>
 
           <nav aria-label="主导航" className="flex shrink-0 items-center">
@@ -114,7 +114,7 @@ export function Layout() {
                   >
                     <UserAvatar user={currentUser} />
                     <span className="hidden max-w-24 truncate sm:inline">
-                      {currentUser.name}
+                      {getDisplayName(currentUser)}
                     </span>
                   </Dropdown.Trigger>
                   <Dropdown.Popover placement="bottom end" className="min-w-36">
@@ -158,6 +158,14 @@ export function Layout() {
         </div>
       </header>
 
+      {site.announcement ? (
+        <div className="border-b border-border bg-surface-secondary">
+          <p className="mx-auto w-full max-w-[69.25rem] px-4 py-2 text-sm text-muted">
+            {site.announcement}
+          </p>
+        </div>
+      ) : null}
+
       <div className="flex-1">
         <Outlet />
       </div>
@@ -174,7 +182,7 @@ export function Layout() {
         confirmLabel="退出登录"
         confirmVariant="primary"
         onConfirm={() => {
-          logout()
+          void logout()
           setLogoutOpen(false)
         }}
       />

@@ -1,9 +1,11 @@
 import { useEffect } from 'react'
 
-import { SITE_NAME } from '@/lib/constants'
+import { useForum } from '@/lib/forum-context'
 
 export function usePageTitle(title?: string | null) {
+  const { site } = useForum()
+
   useEffect(() => {
-    document.title = title ? `${title} · ${SITE_NAME}` : SITE_NAME
-  }, [title])
+    document.title = title ? `${title} · ${site.siteName}` : site.siteName
+  }, [site.siteName, title])
 }

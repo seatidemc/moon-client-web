@@ -5,12 +5,15 @@ import { useSearchParams } from 'react-router-dom'
 
 import { TagList } from '@/components/TagList'
 import { ThreadCard } from '@/components/ThreadCard'
-import { useForum } from '@/lib/forum-context'
-import { htmlToPlainText } from '@/lib/html-content'
+import {
+  flattenPages,
+  useHotTags,
+  useSearchThreads,
+} from '@/lib/queries'
+import { useInfiniteScroll } from '@/lib/use-infinite-scroll'
 import { usePageTitle } from '@/lib/use-page-title'
 
 export function SearchPage() {
-  const { users, boards, threads, replies } = useForum()
   const [searchParams, setSearchParams] = useSearchParams()
   const query = searchParams.get('q')?.trim() ?? ''
   const paramsKey = searchParams.toString()
@@ -20,53 +23,22 @@ export function SearchPage() {
   } | null>(null)
   const input = draft?.paramsKey === paramsKey ? draft.value : query
 
+  const searchQuery = useSearchThreads(query)
+  const tagsQuery = useHotTags()
+  const results = flattenPages(searchQuery.data)
+  const total = searchQuery.data?.pages[0]?.total ?? 0
+  const popularTags = (tagsQuery.data ?? []).map((tag) => tag.name)
+  const sentinelRef = useInfiniteScroll({
+    hasNextPage: searchQuery.hasNextPage,
+    isFetchingNextPage: searchQuery.isFetchingNextPage,
+    fetchNextPage: searchQuery.fetchNextPage,
+  })
+
   usePageTitle(query ? `搜索：${query}` : '搜索')
 
   function updateInput(value: string) {
     setDraft({ paramsKey, value })
   }
-
-  const terms = query
-    .toLocaleLowerCase('zh-CN')
-    .split(/\s+/)
-    .filter(Boolean)
-
-  const results =
-    terms.length === 0
-      ? []
-      : threads
-          .filter((thread) => {
-            const author = users.find((user) => user.id === thread.authorId)
-            const board = boards.find((item) => item.id === thread.boardId)
-            const threadReplies = replies.filter(
-              (reply) => reply.threadId === thread.id,
-            )
-            const searchable = [
-              thread.title,
-              htmlToPlainText(thread.content),
-              ...thread.tags.flatMap((tag) => [tag, `#${tag}`]),
-              author?.name ?? '',
-              author?.handle ?? '',
-              board?.name ?? '',
-              ...threadReplies.map((reply) => htmlToPlainText(reply.content)),
-            ]
-              .join('\n')
-              .toLocaleLowerCase('zh-CN')
-
-            return terms.every((term) => searchable.includes(term))
-          })
-          .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-
-  const tagCounts = new Map<string, number>()
-  for (const thread of threads) {
-    for (const tag of thread.tags) {
-      tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1)
-    }
-  }
-  const popularTags = [...tagCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
-    .map(([tag]) => tag)
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -101,7 +73,7 @@ export function SearchPage() {
       {query ? (
         <section className="mt-8" aria-labelledby="search-results-heading">
           <h2 id="search-results-heading" className="text-sm font-medium">
-            找到 {results.length} 个结果
+            找到 {total} 个结果
           </h2>
 
           {results.length > 0 ? (
@@ -114,6 +86,11 @@ export function SearchPage() {
                   variant="compact"
                 />
               ))}
+              <div ref={sentinelRef} aria-hidden="true" className="h-px" />
+            </div>
+          ) : searchQuery.isPending ? (
+            <div className="py-14 text-center">
+              <p className="text-sm text-muted">正在搜索…</p>
             </div>
           ) : (
             <div className="py-14 text-center">

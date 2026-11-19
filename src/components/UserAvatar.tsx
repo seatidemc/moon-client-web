@@ -1,30 +1,32 @@
 import { Avatar, cn } from '@heroui/react'
 
-import { getAvatarShapeClassName, getAvatarUrl } from '@/lib/avatar'
-import { useForum } from '@/lib/forum-context'
-import type { User } from '@/types'
+import {
+  getAvatarShape,
+  getAvatarShapeClassName,
+  getAvatarUrl,
+} from '@/lib/avatar'
+import { getDisplayName } from '@/lib/user'
+import type { UserSummary } from '@/types'
 
 interface UserAvatarProps {
-  user: User
+  user: UserSummary
   size?: 'sm' | 'md' | 'lg'
   className?: string
 }
 
 export function UserAvatar({ user, size = 'sm', className }: UserAvatarProps) {
-  const { avatarShape } = useForum()
-
   return (
     <Avatar
       size={size}
       variant="soft"
-      aria-label={user.name}
+      aria-label={getDisplayName(user)}
       className={cn(
         'shrink-0',
-        getAvatarShapeClassName(avatarShape),
+        getAvatarShapeClassName(getAvatarShape(user)),
         className,
       )}
     >
-      <Avatar.Image src={getAvatarUrl(user)} alt={user.name} />
+      <Avatar.Image src={getAvatarUrl(user)} alt={getDisplayName(user)} />
     </Avatar>
   )
 }

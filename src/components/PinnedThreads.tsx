@@ -8,29 +8,25 @@ import {
 import { useRef, useState } from 'react'
 
 import { ThreadCard } from '@/components/ThreadCard'
-import { useForum } from '@/lib/forum-context'
+import { usePinnedThreads } from '@/lib/queries'
 import { readCookie, writeCookie } from '@/lib/utils'
 
 const COLLAPSED_COOKIE = 'pinned-threads-collapsed'
 
 interface PinnedThreadsProps {
   /** 只显示该板块的置顶；为空时显示全部（首页） */
-  boardId?: string
+  boardSlug?: string
 }
 
-export function PinnedThreads({ boardId }: PinnedThreadsProps) {
-  const { threads } = useForum()
+export function PinnedThreads({ boardSlug }: PinnedThreadsProps) {
+  const pinnedQuery = usePinnedThreads(boardSlug)
   const scrollerRef = useRef<HTMLDivElement>(null)
   const rowRef = useRef<HTMLDivElement>(null)
   const [collapsed, setCollapsed] = useState(
     () => readCookie(COLLAPSED_COOKIE) === '1',
   )
 
-  const pinnedThreads = threads
-    .filter(
-      (thread) => thread.pinned && (!boardId || thread.boardId === boardId),
-    )
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  const pinnedThreads = pinnedQuery.data ?? []
   // 不超过三张时与下方内容同宽并等分卡片，超过三张才铺满整屏横向滚动
   const isCarousel = pinnedThreads.length > 3
 
@@ -151,7 +147,7 @@ export function PinnedThreads({ boardId }: PinnedThreadsProps) {
                   <ThreadCard
                     thread={thread}
                     variant="compact"
-                    showBoard={!boardId}
+                    showBoard={!boardSlug}
                     className="h-full"
                   />
                 </div>

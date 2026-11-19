@@ -2,19 +2,20 @@ import { Button, Modal, cn, toast } from '@heroui/react'
 import { ImagePlus, Trash2 } from 'lucide-react'
 import { useRef, useState, type DragEvent } from 'react'
 
-import { useForum } from '@/lib/forum-context'
-import { imageFileToDataUrl } from '@/lib/image'
+import { uploadImage } from '@/lib/api'
+import { imageFileToBackgroundBlob } from '@/lib/image'
+import { useBindBackground } from '@/lib/queries'
 
 interface ProfileCustomizeDialogProps {
   isOpen: boolean
   onOpenChange: (isOpen: boolean) => void
-  userId: string
+  backgroundUrl: string | null
 }
 
 export function ProfileCustomizeDialog({
   isOpen,
   onOpenChange,
-  userId,
+  backgroundUrl,
 }: ProfileCustomizeDialogProps) {
   return (
     <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -24,7 +25,7 @@ export function ProfileCustomizeDialog({
             <Modal.CloseTrigger aria-label="关闭个性化设置" />
             <CustomizePanel
               key={isOpen ? 'open' : 'closed'}
-              userId={userId}
+              background={backgroundUrl}
               onClose={() => onOpenChange(false)}
             />
           </Modal.Dialog>
@@ -35,14 +36,13 @@ export function ProfileCustomizeDialog({
 }
 
 function CustomizePanel({
-  userId,
+  background,
   onClose,
 }: {
-  userId: string
+  background: string | null
   onClose: () => void
 }) {
-  const { userBackgrounds, setUserBackground } = useForum()
-  const background = userBackgrounds[userId]
+  const bindBackground = useBindBackground()
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const [processing, setProcessing] = useState(false)
@@ -53,12 +53,12 @@ function CustomizePanel({
     setProcessing(true)
 
     try {
-      const updateBackground = imageFileToDataUrl(file).then((dataUrl) => {
-        setUserBackground(userId, dataUrl)
-      })
+      const updateBackground = imageFileToBackgroundBlob(file)
+        .then((blob) => uploadImage(blob, 'background'))
+        .then((upload) => bindBackground.mutateAsync(upload.id))
 
       toast.promise(updateBackground, {
-        loading: '正在处理图片…',
+        loading: '正在上传背景…',
         success: '主页背景已更新。',
         error: (cause) =>
           cause instanceof Error ? cause.message : '无法读取这张图片。',
@@ -84,8 +84,13 @@ function CustomizePanel({
     inputRef.current?.click()
   }
 
-  function handleRemove() {
-    setUserBackground(userId, null)
+  async function handleRemove() {
+    try {
+      await bindBackground.mutateAsync(null)
+      toast.success('主页背景已移除。')
+    } catch {
+      // 错误提示由 API 层展示。
+    }
   }
 
   return (
@@ -102,7 +107,8 @@ function CustomizePanel({
               size="sm"
               variant="ghost"
               className="text-danger"
-              onPress={handleRemove}
+              isDisabled={processing}
+              onPress={() => void handleRemove()}
             >
               <Trash2 aria-hidden="true" />
               移除背景

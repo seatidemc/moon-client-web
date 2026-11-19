@@ -12,6 +12,13 @@ import { NewThreadDialog } from '@/components/NewThreadDialog'
 import { ThreadCard } from '@/components/ThreadCard'
 import { getBoardThemeStyle } from '@/lib/board-theme'
 import { useForum } from '@/lib/forum-context'
+import {
+  flattenPages,
+  useBoard,
+  useSetBoardFollow,
+  useThreads,
+} from '@/lib/queries'
+import { useInfiniteScroll } from '@/lib/use-infinite-scroll'
 import { usePageTitle } from '@/lib/use-page-title'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
@@ -19,33 +26,35 @@ import { NotFoundPage } from '@/pages/NotFoundPage'
 const DECORATION_VARIANT: BoardDecorationVariant = 'tiled'
 
 export function TopicPage() {
-  const { id } = useParams()
-  const {
-    boards,
-    threads,
-    currentUser,
-    openLogin,
-    boardFollows,
-    toggleBoardFollow,
-  } = useForum()
+  const { slug } = useParams()
+  const { currentUser, openLogin } = useForum()
+  const boardQuery = useBoard(slug)
+  const threadsQuery = useThreads(slug)
+  const follow = useSetBoardFollow(slug)
   const [composerOpen, setComposerOpen] = useState(false)
-  const board = boards.find((item) => item.id === id)
+
+  const board = boardQuery.data
+  const threads = flattenPages(threadsQuery.data)
+  const sentinelRef = useInfiniteScroll({
+    hasNextPage: threadsQuery.hasNextPage,
+    isFetchingNextPage: threadsQuery.isFetchingNextPage,
+    fetchNextPage: threadsQuery.fetchNextPage,
+  })
 
   usePageTitle(board?.name)
 
-  if (!board) return <NotFoundPage />
+  if (boardQuery.isError) return <NotFoundPage />
+  if (!board) {
+    return (
+      <main className="mx-auto w-full max-w-[69.25rem] px-4 py-16">
+        <p className="text-center text-sm text-muted">正在加载板块…</p>
+      </main>
+    )
+  }
 
-  const boardId = board.id
-  const following = currentUser
-    ? (boardFollows[boardId] ?? []).includes(currentUser.id)
-    : false
+  const following = board.followingByMe
+
   const themeStyle = getBoardThemeStyle(board.color)
-
-  const boardThreads = threads
-    .filter((thread) => thread.boardId === boardId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-  // 置顶主题已在顶部轮播中展示，普通列表不再重复
-  const listedThreads = boardThreads.filter((thread) => !thread.pinned)
 
   function openComposer() {
     if (!currentUser) {
@@ -62,7 +71,7 @@ export function TopicPage() {
       return
     }
 
-    toggleBoardFollow(boardId)
+    follow.mutate(!following)
   }
 
   return (
@@ -120,11 +129,18 @@ export function TopicPage() {
         </div>
 
         <div className="mt-8 pb-10 sm:pb-12">
-          <FeedLayout boardId={board.id} boardColor={board.color}>
-            {boardThreads.length > 0 ? (
-              listedThreads.map((thread) => (
-                <ThreadCard key={thread.id} thread={thread} />
-              ))
+          <FeedLayout boardSlug={board.slug} boardColor={board.color}>
+            {threads.length > 0 ? (
+              <>
+                {threads.map((thread) => (
+                  <ThreadCard key={thread.id} thread={thread} />
+                ))}
+                <div ref={sentinelRef} aria-hidden="true" className="h-px" />
+              </>
+            ) : threadsQuery.isPending ? (
+              <div className="py-16 text-center">
+                <p className="text-sm text-muted">正在加载主题…</p>
+              </div>
             ) : (
               <div className="py-16 text-center">
                 <p className="text-sm text-muted">这个板块还没有主题。</p>

@@ -19,7 +19,7 @@ interface EditPostDialogProps {
   onOpenChange: (isOpen: boolean) => void
   initialTitle?: string
   initialContent: string
-  onSave: (values: { title: string; content: string }) => void
+  onSave: (values: { title: string; content: string }) => Promise<void> | void
   /** 编辑跟帖时用于 re# 楼层提示 */
   floorOptions?: ReplyReferenceOption[]
   /** 所属板块色，用于让编辑弹窗沿用板块主题色 */
@@ -105,16 +105,18 @@ function EditPostForm({
   isAdvanced: boolean
   floorOptions?: ReplyReferenceOption[]
   onCancel: () => void
-  onSave: (values: { title: string; content: string }) => void
+  onSave: (values: { title: string; content: string }) => Promise<void> | void
 }) {
   const isThread = initialTitle !== undefined
   const [title, setTitle] = useState(initialTitle ?? '')
   const [content, setContent] = useState(initialContent)
   const [titleError, setTitleError] = useState<string | null>(null)
   const [contentError, setContentError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (saving) return
 
     const nextTitleError = isThread && !title.trim() ? '请填写标题。' : null
     const nextContentError = hasRichTextContent(content) ? null : '请填写正文。'
@@ -124,7 +126,14 @@ function EditPostForm({
 
     if (nextTitleError || nextContentError) return
 
-    onSave({ title: title.trim(), content })
+    setSaving(true)
+    try {
+      await onSave({ title: title.trim(), content })
+    } catch {
+      // 错误提示由 API 层统一展示；保留弹窗与输入内容方便重试。
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -183,10 +192,10 @@ function EditPostForm({
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="tertiary" onPress={onCancel}>
+        <Button variant="tertiary" onPress={onCancel} isDisabled={saving}>
           取消
         </Button>
-        <Button type="submit" variant="primary">
+        <Button type="submit" variant="primary" isDisabled={saving}>
           保存
         </Button>
       </Modal.Footer>

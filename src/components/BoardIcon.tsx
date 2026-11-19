@@ -1,10 +1,8 @@
 import { createElement } from 'react'
 
 import { getBoardIcon } from '@/lib/board-icons'
-import type { BoardIconName } from '@/types'
-
 interface BoardIconProps {
-  icon: BoardIconName
+  icon: string
   color: string
   className?: string
 }

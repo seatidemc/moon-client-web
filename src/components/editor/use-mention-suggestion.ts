@@ -2,14 +2,16 @@ import type { Editor } from '@tiptap/core'
 import { TextSelection } from '@tiptap/pm/state'
 import {
   useCallback,
+  useEffect,
   useMemo,
   useState,
   type KeyboardEvent,
   type RefObject,
 } from 'react'
 
+import { useMentionCandidates } from '@/lib/queries'
 import { replyReferenceSpacing } from '@/lib/tiptap-reply-references'
-import type { User } from '@/types'
+import type { UserSummary } from '@/types'
 
 import { MENTION_POPUP_HEIGHT, MENTION_POPUP_WIDTH } from './editor-constants'
 import type { MentionTrigger } from './editor-types'
@@ -21,19 +23,34 @@ import {
 
 interface Options {
   panelRef: RefObject<HTMLDivElement | null>
-  users: User[]
   /** 允许浮窗超出编辑器上边缘（用于底部快捷回复） */
   allowOutsidePanel?: boolean
 }
 
-/** Tracks an `@` query typed in the editor and exposes the user picker. */
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value)
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebounced(value), delay)
+    return () => window.clearTimeout(timer)
+  }, [delay, value])
+
+  return debounced
+}
+
+/**
+ * Tracks an `@` query typed in the editor and searches users through the API.
+ * Candidates are always the server's `UserSummary` shape, and the inserted
+ * chip only stores the user id plus the immutable username.
+ */
 export function useMentionSuggestion({
   panelRef,
-  users,
   allowOutsidePanel = false,
 }: Options) {
   const [trigger, setTrigger] = useState<MentionTrigger | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
+  const debouncedQuery = useDebouncedValue(trigger?.query ?? '', 150)
+  const candidates = useMentionCandidates(debouncedQuery)
 
   const update = useCallback(
     (currentEditor: Editor) => {
@@ -88,34 +105,31 @@ export function useMentionSuggestion({
     [allowOutsidePanel, panelRef],
   )
 
-  const options = useMemo(() => {
-    if (!trigger) return []
-
-    const query = trigger.query.toLocaleLowerCase('zh-CN')
-    return users.filter(
-      (user) =>
-        user.handle.toLocaleLowerCase('zh-CN').includes(query) ||
-        user.name.toLocaleLowerCase('zh-CN').includes(query),
-    )
-  }, [trigger, users])
+  const options = useMemo<UserSummary[]>(() => {
+    if (!trigger || trigger.query.trim() === '') return []
+    return candidates.data ?? []
+  }, [candidates.data, trigger])
 
   const boundedIndex = Math.min(
     activeIndex,
     Math.max(options.length - 1, 0),
   )
-  const visible = trigger !== null && users.length > 0
+  const visible = trigger !== null
 
   const hide = useCallback(() => setTrigger(null), [])
 
   const choose = useCallback(
-    (currentEditor: Editor, user: User) => {
+    (currentEditor: Editor, user: UserSummary) => {
       if (!trigger) return
 
       const { state, view } = currentEditor
       const chipType = state.schema.nodes.mention
       if (!chipType) return
 
-      const chip = chipType.create({ userId: user.id, handle: user.handle })
+      const chip = chipType.create({
+        userId: user.id,
+        username: user.username,
+      })
       // Keep typing after the chip separated from it, the same way a picked
       // floor is.
       const { $from } = state.selection
@@ -175,6 +189,7 @@ export function useMentionSuggestion({
     options,
     activeIndex: boundedIndex,
     visible,
+    loading: candidates.isFetching,
     update,
     hide,
     choose,

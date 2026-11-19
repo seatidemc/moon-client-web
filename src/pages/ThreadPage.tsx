@@ -1,5 +1,13 @@
 import { Button, cn } from '@heroui/react'
-import { CornerUpLeft, Heart, Pencil, Trash2 } from 'lucide-react'
+import {
+  CornerUpLeft,
+  Heart,
+  Lock,
+  LockOpen,
+  Pencil,
+  Pin,
+  Trash2,
+} from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
@@ -14,12 +22,23 @@ import {
 import { ThreadToc } from '@/components/ThreadToc'
 import { UserByline } from '@/components/UserByline'
 import { getBoardThemeStyle } from '@/lib/board-theme'
+import { useForum } from '@/lib/forum-context'
 import {
-  replyPostKey,
-  threadPostKey,
-  useForum,
-} from '@/lib/forum-context'
+  flattenPages,
+  useDeleteReply,
+  useDeleteThread,
+  useSetReplyLike,
+  useSetThreadLike,
+  useSetThreadLocked,
+  useSetThreadPinned,
+  useThread,
+  useThreadReplies,
+  useUpdateReply,
+  useUpdateThread,
+} from '@/lib/queries'
 import { buildReplyReferenceOptions } from '@/lib/reply-reference-options'
+import { getDisplayName } from '@/lib/user'
+import { useInfiniteScroll } from '@/lib/use-infinite-scroll'
 import { usePageTitle } from '@/lib/use-page-title'
 import { formatRelativeTime } from '@/lib/utils'
 import type { Reply } from '@/types'
@@ -28,31 +47,24 @@ import { NotFoundPage } from '@/pages/NotFoundPage'
 type EditTarget = { kind: 'thread' } | { kind: 'reply'; reply: Reply }
 
 interface PostActionsProps {
-  postKey: string
+  liked: boolean
+  likeCount: number
   postLabel: string
+  onLike: () => void
   onReply: () => void
+  replyDisabled?: boolean
   className?: string
 }
 
 function PostActions({
-  postKey,
+  liked,
+  likeCount,
   postLabel,
+  onLike,
   onReply,
+  replyDisabled = false,
   className,
 }: PostActionsProps) {
-  const { postLikes, currentUser, togglePostLike, openLogin } = useForum()
-  const likers = postLikes[postKey] ?? []
-  const liked = currentUser ? likers.includes(currentUser.id) : false
-
-  function handleLike() {
-    if (!currentUser) {
-      openLogin()
-      return
-    }
-
-    togglePostLike(postKey)
-  }
-
   return (
     <div className={cn('flex items-center gap-1', className)}>
       <Button
@@ -62,13 +74,13 @@ function PostActions({
         aria-pressed={liked}
         aria-label={liked ? `取消${postLabel}的点赞` : `点赞${postLabel}`}
         className="gap-1.5 px-2 text-xs text-muted hover:text-foreground"
-        onPress={handleLike}
+        onPress={onLike}
       >
         <Heart
           aria-hidden="true"
           className={cn('size-4', liked && 'fill-current text-danger')}
         />
-        <span className="tabular-nums">{likers.length}</span>
+        <span className="tabular-nums">{likeCount}</span>
       </Button>
 
       <Button
@@ -76,6 +88,7 @@ function PostActions({
         size="sm"
         variant="ghost"
         aria-label={`回复${postLabel}`}
+        isDisabled={replyDisabled}
         className="gap-1.5 px-2 text-xs text-muted hover:text-foreground"
         onPress={onReply}
       >
@@ -89,85 +102,98 @@ function PostActions({
 export function ThreadPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const {
-    users,
-    boards,
-    threads,
-    replies,
-    currentUser,
-    openLogin,
-    postLikes,
-    togglePostLike,
-    updateThread,
-    deleteThread,
-    updateReply,
-    deleteReply,
-  } = useForum()
+  const threadId = Number(id)
+
+  const { currentUser, openLogin, hasPermission } = useForum()
+  const threadQuery = useThread(threadId)
+  const repliesQuery = useThreadReplies(threadId)
+  const likeThread = useSetThreadLike(threadId)
+  const likeReply = useSetReplyLike(threadId)
+  const updateThread = useUpdateThread(threadId)
+  const deleteThread = useDeleteThread()
+  const deleteReply = useDeleteReply(threadId)
+  const pinThread = useSetThreadPinned(threadId)
+  const lockThread = useSetThreadLocked(threadId)
+
   const [deleteThreadOpen, setDeleteThreadOpen] = useState(false)
   const [replyToDelete, setReplyToDelete] = useState<Reply | null>(null)
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null)
   const composerRef = useRef<ReplyComposerHandle>(null)
+  const updateReply = useUpdateReply(
+    threadId,
+    editTarget?.kind === 'reply' ? editTarget.reply.id : 0,
+  )
 
-  const thread = threads.find((item) => item.id === id)
-  const board = thread
-    ? boards.find((item) => item.id === thread.boardId)
-    : undefined
-  const author = thread
-    ? users.find((user) => user.id === thread.authorId)
-    : undefined
-  const themeStyle = getBoardThemeStyle(board?.color)
+  const thread = threadQuery.data
+  const replies = flattenPages(repliesQuery.data)
+  const threadReplies = [...replies].sort((a, b) => a.floor - b.floor)
+  const sentinelRef = useInfiniteScroll({
+    hasNextPage: repliesQuery.hasNextPage,
+    isFetchingNextPage: repliesQuery.isFetchingNextPage,
+    fetchNextPage: repliesQuery.fetchNextPage,
+  })
 
   usePageTitle(thread?.title)
 
-  if (!thread) return <NotFoundPage />
+  if (!Number.isFinite(threadId) || threadId <= 0 || threadQuery.isError) {
+    return <NotFoundPage />
+  }
 
-  const threadKey = threadPostKey(thread.id)
-  const threadLikers = postLikes[threadKey] ?? []
-  const threadLiked = currentUser
-    ? threadLikers.includes(currentUser.id)
-    : false
-  const threadReplies = replies
-    .filter((reply) => reply.threadId === thread.id)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-  const isThreadAuthor = currentUser?.id === thread.authorId
+  if (!thread) {
+    return (
+      <main className="mx-auto w-full max-w-[69.25rem] px-4 py-16">
+        <p className="text-center text-sm text-muted">正在加载主题…</p>
+      </main>
+    )
+  }
+
+  const board = thread.board
+  const author = thread.author
+  const themeStyle = getBoardThemeStyle(board.color)
   const replyReferenceOptions = buildReplyReferenceOptions(
     thread,
     threadReplies,
-    users,
   )
   const tocItems = [
     { id: 'thread-post', label: '主题', time: thread.createdAt },
-    ...threadReplies.map((reply, index) => ({
+    ...threadReplies.map((reply) => ({
       id: `reply-${reply.id}`,
-      label: `#${index + 1} ${
-        users.find((user) => user.id === reply.authorId)?.name ?? '未知用户'
+      label: `#${reply.floor} ${
+        reply.author ? getDisplayName(reply.author) : '已删除'
       }`,
       time: reply.createdAt,
     })),
   ]
+  const edited = thread.updatedAt && thread.updatedAt !== thread.createdAt
 
-  function handleDeleteThread() {
-    deleteThread(thread!.id)
-    setDeleteThreadOpen(false)
-    navigate(`/topic/${thread!.boardId}`, { replace: true })
+  async function handleDeleteThread() {
+    try {
+      await deleteThread.mutateAsync(thread!.id)
+      setDeleteThreadOpen(false)
+      navigate(`/topic/${board.slug}`, { replace: true })
+    } catch {
+      // 错误信息由 API 层展示。
+    }
   }
 
-  function handleDeleteReply() {
+  async function handleDeleteReply() {
     if (!replyToDelete) return
 
-    deleteReply(replyToDelete.id)
-    setReplyToDelete(null)
+    try {
+      await deleteReply.mutateAsync(replyToDelete.id)
+      setReplyToDelete(null)
+    } catch {
+      // 错误信息由 API 层展示。
+    }
   }
 
   function handleReply(floor: number) {
-    const run = () => composerRef.current?.appendReplyReference(floor)
-
     if (!currentUser) {
-      openLogin(() => requestAnimationFrame(run))
+      openLogin(() => composerRef.current?.appendReplyReference(floor))
       return
     }
 
-    run()
+    composerRef.current?.appendReplyReference(floor)
   }
 
   function handleLikeThread() {
@@ -176,8 +202,30 @@ export function ThreadPage() {
       return
     }
 
-    togglePostLike(threadKey)
+    likeThread.mutate(!thread!.likedByMe)
   }
+
+  function handleLikeReply(reply: Reply) {
+    if (!currentUser) {
+      openLogin()
+      return
+    }
+
+    likeReply.mutate({ replyId: reply.id, liked: !reply.likedByMe })
+  }
+
+  function handleTogglePin() {
+    pinThread.mutate(!thread!.pinned)
+  }
+
+  function handleToggleLock() {
+    lockThread.mutate(!thread!.locked)
+  }
+
+  const canPin = hasPermission('thread.pin', board.id)
+  const canLock = hasPermission('thread.lock', board.id)
+  const canManageThread =
+    thread.canEdit || thread.canDelete || canPin || canLock
 
   return (
     <div
@@ -191,19 +239,17 @@ export function ThreadPage() {
               id="thread-post"
               className="scroll-mt-6 rounded-2xl bg-surface p-4 sm:p-5"
             >
-              {board ? (
-                <Link
-                  to={`/topic/${board.id}`}
-                  className="mb-3 flex w-fit items-center gap-1.5 rounded text-sm text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/40"
-                >
-                  <BoardIcon
-                    icon={board.icon}
-                    color={board.color}
-                    className="size-4"
-                  />
-                  {board.name}
-                </Link>
-              ) : null}
+              <Link
+                to={`/topic/${board.slug}`}
+                className="mb-3 flex w-fit items-center gap-1.5 rounded text-sm text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/40"
+              >
+                <BoardIcon
+                  icon={board.icon}
+                  color={board.color}
+                  className="size-4"
+                />
+                {board.name}
+              </Link>
 
               <h1 className="break-words font-minecraft-sc text-2xl leading-tight tracking-tight sm:text-3xl">
                 {thread.title}
@@ -222,45 +268,94 @@ export function ThreadPage() {
                 )}
               </div>
 
-              <PostContent className="mt-6">{thread.content}</PostContent>
+              <PostContent className="mt-6">{thread.contentHtml}</PostContent>
 
               <div
                 className={cn(
                   'mt-4 flex items-end justify-between gap-3',
-                  !isThreadAuthor && 'lg:hidden',
+                  !canManageThread && 'lg:hidden',
                 )}
               >
                 <PostActions
                   className="lg:hidden"
-                  postKey={threadKey}
+                  liked={thread.likedByMe}
+                  likeCount={thread.likeCount}
                   postLabel="主题"
+                  onLike={handleLikeThread}
                   onReply={() => handleReply(0)}
+                  replyDisabled={thread.locked}
                 />
 
-                {isThreadAuthor ? (
+                {canManageThread ? (
                   <div className="ml-auto flex items-center">
-                    <Button
-                      type="button"
-                      size="sm"
-                      isIconOnly
-                      variant="ghost"
-                      className="text-muted hover:text-foreground"
-                      aria-label="编辑主题"
-                      onPress={() => setEditTarget({ kind: 'thread' })}
-                    >
-                      <Pencil className="size-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      isIconOnly
-                      variant="ghost"
-                      className="text-muted hover:text-danger"
-                      aria-label="删除主题"
-                      onPress={() => setDeleteThreadOpen(true)}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
+                    {canPin ? (
+                      <>
+                        <Button
+                          type="button"
+                          size="sm"
+                          isIconOnly
+                          variant="ghost"
+                          className={cn(
+                            'text-muted hover:text-foreground',
+                            thread.pinned && 'text-accent',
+                          )}
+                          aria-label={thread.pinned ? '取消置顶' : '置顶主题'}
+                          aria-pressed={thread.pinned}
+                          onPress={handleTogglePin}
+                        >
+                          <Pin
+                            className={cn(
+                              'size-3.5',
+                              thread.pinned && 'fill-current',
+                            )}
+                          />
+                        </Button>
+                      </>
+                    ) : null}
+                    {canLock ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        isIconOnly
+                        variant="ghost"
+                        className="text-muted hover:text-foreground"
+                        aria-label={thread.locked ? '解除锁定' : '锁定主题'}
+                        aria-pressed={thread.locked}
+                        onPress={handleToggleLock}
+                      >
+                        {thread.locked ? (
+                          <Lock className="size-3.5" />
+                        ) : (
+                          <LockOpen className="size-3.5" />
+                        )}
+                      </Button>
+                    ) : null}
+                    {thread.canEdit ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        isIconOnly
+                        variant="ghost"
+                        className="text-muted hover:text-foreground"
+                        aria-label="编辑主题"
+                        onPress={() => setEditTarget({ kind: 'thread' })}
+                      >
+                        <Pencil className="size-3.5" />
+                      </Button>
+                    ) : null}
+                    {thread.canDelete ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        isIconOnly
+                        variant="ghost"
+                        className="text-muted hover:text-danger"
+                        aria-label="删除主题"
+                        onPress={() => setDeleteThreadOpen(true)}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
@@ -268,12 +363,33 @@ export function ThreadPage() {
 
             <section className="space-y-5" aria-label="跟帖">
               {threadReplies.length > 0 ? (
-                threadReplies.map((reply, index) => {
-                  const replyAuthor = users.find(
-                    (user) => user.id === reply.authorId,
-                  )
-                  const canModify = currentUser?.id === reply.authorId
-                  const fromThreadAuthor = reply.authorId === thread.authorId
+                threadReplies.map((reply) => {
+                  const replyAuthor = reply.author
+                  const fromThreadAuthor =
+                    replyAuthor?.id === thread.author?.id
+
+                  if (reply.deleted) {
+                    return (
+                      <article
+                        key={reply.id}
+                        id={`reply-${reply.id}`}
+                        className="scroll-mt-6 rounded-2xl bg-surface p-4 sm:p-5"
+                      >
+                        <header className="flex flex-wrap items-center justify-between gap-3">
+                          <span className="text-sm text-muted">
+                            该楼层已删除
+                          </span>
+                          <Link
+                            to={`/thread/${thread.id}#reply-${reply.id}`}
+                            aria-label={`第 ${reply.floor} 楼的链接`}
+                            className="ml-2 rounded px-1 py-0.5 text-xs text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/40"
+                          >
+                            #{reply.floor}
+                          </Link>
+                        </header>
+                      </article>
+                    )
+                  }
 
                   return (
                     <article
@@ -301,40 +417,40 @@ export function ThreadPage() {
                         )}
 
                         <div className="flex items-center">
-                          {canModify ? (
-                            <>
-                              <Button
-                                type="button"
-                                size="sm"
-                                isIconOnly
-                                variant="ghost"
-                                className="text-muted hover:text-foreground"
-                                aria-label="编辑回复"
-                                onPress={() =>
-                                  setEditTarget({ kind: 'reply', reply })
-                                }
-                              >
-                                <Pencil className="size-3.5" />
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                isIconOnly
-                                variant="ghost"
-                                className="text-muted hover:text-danger"
-                                aria-label="删除跟帖"
-                                onPress={() => setReplyToDelete(reply)}
-                              >
-                                <Trash2 className="size-3.5" />
-                              </Button>
-                            </>
+                          {reply.canEdit ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              isIconOnly
+                              variant="ghost"
+                              className="text-muted hover:text-foreground"
+                              aria-label="编辑回复"
+                              onPress={() =>
+                                setEditTarget({ kind: 'reply', reply })
+                              }
+                            >
+                              <Pencil className="size-3.5" />
+                            </Button>
+                          ) : null}
+                          {reply.canDelete ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              isIconOnly
+                              variant="ghost"
+                              className="text-muted hover:text-danger"
+                              aria-label="删除跟帖"
+                              onPress={() => setReplyToDelete(reply)}
+                            >
+                              <Trash2 className="size-3.5" />
+                            </Button>
                           ) : null}
                           <Link
                             to={`/thread/${thread.id}#reply-${reply.id}`}
-                            aria-label={`第 ${index + 1} 楼的链接`}
+                            aria-label={`第 ${reply.floor} 楼的链接`}
                             className="ml-2 rounded px-1 py-0.5 text-xs text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/40"
                           >
-                            #{index + 1}
+                            #{reply.floor}
                           </Link>
                         </div>
                       </header>
@@ -346,23 +462,31 @@ export function ThreadPage() {
                           replies: threadReplies,
                         }}
                       >
-                        {reply.content}
+                        {reply.contentHtml ?? ''}
                       </PostContent>
 
                       <PostActions
                         className="mt-4"
-                        postKey={replyPostKey(reply.id)}
-                        postLabel={`第 ${index + 1} 楼`}
-                        onReply={() => handleReply(index + 1)}
+                        liked={reply.likedByMe}
+                        likeCount={reply.likeCount}
+                        postLabel={`第 ${reply.floor} 楼`}
+                        onLike={() => handleLikeReply(reply)}
+                        onReply={() => handleReply(reply.floor)}
+                        replyDisabled={thread.locked}
                       />
                     </article>
                   )
                 })
+              ) : repliesQuery.isPending ? (
+                <p className="rounded-2xl bg-surface px-4 py-10 text-center text-sm text-muted">
+                  正在加载跟帖…
+                </p>
               ) : (
                 <p className="rounded-2xl bg-surface px-4 py-10 text-center text-sm text-muted">
                   还没有跟帖，来写下第一帖吧。
                 </p>
               )}
+              <div ref={sentinelRef} aria-hidden="true" className="h-px" />
             </section>
           </div>
 
@@ -373,6 +497,7 @@ export function ThreadPage() {
                 size="md"
                 variant="primary"
                 className="w-full"
+                isDisabled={thread.locked}
                 onPress={() => handleReply(0)}
               >
                 <CornerUpLeft aria-hidden="true" className="size-4" />
@@ -383,8 +508,8 @@ export function ThreadPage() {
                 type="button"
                 size="md"
                 variant="outline"
-                aria-pressed={threadLiked}
-                aria-label={threadLiked ? '取消主题的点赞' : '点赞主题'}
+                aria-pressed={thread.likedByMe}
+                aria-label={thread.likedByMe ? '取消主题的点赞' : '点赞主题'}
                 className="w-full justify-center gap-2"
                 onPress={handleLikeThread}
               >
@@ -392,11 +517,11 @@ export function ThreadPage() {
                   aria-hidden="true"
                   className={cn(
                     'size-4',
-                    threadLiked && 'fill-current text-danger',
+                    thread.likedByMe && 'fill-current text-danger',
                   )}
                 />
                 点赞
-                <span className="tabular-nums">{threadLikers.length}</span>
+                <span className="tabular-nums">{thread.likeCount}</span>
               </Button>
 
               <section
@@ -406,10 +531,10 @@ export function ThreadPage() {
                 {author ? (
                   <UserByline
                     user={author}
-                    date={thread.updatedAt ?? thread.createdAt}
+                    date={thread.updatedAt || thread.createdAt}
                     avatarSize="md"
                     dateText={
-                      thread.updatedAt
+                      edited
                         ? `最后编辑于 ${formatRelativeTime(thread.updatedAt)}`
                         : `发布于 ${formatRelativeTime(thread.createdAt)}`
                     }
@@ -427,11 +552,19 @@ export function ThreadPage() {
         </div>
       </main>
 
-      <ReplyComposer ref={composerRef} threadId={thread.id} />
+      {thread.locked ? (
+        <div className="sticky bottom-0 z-20 mt-auto" style={themeStyle}>
+          <div className="mx-auto w-full max-w-[69.25rem] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <p className="max-w-3xl text-sm text-muted">主题已锁定，无法回复。</p>
+          </div>
+        </div>
+      ) : (
+        <ReplyComposer ref={composerRef} threadId={thread.id} />
+      )}
 
       <EditPostDialog
         isOpen={editTarget !== null}
-        boardColor={board?.color}
+        boardColor={board.color}
         onOpenChange={(isOpen) => {
           if (!isOpen) setEditTarget(null)
         }}
@@ -440,19 +573,22 @@ export function ThreadPage() {
         }
         initialContent={
           editTarget?.kind === 'reply'
-            ? editTarget.reply.content
-            : thread.content
+            ? (editTarget.reply.contentHtml ?? '')
+            : thread.contentHtml
         }
         floorOptions={
           editTarget?.kind === 'reply' ? replyReferenceOptions : undefined
         }
-        onSave={({ title, content }) => {
+        onSave={async ({ title, content }) => {
           if (!editTarget) return
 
           if (editTarget.kind === 'thread') {
-            updateThread(thread.id, { title, content })
+            await updateThread.mutateAsync({
+              title,
+              contentHtml: content,
+            })
           } else {
-            updateReply(editTarget.reply.id, content)
+            await updateReply.mutateAsync(content)
           }
 
           setEditTarget(null)
@@ -465,7 +601,7 @@ export function ThreadPage() {
         title="删除这个主题？"
         description="主题和它下面的所有跟帖都会被删除，此操作无法撤销。"
         confirmLabel="删除主题"
-        onConfirm={handleDeleteThread}
+        onConfirm={() => void handleDeleteThread()}
       />
       <ConfirmDialog
         isOpen={replyToDelete !== null}
@@ -474,7 +610,7 @@ export function ThreadPage() {
         }}
         title="删除这条跟帖？"
         description="删除后无法恢复。"
-        onConfirm={handleDeleteReply}
+        onConfirm={() => void handleDeleteReply()}
       />
     </div>
   )

@@ -5,6 +5,13 @@ export function makeExcerpt(html: string, maxLength = 120): string {
   return text.length > maxLength ? `${text.slice(0, maxLength).trimEnd()}…` : text
 }
 
+/** 截断已经由服务端生成的纯文本摘要，保持原有卡片文案长度。 */
+export function truncateText(text: string, maxLength: number): string {
+  return text.length > maxLength
+    ? `${text.slice(0, maxLength).trimEnd()}…`
+    : text
+}
+
 export function formatRelativeTime(isoDate: string): string {
   const date = new Date(isoDate)
   if (Number.isNaN(date.getTime())) return ''

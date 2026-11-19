@@ -12,6 +12,8 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 
+import { uploadImage } from '@/lib/api'
+
 import { replaceImageSource } from './editor-commands'
 import {
   FLOATING_LAYER_Z_INDEX,
@@ -29,7 +31,6 @@ import {
   floatingLayerContainer,
   normalizeImageSrc,
   parseImageDimension,
-  readImageFileAsDataUrl,
 } from './editor-utils'
 
 type ImageSource = 'url' | 'upload'
@@ -81,6 +82,11 @@ export function ImagePopover({
     const src = normalizeImageSrc(srcInput)
     if (!src) return
 
+    if (/^data:/i.test(src)) {
+      toast.danger('请先上传图片，正文不能使用 data URL。')
+      return
+    }
+
     if (mode === 'replace' && imagePos !== null) {
       replaceImageSource(editor, imagePos, src)
       onClose()
@@ -107,7 +113,7 @@ export function ImagePopover({
   function insertFiles(files: File[]) {
     if (files.length === 0) return
 
-    // 替换模式只取第一张图，原位替换来源。
+    // 替换模式只取第一张图，上传成功后原位替换来源。
     if (mode === 'replace' && imagePos !== null) {
       const images = filterImageFiles(files)
       if (images.length === 0) {
@@ -116,14 +122,17 @@ export function ImagePopover({
       }
 
       onClose()
-      void readImageFileAsDataUrl(images[0])
-        .then((src) => replaceImageSource(editor, imagePos, src))
-        .catch((cause: unknown) => {
-          // 读取或解码失败时保留原图。
-          toast.danger(
-            cause instanceof Error ? cause.message : '无法读取这张图片。',
-          )
-        })
+      toast.promise(
+        uploadImage(images[0], 'post').then((upload) => {
+          replaceImageSource(editor, imagePos, upload.url)
+        }),
+        {
+          loading: '正在上传图片…',
+          success: '图片已替换。',
+          error: (cause) =>
+            cause instanceof Error ? cause.message : '图片上传失败。',
+        },
+      )
       return
     }
 
@@ -243,8 +252,8 @@ export function ImagePopover({
               </span>
               <span className="text-xs text-muted">
                 {mode === 'replace'
-                  ? '图片会替换当前图片'
-                  : '图片会内嵌到内容中保存'}
+                  ? '图片会先上传，再替换当前图片'
+                  : '图片会先上传，再插入内容'}
               </span>
             </button>
           </Tabs.Panel>

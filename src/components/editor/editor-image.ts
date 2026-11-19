@@ -137,7 +137,8 @@ export const ContextualImage = Image.extend({
     }
   },
 }).configure({
-  allowBase64: true,
+  // 正文图片必须先上传；禁止把 data:/Base64 图片解析进文档。
+  allowBase64: false,
   resize: {
     enabled: true,
     directions: [...RESIZE_DIRECTIONS],

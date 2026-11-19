@@ -1,7 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 
 import { getBoardIcon } from '@/lib/board-icons'
-import type { BoardIconName } from '@/types'
 
 export type BoardDecorationVariant = 'radial' | 'tiled'
 
@@ -172,7 +171,7 @@ function Mask({
 }
 
 interface BoardDecorationProps {
-  icon: BoardIconName
+  icon: string
   color: string
   variant?: BoardDecorationVariant
 }

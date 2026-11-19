@@ -14,7 +14,6 @@ import {
 } from 'react'
 
 import { downloadHtml, downloadMarkdown } from '@/lib/export-document'
-import { useForum } from '@/lib/forum-context'
 import { expandEmojiShortcodes } from '@/lib/tiptap-emoji-shortcodes'
 import { canApplyFeature } from '@/lib/tiptap-formatting-context'
 import {
@@ -94,7 +93,6 @@ export function RichTextEditor({
   )
   const [imageAlign, setImageAlign] = useState<ImageAlignState | null>(null)
   const [compactHeight, setCompactHeight] = useState(COMPACT_EDITOR_HEIGHT)
-  const { users } = useForum()
   const resizeStartRef = useRef<{ pointerY: number; height: number } | null>(
     null,
   )
@@ -122,7 +120,6 @@ export function RichTextEditor({
   })
   const mention = useMentionSuggestion({
     panelRef: richPanelRef,
-    users,
     allowOutsidePanel: compact,
   })
   const emoji = useEmojiSuggestion({
@@ -717,6 +714,7 @@ export function RichTextEditor({
             trigger={mention.trigger}
             options={mention.options}
             activeIndex={mention.activeIndex}
+            loading={mention.loading}
             onChoose={(user) => {
               if (editor) mention.choose(editor, user)
             }}

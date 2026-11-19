@@ -3,11 +3,12 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import { UserAvatar } from '@/components/UserAvatar'
+import { getDisplayName } from '@/lib/user'
 import { formatDateTime, formatRelativeTime } from '@/lib/utils'
-import type { User } from '@/types'
+import type { UserSummary } from '@/types'
 
 interface UserBylineProps {
-  user: User
+  user: UserSummary
   date?: string
   /** 覆盖日期区域的显示内容；仍以 date 作为 <time> 的值 */
   dateText?: ReactNode
@@ -26,9 +27,11 @@ export function UserByline({
   badge,
   className,
 }: UserBylineProps) {
+  const displayName = getDisplayName(user)
+
   return (
     <div className={cn('flex min-w-0 items-center gap-2.5', className)}>
-      <Link to={`/user/${user.id}`} aria-label={`查看 ${user.name} 的主页`}>
+      <Link to={`/user/${user.id}`} aria-label={`查看 ${displayName} 的主页`}>
         <UserAvatar user={user} size={avatarSize} />
       </Link>
       <div className="min-w-0">
@@ -37,11 +40,11 @@ export function UserByline({
             to={`/user/${user.id}`}
             className="truncate text-sm font-medium hover:underline"
           >
-            {user.name}
+            {displayName}
           </Link>
           {badge}
           {showHandle ? (
-            <span className="truncate text-xs text-muted">@{user.handle}</span>
+            <span className="truncate text-xs text-muted">@{user.username}</span>
           ) : null}
         </div>
         {date ? (

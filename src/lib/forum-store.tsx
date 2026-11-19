@@ -1,4 +1,14 @@
 import {
+  MutationCache,
+  QueryCache,
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+import { toast } from '@heroui/react'
+import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -6,550 +16,209 @@ import {
   type ReactNode,
 } from 'react'
 
-import { seedData } from '@/data/seed'
-import {
-  DEFAULT_BOARD_COLOR,
-  DEFAULT_BOARD_ICON,
-  isBoardIconName,
-} from '@/lib/board-icons'
-import {
-  DEMO_PASSWORD,
-  FORUM_STORAGE_KEY,
-  SESSION_STORAGE_KEY,
-} from '@/lib/constants'
+import { isApiError, request } from '@/lib/api'
+import { DEFAULT_SITE } from '@/lib/constants'
 import {
   ForumContext,
-  replyPostKey,
-  threadPostKey,
   type ForumContextValue,
-  type NewReplyInput,
-  type NewThreadInput,
-  type UpdateThreadInput,
 } from '@/lib/forum-context'
-import { extractTags } from '@/lib/html-content'
-import { findReplyTargetFloor } from '@/lib/reply-references'
-import { createId } from '@/lib/utils'
-import type {
-  AvatarShape,
-  Board,
-  ForumData,
-  ForumThread,
-  Reply,
-} from '@/types'
+import { queryKeys } from '@/lib/queries'
+import type { LoginResult, Me, Site, UserSummary } from '@/types'
 
-function isForumData(value: unknown): value is ForumData {
-  if (!value || typeof value !== 'object') return false
-
-  const candidate = value as Partial<ForumData>
-  return (
-    Array.isArray(candidate.users) &&
-    Array.isArray(candidate.boards) &&
-    Array.isArray(candidate.threads) &&
-    Array.isArray(candidate.replies)
-  )
+const EMPTY_ME: Me = {
+  user: null,
+  globalPermissions: [],
+  boardPermissions: {},
 }
 
-type StoredBoard = Partial<Omit<Board, 'icon' | 'color'>> & {
-  icon?: unknown
-  color?: unknown
-}
-
-function normalizeBoards(value: unknown): Board[] {
-  if (!Array.isArray(value)) return seedData.boards
-
-  return value.flatMap((item): Board[] => {
-    if (!item || typeof item !== 'object') return []
-
-    const board = item as StoredBoard
-    if (
-      typeof board.id !== 'string' ||
-      typeof board.name !== 'string' ||
-      typeof board.description !== 'string'
-    ) {
-      return []
-    }
-
-    // Older saves predate board icons and colors, so fall back to the seed
-    // values for known boards instead of dropping them.
-    const seedBoard = seedData.boards.find(
-      (candidate) => candidate.id === board.id,
-    )
-
-    return [
-      {
-        id: board.id,
-        name: board.name,
-        description: board.description,
-        icon: isBoardIconName(board.icon)
-          ? board.icon
-          : (seedBoard?.icon ?? DEFAULT_BOARD_ICON),
-        color:
-          typeof board.color === 'string' && board.color
-            ? board.color
-            : (seedBoard?.color ?? DEFAULT_BOARD_COLOR),
-      },
-    ]
-  })
-}
-
-function normalizeIdLists(value: unknown): Record<string, string[]> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
-
-  const lists: Record<string, string[]> = {}
-
-  for (const [key, ids] of Object.entries(value)) {
-    if (!Array.isArray(ids)) continue
-
-    lists[key] = ids.filter((id): id is string => typeof id === 'string')
-  }
-
-  return lists
-}
-
-function normalizeIdList(value: unknown): string[] {
-  if (!Array.isArray(value)) return []
-
-  return value.filter((id): id is string => typeof id === 'string')
-}
-
-function normalizeUserBackgrounds(value: unknown): Record<string, string> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
-
-  const userBackgrounds: Record<string, string> = {}
-
-  for (const [userId, background] of Object.entries(value)) {
-    if (typeof background === 'string' && background) {
-      userBackgrounds[userId] = background
-    }
-  }
-
-  return userBackgrounds
-}
+const EMPTY_SITE = DEFAULT_SITE
 
 /**
- * Older saves predate pinned threads, so inherit the seed's pin flag for
- * threads that already exist there instead of dropping the pinned section.
+ * 全局 401 处理需要打开登录弹窗；QueryClient 在 provider 之外创建，
+ * 通过模块级回调桥接当前组件的 openLogin。
  */
-function normalizeThreads(value: unknown): ForumThread[] {
-  if (!Array.isArray(value)) return seedData.threads
+let globalUnauthorizedHandler: (() => void) | null = null
 
-  return value.map((item) => {
-    if (!item || typeof item !== 'object') return item
+function handleGlobalError(error: unknown) {
+  if (!isApiError(error)) return
 
-    const thread = item as ForumThread
-    if (typeof thread.pinned === 'boolean') return thread
+  if (error.status === 401) {
+    globalUnauthorizedHandler?.()
+    return
+  }
 
-    const seedThread = seedData.threads.find(
-      (candidate) => candidate.id === thread.id,
-    )
-
-    return { ...thread, pinned: seedThread?.pinned }
-  })
-}
-
-function normalizeAvatarShape(value: unknown): AvatarShape {
-  return value === 'square' ? 'square' : 'circle'
-}
-
-function loadForumData(): ForumData {
-  try {
-    const stored = window.localStorage.getItem(FORUM_STORAGE_KEY)
-    if (!stored) return seedData
-
-    const parsed: unknown = JSON.parse(stored)
-    if (!isForumData(parsed)) return seedData
-
-    // Older saves predate likes and backgrounds, so fill in defaults instead of
-    // dropping them.
-    return {
-      ...parsed,
-      boards: normalizeBoards(parsed.boards),
-      threads: normalizeThreads(parsed.threads),
-      userLikes: normalizeIdLists(parsed.userLikes),
-      postLikes: normalizeIdLists(parsed.postLikes),
-      boardFollows: normalizeIdLists(parsed.boardFollows),
-      userBackgrounds: normalizeUserBackgrounds(parsed.userBackgrounds),
-      avatarShape: normalizeAvatarShape(parsed.avatarShape),
-      readNotificationIds: normalizeIdList(parsed.readNotificationIds),
-    }
-  } catch {
-    return seedData
+  if (error.status === 403 || error.status === 429) {
+    toast.danger(error.message)
   }
 }
 
-function loadSession(): string | null {
-  try {
-    return window.localStorage.getItem(SESSION_STORAGE_KEY)
-  } catch {
-    return null
-  }
+interface AuthStateProps {
+  children: ReactNode
 }
 
-function saveSession(userId: string | null) {
-  try {
-    if (userId) {
-      window.localStorage.setItem(SESSION_STORAGE_KEY, userId)
-    } else {
-      window.localStorage.removeItem(SESSION_STORAGE_KEY)
-    }
-  } catch {
-    // A blocked localStorage should not prevent the forum from working.
-  }
-}
-
-export function ForumProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<ForumData>(loadForumData)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(loadSession)
+function AuthState({ children }: AuthStateProps) {
+  const queryClient = useQueryClient()
   const [loginDialogOpen, setLoginDialogOpen] = useState(false)
   const pendingActionRef = useRef<(() => void) | null>(null)
 
-  const currentUser =
-    data.users.find((user) => user.id === currentUserId) ?? null
+  const meQuery = useQuery({
+    queryKey: queryKeys.me,
+    queryFn: () => request<Me>('/auth/me'),
+    meta: { skipGlobalError: true },
+    staleTime: 30_000,
+  })
 
+  const siteQuery = useQuery({
+    queryKey: queryKeys.site,
+    queryFn: () => request<Site>('/site'),
+    meta: { skipGlobalError: true },
+    staleTime: 300_000,
+  })
+
+  const openLogin = useCallback((afterLogin?: () => void) => {
+    // 后台请求触发的 401 不带后续动作，不要覆盖用户刚触发的待执行动作。
+    if (afterLogin) pendingActionRef.current = afterLogin
+    setLoginDialogOpen(true)
+  }, [])
+
+  // 全局 401 处理需要打开登录弹窗；在 effect 中同步稳定引用。
   useEffect(() => {
+    globalUnauthorizedHandler = openLogin
+    return () => {
+      if (globalUnauthorizedHandler === openLogin) {
+        globalUnauthorizedHandler = null
+      }
+    }
+  }, [openLogin])
+
+  const closeLogin = useCallback(() => {
+    pendingActionRef.current = null
+    setLoginDialogOpen(false)
+  }, [])
+
+  const login = useCallback(
+    async (username: string, password: string): Promise<string | null> => {
+      try {
+        const result = await request<LoginResult>('/auth/login', {
+          method: 'POST',
+          body: { username, password, remember: true },
+        })
+
+        queryClient.setQueryData<Me>(queryKeys.me, {
+          user: result.user,
+          globalPermissions: result.globalPermissions,
+          boardPermissions: result.boardPermissions,
+        })
+        setLoginDialogOpen(false)
+
+        const afterLogin = pendingActionRef.current
+        pendingActionRef.current = null
+        afterLogin?.()
+
+        // 登录后重新拉取带 viewer 字段的公开数据（likedByMe / followingByMe）。
+        void queryClient.invalidateQueries()
+        return null
+      } catch (error) {
+        return isApiError(error) ? error.message : '登录失败，请稍后再试。'
+      }
+    },
+    [queryClient],
+  )
+
+  const logout = useCallback(async () => {
     try {
-      window.localStorage.setItem(FORUM_STORAGE_KEY, JSON.stringify(data))
+      await request<void>('/auth/logout', { method: 'POST' })
     } catch {
-      // Keep the in-memory forum usable even when storage is unavailable.
-    }
-  }, [data])
-
-  const value = useMemo<ForumContextValue>(() => {
-    function openLogin(afterLogin?: () => void) {
-      pendingActionRef.current = afterLogin ?? null
-      setLoginDialogOpen(true)
+      // 会话可能已经失效；本地状态仍然要清空。
     }
 
-    function closeLogin() {
-      pendingActionRef.current = null
-      setLoginDialogOpen(false)
-    }
+    pendingActionRef.current = null
+    queryClient.setQueryData<Me>(queryKeys.me, EMPTY_ME)
+    queryClient.removeQueries({ queryKey: ['notifications'] })
+    queryClient.removeQueries({ queryKey: ['unread-count'] })
+    void queryClient.invalidateQueries()
+  }, [queryClient])
 
-    function login(identifier: string, password: string): string | null {
-      const normalized = identifier.trim().toLocaleLowerCase('zh-CN')
-      const user = data.users.find(
-        (candidate) =>
-          candidate.handle.toLocaleLowerCase('zh-CN') === normalized ||
-          candidate.name.toLocaleLowerCase('zh-CN') === normalized,
-      )
+  const me = meQuery.data ?? EMPTY_ME
+  const site = siteQuery.data ?? EMPTY_SITE
+  const currentUser: UserSummary | null = me.user
 
-      if (!user) return '账号不存在，请使用下方演示账号登录。'
-      if (password !== DEMO_PASSWORD) return '密码不正确。'
+  const hasPermission = useCallback(
+    (code: string, boardId?: number | null) => {
+      if (me.globalPermissions.includes(code)) return true
+      if (boardId === undefined || boardId === null) return false
+      return me.boardPermissions[String(boardId)]?.includes(code) ?? false
+    },
+    [me.boardPermissions, me.globalPermissions],
+  )
 
-      const afterLogin = pendingActionRef.current
-      pendingActionRef.current = null
-
-      setCurrentUserId(user.id)
-      saveSession(user.id)
-      setLoginDialogOpen(false)
-      afterLogin?.()
-
-      return null
-    }
-
-    function logout() {
-      setCurrentUserId(null)
-      saveSession(null)
-    }
-
-    function createThread(input: NewThreadInput): ForumThread | null {
-      if (!currentUser) return null
-
-      const thread: ForumThread = {
-        id: createId('thread'),
-        boardId: input.boardId,
-        authorId: currentUser.id,
-        title: input.title.trim(),
-        content: input.content,
-        tags: extractTags(input.content),
-        createdAt: new Date().toISOString(),
-      }
-
-      setData((previous) => ({
-        ...previous,
-        threads: [thread, ...previous.threads],
-      }))
-
-      return thread
-    }
-
-    function updateThread(threadId: string, input: UpdateThreadInput) {
-      if (!currentUser) return
-
-      setData((previous) => ({
-        ...previous,
-        threads: previous.threads.map((thread) =>
-          thread.id === threadId && thread.authorId === currentUser.id
-            ? {
-                ...thread,
-                title: input.title.trim(),
-                content: input.content,
-                tags: extractTags(input.content),
-                updatedAt: new Date().toISOString(),
-              }
-            : thread,
-        ),
-      }))
-    }
-
-    function deleteThread(threadId: string) {
-      if (!currentUser) return
-
-      setData((previous) => {
-        const thread = previous.threads.find((item) => item.id === threadId)
-        if (!thread || thread.authorId !== currentUser.id) return previous
-
-        const removedReplyIds = new Set(
-          previous.replies
-            .filter((reply) => reply.threadId === threadId)
-            .map((reply) => reply.id),
-        )
-        const postLikes = { ...previous.postLikes }
-        delete postLikes[threadPostKey(threadId)]
-        for (const replyId of removedReplyIds) {
-          delete postLikes[replyPostKey(replyId)]
-        }
-
-        return {
-          ...previous,
-          threads: previous.threads.filter((item) => item.id !== threadId),
-          replies: previous.replies.filter(
-            (reply) => !removedReplyIds.has(reply.id),
-          ),
-          postLikes,
-        }
-      })
-    }
-
-    function createReply(input: NewReplyInput): Reply | null {
-      if (!currentUser) return null
-
-      const threadReplyCount = data.replies.filter(
-        (reply) => reply.threadId === input.threadId,
-      ).length
-      const replyToFloor = findReplyTargetFloor(
-        input.content,
-        threadReplyCount,
-      )
-
-      const reply: Reply = {
-        id: createId('reply'),
-        threadId: input.threadId,
-        authorId: currentUser.id,
-        content: input.content,
-        replyToFloor: replyToFloor ?? undefined,
-        createdAt: new Date().toISOString(),
-      }
-
-      setData((previous) => ({
-        ...previous,
-        replies: [...previous.replies, reply],
-      }))
-
-      return reply
-    }
-
-    function updateReply(replyId: string, content: string) {
-      if (!currentUser) return
-
-      setData((previous) => ({
-        ...previous,
-        replies: previous.replies.map((reply) => {
-          if (reply.id !== replyId || reply.authorId !== currentUser.id) {
-            return reply
-          }
-
-          const threadReplyCount = previous.replies.filter(
-            (item) => item.threadId === reply.threadId,
-          ).length
-
-          return {
-            ...reply,
-            content,
-            replyToFloor:
-              findReplyTargetFloor(content, threadReplyCount) ?? undefined,
-          }
-        }),
-      }))
-    }
-
-    function deleteReply(replyId: string) {
-      if (!currentUser) return
-
-      setData((previous) => {
-        const reply = previous.replies.find((item) => item.id === replyId)
-        if (!reply || reply.authorId !== currentUser.id) return previous
-
-        const postLikes = { ...previous.postLikes }
-        delete postLikes[replyPostKey(replyId)]
-
-        return {
-          ...previous,
-          replies: previous.replies.filter((item) => item.id !== replyId),
-          postLikes,
-        }
-      })
-    }
-
-    function toggleUserLike(userId: string) {
-      if (!currentUser) return
-
-      const likerId = currentUser.id
-
-      setData((previous) => {
-        if (!previous.users.some((user) => user.id === userId)) return previous
-
-        const likers = previous.userLikes[userId] ?? []
-        const nextLikers = likers.includes(likerId)
-          ? likers.filter((id) => id !== likerId)
-          : [...likers, likerId]
-
-        return {
-          ...previous,
-          userLikes: { ...previous.userLikes, [userId]: nextLikers },
-        }
-      })
-    }
-
-    function updateUserAvatar(userId: string, avatarUrl: string | null) {
-      setData((previous) => {
-        if (!previous.users.some((user) => user.id === userId)) return previous
-
-        return {
-          ...previous,
-          users: previous.users.map((user) =>
-            user.id === userId ? { ...user, avatarUrl: avatarUrl ?? undefined } : user,
-          ),
-        }
-      })
-    }
-
-    function setAvatarShape(avatarShape: AvatarShape) {
-      setData((previous) => ({ ...previous, avatarShape }))
-    }
-
-    function togglePostLike(postKey: string) {
-      if (!currentUser) return
-
-      const likerId = currentUser.id
-
-      setData((previous) => {
-        const likers = previous.postLikes[postKey] ?? []
-        const nextLikers = likers.includes(likerId)
-          ? likers.filter((id) => id !== likerId)
-          : [...likers, likerId]
-
-        return {
-          ...previous,
-          postLikes: { ...previous.postLikes, [postKey]: nextLikers },
-        }
-      })
-    }
-
-    function toggleBoardFollow(boardId: string) {
-      if (!currentUser) return
-
-      const followerId = currentUser.id
-
-      setData((previous) => {
-        if (!previous.boards.some((board) => board.id === boardId)) {
-          return previous
-        }
-
-        const followers = previous.boardFollows[boardId] ?? []
-        const nextFollowers = followers.includes(followerId)
-          ? followers.filter((id) => id !== followerId)
-          : [...followers, followerId]
-
-        return {
-          ...previous,
-          boardFollows: {
-            ...previous.boardFollows,
-            [boardId]: nextFollowers,
-          },
-        }
-      })
-    }
-
-    function updateUserBio(userId: string, bio: string) {
-      setData((previous) => {
-        if (!previous.users.some((user) => user.id === userId)) return previous
-
-        return {
-          ...previous,
-          users: previous.users.map((user) =>
-            user.id === userId ? { ...user, bio: bio.trim() } : user,
-          ),
-        }
-      })
-    }
-
-    function markNotificationsRead(notificationIds: string[]) {
-      if (!currentUser) return
-
-      setData((previous) => {
-        const known = new Set(previous.readNotificationIds)
-        const additions = [...new Set(notificationIds)].filter(
-          (id) => !known.has(id),
-        )
-        if (additions.length === 0) return previous
-
-        return {
-          ...previous,
-          readNotificationIds: [...previous.readNotificationIds, ...additions],
-        }
-      })
-    }
-
-    function setUserBackground(userId: string, background: string | null) {
-      setData((previous) => {
-        if (!previous.users.some((user) => user.id === userId)) return previous
-
-        const userBackgrounds = { ...previous.userBackgrounds }
-
-        if (background) {
-          userBackgrounds[userId] = background
-        } else {
-          delete userBackgrounds[userId]
-        }
-
-        return { ...previous, userBackgrounds }
-      })
-    }
-
-    return {
-      users: data.users,
-      boards: data.boards,
-      threads: data.threads,
-      replies: data.replies,
-      userLikes: data.userLikes,
-      postLikes: data.postLikes,
-      boardFollows: data.boardFollows,
-      userBackgrounds: data.userBackgrounds,
-      avatarShape: data.avatarShape,
-      readNotificationIds: data.readNotificationIds,
+  const value = useMemo<ForumContextValue>(
+    () => ({
+      site,
       currentUser,
+      globalPermissions: me.globalPermissions,
+      boardPermissions: me.boardPermissions,
+      hasPermission,
       loginDialogOpen,
       openLogin,
       closeLogin,
       login,
       logout,
-      createThread,
-      updateThread,
-      deleteThread,
-      createReply,
-      updateReply,
-      deleteReply,
-      toggleUserLike,
-      togglePostLike,
-      toggleBoardFollow,
-      setUserBackground,
-      setAvatarShape,
-      updateUserAvatar,
-      updateUserBio,
-      markNotificationsRead,
-    }
-  }, [currentUser, data, loginDialogOpen])
+    }),
+    [
+      closeLogin,
+      currentUser,
+      hasPermission,
+      login,
+      loginDialogOpen,
+      logout,
+      me.boardPermissions,
+      me.globalPermissions,
+      openLogin,
+      site,
+    ],
+  )
 
   return <ForumContext value={value}>{children}</ForumContext>
+}
+
+/**
+ * 数据层入口：TanStack Query + 认证/站点上下文。
+ * 业务数据不入 context，页面通过 query hooks 读取。
+ */
+export function ForumProvider({ children }: { children: ReactNode }) {
+  const queryClient = useMemo(
+    () =>
+      new QueryClient({
+        queryCache: new QueryCache({
+          onError: (error, query) => {
+            if (query.meta?.skipGlobalError) return
+            handleGlobalError(error)
+          },
+        }),
+        mutationCache: new MutationCache({
+          onError: (error, _variables, _context, mutation) => {
+            if (mutation.meta?.skipGlobalError) return
+            handleGlobalError(error)
+          },
+        }),
+        defaultOptions: {
+          queries: {
+            refetchOnWindowFocus: false,
+            retry: (failureCount, error) =>
+              (!isApiError(error) || error.status >= 500) && failureCount < 2,
+          },
+          mutations: {
+            retry: false,
+          },
+        },
+      }),
+    [],
+  )
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthState>{children}</AuthState>
+    </QueryClientProvider>
+  )
 }

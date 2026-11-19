@@ -7,8 +7,19 @@ import { AvatarCropDialog } from '@/components/AvatarCropDialog'
 import { ProfileCustomizeDialog } from '@/components/ProfileCustomizeDialog'
 import { ThreadCard } from '@/components/ThreadCard'
 import { UserAvatar } from '@/components/UserAvatar'
-import { getAvatarShapeClassName } from '@/lib/avatar'
+import { getAvatarShape, getAvatarShapeClassName } from '@/lib/avatar'
 import { useForum } from '@/lib/forum-context'
+import {
+  flattenPages,
+  useSetUserLike,
+  useThreadSummaries,
+  useUpdateProfile,
+  useUserProfile,
+  useUserReplies,
+  useUserThreads,
+} from '@/lib/queries'
+import { getDisplayName } from '@/lib/user'
+import { useInfiniteScroll } from '@/lib/use-infinite-scroll'
 import { usePageTitle } from '@/lib/use-page-title'
 import {
   formatDate,
@@ -18,53 +29,75 @@ import {
   makeExcerpt,
 } from '@/lib/utils'
 import { NotFoundPage } from '@/pages/NotFoundPage'
-import type { User } from '@/types'
+import type { UserProfile } from '@/types'
 
 export function UserPage() {
   const { id } = useParams()
-  const {
-    users,
-    threads,
-    replies,
-    userLikes,
-    userBackgrounds,
-    avatarShape,
-    currentUser,
-    openLogin,
-    toggleUserLike,
-    updateUserBio,
-  } = useForum()
-  const user = users.find((candidate) => candidate.id === id)
+  const userId = Number(id)
+
+  const { currentUser, openLogin } = useForum()
+  const userQuery = useUserProfile(userId)
+  const threadsQuery = useUserThreads(userId)
+  const repliesQuery = useUserReplies(userId)
+  const likeUser = useSetUserLike(userId)
+  const updateProfile = useUpdateProfile()
+
+  const user = userQuery.data
+  const userThreads = flattenPages(threadsQuery.data)
+  const userReplies = flattenPages(repliesQuery.data)
+  const threadIds = [...new Set(userReplies.map((reply) => reply.threadId))]
+  const threadQueries = useThreadSummaries(threadIds)
+  const threadTitleById = new Map(
+    threadIds.map((threadId, index) => [
+      threadId,
+      threadQueries[index]?.data?.title ?? '主题',
+    ]),
+  )
+
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
 
-  usePageTitle(user ? `${user.name} 的主页` : '用户不存在')
+  const threadsSentinelRef = useInfiniteScroll({
+    hasNextPage: threadsQuery.hasNextPage,
+    isFetchingNextPage: threadsQuery.isFetchingNextPage,
+    fetchNextPage: threadsQuery.fetchNextPage,
+  })
+  const repliesSentinelRef = useInfiniteScroll({
+    hasNextPage: repliesQuery.hasNextPage,
+    isFetchingNextPage: repliesQuery.isFetchingNextPage,
+    fetchNextPage: repliesQuery.fetchNextPage,
+  })
 
-  if (!user) return <NotFoundPage />
+  usePageTitle(user ? `${getDisplayName(user)} 的主页` : '用户不存在')
 
-  const userThreads = threads
-    .filter((thread) => thread.authorId === user.id)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-  const userReplies = replies
-    .filter((reply) => reply.authorId === user.id)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-  const likers = userLikes[user.id] ?? []
-  const liked = currentUser ? likers.includes(currentUser.id) : false
-  const isSelf = currentUser?.id === user.id
-  const background = userBackgrounds[user.id]
+  if (!Number.isFinite(userId) || userId <= 0 || userQuery.isError) {
+    return <NotFoundPage />
+  }
+
+  if (!user) {
+    return (
+      <main className="mx-auto w-full max-w-[69.25rem] px-4 py-16">
+        <p className="text-center text-sm text-muted">正在加载用户…</p>
+      </main>
+    )
+  }
+
+  const displayName = getDisplayName(user)
+  const liked = user.likedByMe
+  const isSelf = user.isSelf
+  const background = user.backgroundUrl
+  const avatarShape = getAvatarShape(user)
   const onBackgroundClass =
     background &&
     'border-0 bg-foreground/30 text-background backdrop-blur-sm hover:bg-foreground/45'
 
   function handleLike() {
-    if (!user) return
-
     if (!currentUser) {
       openLogin()
       return
     }
 
-    toggleUserLike(user.id)
+    likeUser.mutate(!liked)
   }
 
   const profileBio =
@@ -73,55 +106,61 @@ export function UserPage() {
         key={user.id}
         user={user}
         canEdit={isSelf}
-        onSave={(bio) => updateUserBio(user.id, bio)}
+        onSave={async (bio) => {
+          await updateProfile.mutateAsync({ bio })
+        }}
       />
     ) : null
 
   const actionButtons = (
     <div className="flex shrink-0 items-center gap-2">
-      <Button
-        size="sm"
-        variant={liked ? 'secondary' : 'outline'}
-        onPress={handleLike}
-        aria-pressed={liked}
-        aria-label={liked ? `取消点赞 ${user.name}` : `点赞 ${user.name}`}
-        className={cn(
-          'gap-1.5',
-          liked && !background && 'text-foreground',
-          onBackgroundClass,
-        )}
-      >
-        <Heart
-          className={liked ? 'fill-current text-danger' : undefined}
-          aria-hidden="true"
-        />
-        <span className="tabular-nums">{likers.length}</span>
-      </Button>
+      {isSelf ? null : (
+        <Button
+          size="sm"
+          variant={liked ? 'secondary' : 'outline'}
+          onPress={handleLike}
+          aria-pressed={liked}
+          aria-label={liked ? `取消点赞 ${displayName}` : `点赞 ${displayName}`}
+          className={cn(
+            'gap-1.5',
+            liked && !background && 'text-foreground',
+            onBackgroundClass,
+          )}
+        >
+          <Heart
+            className={liked ? 'fill-current text-danger' : undefined}
+            aria-hidden="true"
+          />
+          <span className="tabular-nums">{user.profileLikeCount}</span>
+        </Button>
+      )}
 
-      <Button
-        size="sm"
-        variant="outline"
-        className={cn('gap-1.5', onBackgroundClass)}
-        onPress={() => setCustomizeOpen(true)}
-      >
-        <Brush aria-hidden="true" />
-        个性化
-      </Button>
+      {isSelf ? (
+        <Button
+          size="sm"
+          variant="outline"
+          className={cn('gap-1.5', onBackgroundClass)}
+          onPress={() => setCustomizeOpen(true)}
+        >
+          <Brush aria-hidden="true" />
+          个性化
+        </Button>
+      ) : null}
     </div>
   )
 
   const overview = (
     <div className="flex shrink-0 gap-8">
       <div>
-        <div className="text-lg font-medium">{userThreads.length}</div>
+        <div className="text-lg font-medium">{user.threadCount}</div>
         <div className="text-xs text-muted">主题</div>
       </div>
       <div>
-        <div className="text-lg font-medium">{userReplies.length}</div>
+        <div className="text-lg font-medium">{user.replyCount}</div>
         <div className="text-xs text-muted">回复</div>
       </div>
       <div>
-        <div className="text-lg font-medium">{likers.length}</div>
+        <div className="text-lg font-medium">{user.profileLikeCount}</div>
         <div className="text-xs text-muted">获赞</div>
       </div>
       <div>
@@ -182,9 +221,9 @@ export function UserPage() {
           </div>
           <div className={cn('min-w-48 flex-1', background && '-mt-2.5')}>
             <h1 className="text-2xl font-semibold tracking-tight">
-              {user.name}
+              {displayName}
             </h1>
-            <p className="mt-0.5 text-sm text-muted">@{user.handle}</p>
+            <p className="mt-0.5 text-sm text-muted">@{user.username}</p>
             {background ? null : profileBio ? (
               <div className="mt-3">{profileBio}</div>
             ) : null}
@@ -214,9 +253,18 @@ export function UserPage() {
           </h2>
           <div className="mt-4 space-y-5">
             {userThreads.length > 0 ? (
-              userThreads.map((thread) => (
-                <ThreadCard key={thread.id} thread={thread} showBoard />
-              ))
+              <>
+                {userThreads.map((thread) => (
+                  <ThreadCard key={thread.id} thread={thread} showBoard />
+                ))}
+                <div
+                  ref={threadsSentinelRef}
+                  aria-hidden="true"
+                  className="h-px"
+                />
+              </>
+            ) : threadsQuery.isPending ? (
+              <p className="py-8 text-sm text-muted">正在加载主题…</p>
             ) : (
               <p className="py-8 text-sm text-muted">还没有发布主题。</p>
             )}
@@ -229,13 +277,8 @@ export function UserPage() {
           </h2>
           <div className="mt-2 divide-y divide-border">
             {userReplies.length > 0 ? (
-              userReplies.map((reply) => {
-                const thread = threads.find(
-                  (item) => item.id === reply.threadId,
-                )
-                if (!thread) return null
-
-                return (
+              <>
+                {userReplies.map((reply) => (
                   <article key={reply.id} className="py-4">
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-muted">
                       <time
@@ -246,18 +289,25 @@ export function UserPage() {
                       </time>
                       <span>回复了</span>
                       <Link
-                        to={`/thread/${thread.id}#reply-${reply.id}`}
+                        to={`/thread/${reply.threadId}#reply-${reply.id}`}
                         className="font-minecraft-sc text-foreground hover:underline"
                       >
-                        {thread.title}
+                        {threadTitleById.get(reply.threadId) ?? '主题'}
                       </Link>
                     </div>
                     <p className="mt-1.5 line-clamp-2 text-sm leading-6 text-foreground">
-                      {makeExcerpt(reply.content, 140)}
+                      {makeExcerpt(reply.contentHtml ?? '', 140)}
                     </p>
                   </article>
-                )
-              })
+                ))}
+                <div
+                  ref={repliesSentinelRef}
+                  aria-hidden="true"
+                  className="h-px"
+                />
+              </>
+            ) : repliesQuery.isPending ? (
+              <p className="py-8 text-sm text-muted">正在加载回复…</p>
             ) : (
               <p className="py-8 text-sm text-muted">还没有回复。</p>
             )}
@@ -268,7 +318,7 @@ export function UserPage() {
       <ProfileCustomizeDialog
         isOpen={customizeOpen}
         onOpenChange={setCustomizeOpen}
-        userId={user.id}
+        backgroundUrl={user.backgroundUrl}
       />
 
       <AvatarCropDialog
@@ -285,26 +335,36 @@ function ProfileBio({
   canEdit,
   onSave,
 }: {
-  user: User
+  user: UserProfile
   canEdit: boolean
-  onSave: (bio: string) => void
+  onSave: (bio: string) => Promise<void>
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(user.bio)
+  const [saving, setSaving] = useState(false)
 
   function beginEditing() {
     setDraft(user.bio)
     setEditing(true)
   }
 
-  function save() {
-    onSave(draft.trim())
-    setEditing(false)
+  async function save() {
+    if (saving) return
+
+    setSaving(true)
+    try {
+      await onSave(draft.trim())
+      setEditing(false)
+    } catch {
+      // 全局错误提示已展示；保留编辑态方便重试。
+    } finally {
+      setSaving(false)
+    }
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    save()
+    void save()
   }
 
   if (editing) {
@@ -312,6 +372,7 @@ function ProfileBio({
       <form onSubmit={handleSubmit} className="text-sm leading-6">
         <TextArea
           autoFocus
+          maxLength={200}
           aria-label="个人介绍"
           placeholder="介绍一下自己…"
           value={draft}
@@ -324,7 +385,7 @@ function ProfileBio({
               event.key === 'Enter'
             ) {
               event.preventDefault()
-              save()
+              void save()
             }
           }}
           className="h-24 w-full resize-none"
@@ -334,11 +395,17 @@ function ProfileBio({
             type="button"
             size="sm"
             variant="tertiary"
+            isDisabled={saving}
             onPress={() => setEditing(false)}
           >
             取消
           </Button>
-          <Button type="submit" size="sm" variant="primary">
+          <Button
+            type="submit"
+            size="sm"
+            variant="primary"
+            isDisabled={saving}
+          >
             保存
           </Button>
         </div>

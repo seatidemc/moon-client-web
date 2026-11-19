@@ -44,7 +44,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<HomePage />} />
           <Route path="boards" element={<BoardsPage />} />
-          <Route path="topic/:id" element={<TopicPage />} />
+          <Route path="topic/:slug" element={<TopicPage />} />
           <Route path="thread/:id" element={<ThreadPage />} />
           <Route path="user/:id" element={<UserPage />} />
           <Route path="notifications" element={<NotificationsPage />} />

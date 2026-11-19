@@ -3,6 +3,8 @@ import { mergeAttributes, Node } from '@tiptap/core'
 /**
  * An atomic `@username` chip. As a single inline node the cursor never enters
  * it, so Backspace removes the whole mention instead of editing its label.
+ * The HTML contract is `span[data-tag-type="mention"][data-user-id]` with
+ * `@username` as its text; the class is only used for styling.
  */
 export const Mention = Node.create({
   name: 'mention',
@@ -13,18 +15,17 @@ export const Mention = Node.create({
   addAttributes() {
     return {
       userId: {
-        default: '',
-        parseHTML: (element) => element.getAttribute('data-user-id') ?? '',
+        default: 0,
+        parseHTML: (element) =>
+          Number.parseInt(element.getAttribute('data-user-id') ?? '', 10) || 0,
         renderHTML: (attributes) => ({
           'data-user-id': String(attributes.userId),
         }),
       },
-      handle: {
+      username: {
         default: '',
-        parseHTML: (element) => element.getAttribute('data-handle') ?? '',
-        renderHTML: (attributes) => ({
-          'data-handle': String(attributes.handle),
-        }),
+        parseHTML: (element) => (element.textContent ?? '').replace(/^@/, ''),
+        renderHTML: () => ({}),
       },
     }
   },
@@ -40,9 +41,9 @@ export const Mention = Node.create({
         class: 'mention',
         'data-tag-type': 'mention',
       }),
-      `@${node.attrs.handle}`,
+      `@${node.attrs.username}`,
     ]
   },
 
-  renderMarkdown: (node) => `@${node.attrs?.handle ?? ''}`,
+  renderMarkdown: (node) => `@${node.attrs?.username ?? ''}`,
 })

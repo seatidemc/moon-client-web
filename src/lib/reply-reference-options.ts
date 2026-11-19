@@ -1,5 +1,6 @@
-import { makeExcerpt } from '@/lib/utils'
-import type { ForumThread, Reply, User } from '@/types'
+import { htmlToPlainText } from '@/lib/html-content'
+import { getDisplayName } from '@/lib/user'
+import type { Reply, ThreadSummary } from '@/types'
 
 const EXCERPT_LENGTH = 16
 
@@ -11,28 +12,35 @@ export interface ReplyReferenceOption {
 }
 
 /**
- * Builds the floor picker data for the reply editor. `threadReplies` must be
- * ordered the same way as the thread page (ascending floor number).
+ * Builds the floor picker data for the reply editor. Replies use their stable
+ * server-assigned `floor`; deleted replies remain as placeholders so historical
+ * references stay resolvable.
  */
 export function buildReplyReferenceOptions(
-  thread: ForumThread,
+  thread: ThreadSummary,
   threadReplies: Reply[],
-  users: User[],
 ): ReplyReferenceOption[] {
-  function authorName(authorId: string) {
-    return users.find((user) => user.id === authorId)?.name ?? '未知用户'
-  }
-
   return [
     {
       floor: 0,
-      name: authorName(thread.authorId),
-      excerpt: makeExcerpt(thread.content, EXCERPT_LENGTH),
+      name: thread.author ? getDisplayName(thread.author) : '未知用户',
+      excerpt: thread.excerpt,
     },
-    ...threadReplies.map((reply, index) => ({
-      floor: index + 1,
-      name: authorName(reply.authorId),
-      excerpt: makeExcerpt(reply.content, EXCERPT_LENGTH),
-    })),
+    ...[...threadReplies]
+      .sort((a, b) => a.floor - b.floor)
+      .map((reply) => {
+        const text = reply.deleted
+          ? ''
+          : htmlToPlainText(reply.contentHtml ?? '')
+
+        return {
+          floor: reply.floor,
+          name: reply.author ? getDisplayName(reply.author) : '已删除',
+          excerpt:
+            text.length > EXCERPT_LENGTH
+              ? `${text.slice(0, EXCERPT_LENGTH).trimEnd()}…`
+              : text,
+        }
+      }),
   ]
 }

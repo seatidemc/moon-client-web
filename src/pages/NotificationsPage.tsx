@@ -4,17 +4,31 @@ import { useState } from 'react'
 
 import { NotificationItem } from '@/components/NotificationItem'
 import { useForum } from '@/lib/forum-context'
-import { useNotifications } from '@/lib/notifications'
+import {
+  useMarkNotificationsRead,
+  useNotifications,
+  useUnreadCount,
+  type NotificationFilter,
+} from '@/lib/notifications'
+import { useInfiniteScroll } from '@/lib/use-infinite-scroll'
 import { usePageTitle } from '@/lib/use-page-title'
 
-type NotificationFilter = 'all' | 'unread'
-
 export function NotificationsPage() {
-  const { currentUser, openLogin, markNotificationsRead } = useForum()
-  const { notifications, readIds, unreadCount } = useNotifications()
+  const { currentUser, openLogin } = useForum()
   const [filter, setFilter] = useState<NotificationFilter>('all')
+  const all = useNotifications('all')
+  const unread = useNotifications('unread')
+  const unreadCount = useUnreadCount().data ?? 0
+  const markRead = useMarkNotificationsRead()
 
   usePageTitle('通知')
+
+  const active = filter === 'all' ? all : unread
+  const sentinelRef = useInfiniteScroll({
+    hasNextPage: active.hasNextPage,
+    isFetchingNextPage: active.isFetchingNextPage,
+    fetchNextPage: active.fetchNextPage,
+  })
 
   if (!currentUser) {
     return (
@@ -35,11 +49,6 @@ export function NotificationsPage() {
     )
   }
 
-  const visibleNotifications =
-    filter === 'unread'
-      ? notifications.filter((notification) => !readIds.has(notification.id))
-      : notifications
-
   return (
     <main className="mx-auto w-full max-w-[69.25rem] px-4 py-10 sm:py-12">
       <h1 className="text-2xl font-semibold tracking-tight">通知</h1>
@@ -47,14 +56,16 @@ export function NotificationsPage() {
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <Tabs
           selectedKey={filter}
-          onSelectionChange={(key) => setFilter(key as NotificationFilter)}
+          onSelectionChange={(key) =>
+            setFilter(key === 'unread' ? 'unread' : 'all')
+          }
         >
           <Tabs.ListContainer>
             <Tabs.List aria-label="通知筛选">
               <Tabs.Tab id="all" className="gap-1.5 whitespace-nowrap">
                 全部
                 <span className="text-xs tabular-nums opacity-60">
-                  {notifications.length}
+                  {all.total}
                 </span>
                 <Tabs.Indicator />
               </Tabs.Tab>
@@ -74,11 +85,7 @@ export function NotificationsPage() {
             size="sm"
             variant="ghost"
             className="text-muted"
-            onPress={() =>
-              markNotificationsRead(
-                notifications.map((notification) => notification.id),
-              )
-            }
+            onPress={() => markRead.mutate({ all: true })}
           >
             全部标为已读
           </Button>
@@ -89,16 +96,25 @@ export function NotificationsPage() {
         className="mt-4 overflow-hidden rounded-2xl bg-surface"
         aria-label="通知列表"
       >
-        {visibleNotifications.length > 0 ? (
+        {active.notifications.length > 0 ? (
           <div className="divide-y divide-border">
-            {visibleNotifications.map((notification) => (
+            {active.notifications.map((notification) => (
               <NotificationItem
                 key={notification.id}
                 notification={notification}
-                read={readIds.has(notification.id)}
-                onSelect={() => markNotificationsRead([notification.id])}
+                read={notification.read}
+                onSelect={() => {
+                  if (!notification.read) {
+                    markRead.mutate({ ids: [notification.id] })
+                  }
+                }}
               />
             ))}
+            <div ref={sentinelRef} aria-hidden="true" className="h-px" />
+          </div>
+        ) : active.isPending ? (
+          <div className="px-6 py-16 text-center">
+            <p className="text-sm text-muted">正在加载通知…</p>
           </div>
         ) : (
           <div className="px-6 py-16 text-center">

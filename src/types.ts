@@ -1,86 +1,173 @@
-export type AvatarShape = 'circle' | 'square'
+/**
+ * API DTO 类型，与后端 `/forum-v1` 的 JSON 契约保持一致。
+ * ID 为数字，日期为 RFC3339 UTC 字符串。
+ */
 
-export interface User {
-  id: string
-  name: string
-  handle: string
-  bio: string
-  joinedAt: string
-  /** 自定义头像图片地址；为空时使用按 handle 拉取的 Minecraft 默认头像 */
-  avatarUrl?: string
-}
+export type AvatarShape = 'circle' | 'square'
 
 export type BoardIconName = 'discussion' | 'code' | 'life' | 'feedback'
 
-export interface Board {
-  id: string
+/** 可空时间统一用 null 表示。 */
+export type Nullable<T> = T | null
+
+export interface Page<T> {
+  items: T[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export interface ItemsResponse<T> {
+  items: T[]
+}
+
+export interface UserSummary {
+  id: number
+  username: string
+  nickname: Nullable<string>
+  avatarUrl: string
+  avatarShape: AvatarShape
+}
+
+export interface UserProfile extends UserSummary {
+  bio: string
+  backgroundUrl: Nullable<string>
+  joinedAt: string
+  threadCount: number
+  replyCount: number
+  likeCount: number
+  profileLikeCount: number
+  likedByMe: boolean
+  isSelf: boolean
+}
+
+export interface BoardBrief {
+  id: number
+  slug: string
   name: string
-  description: string
-  /** 板块图标标识，映射到 pixelarticons 图标，见 src/lib/board-icons.ts */
-  icon: BoardIconName
-  /** 板块主题色（hex），用于图标底色和卡片强调 */
+  icon: string
   color: string
 }
 
-export interface ForumThread {
-  id: string
-  boardId: string
-  authorId: string
+export interface BoardSummary extends BoardBrief {
+  description: string
+  threadCount: number
+  followerCount: number
+  followingByMe: boolean
+}
+
+export interface ThreadSummary {
+  id: number
+  board: BoardBrief
+  author: Nullable<UserSummary>
   title: string
-  content: string
+  excerpt: string
   tags: string[]
+  pinned: boolean
+  locked: boolean
+  replyCount: number
+  likeCount: number
+  likedByMe: boolean
   createdAt: string
-  /** 最后编辑时间；从未编辑过时为空 */
-  updatedAt?: string
-  /** 是否为置顶主题；置顶主题出现在首页或所在板块顶部 */
-  pinned?: boolean
+  updatedAt: string
+}
+
+export interface ThreadDetail extends ThreadSummary {
+  contentHtml: string
+  canEdit: boolean
+  canDelete: boolean
+  canModerate: boolean
 }
 
 export interface Reply {
-  id: string
-  threadId: string
-  authorId: string
-  content: string
-  /** 该跟帖回复的楼层号（0 表示主题帖）；未引用楼层时为空 */
-  replyToFloor?: number
+  id: number
+  threadId: number
+  floor: number
+  author: Nullable<UserSummary>
+  contentHtml: Nullable<string>
+  replyToFloor: Nullable<number>
+  replyToReplyId: Nullable<number>
+  likeCount: number
+  likedByMe: boolean
+  deleted: boolean
   createdAt: string
+  updatedAt: Nullable<string>
+  canEdit: boolean
+  canDelete: boolean
 }
 
-export type NotificationType = 'reply' | 'like-thread' | 'like-reply'
+export type NotificationType =
+  | 'reply'
+  | 'like_thread'
+  | 'like_reply'
+  | 'mention'
 
-/**
- * 通知由回复和点赞记录派生，这里只保留展示所需的信息。
- * 通知本身不落库，`readNotificationIds` 中保存已读状态。
- */
 export interface Notification {
-  /** 稳定标识，用于记录已读状态 */
-  id: string
+  id: number
   type: NotificationType
-  /** 触发通知的用户 id */
-  actorId: string
-  threadId: string
-  /** 回复通知中的跟帖，或点赞跟帖时的目标 */
-  replyId?: string
-  /** 回复内容或主题/跟帖正文的 HTML 摘要来源 */
+  actor: Nullable<UserSummary>
+  threadId: number
+  threadTitle: string
+  /** 0 表示与主题本身相关（主题提及或主题点赞） */
+  replyId: number
   excerpt: string
+  read: boolean
   createdAt: string
 }
 
-export interface ForumData {
-  users: User[]
-  boards: Board[]
-  threads: ForumThread[]
-  replies: Reply[]
-  /** 用户主页的点赞记录：被点赞用户 id → 点赞者 id 列表 */
-  userLikes: Record<string, string[]>
-  /** 楼层点赞记录：帖子键（thread:<id> / reply:<id>）→ 点赞者 id 列表 */
-  postLikes: Record<string, string[]>
-  /** 板块关注记录：板块 id → 关注者 id 列表 */
-  boardFollows: Record<string, string[]>
-  /** 用户主页背景图：用户 id → 图片 data URL */
-  userBackgrounds: Record<string, string>
-  /** 头像显示形状，全站统一 */
-  avatarShape: AvatarShape
-  /** 已读通知 id 列表；通知内容本身由回复与点赞记录派生 */
-  readNotificationIds: string[]
+export interface RecentReply {
+  id: number
+  threadId: number
+  threadTitle: string
+  boardSlug: string
+  floor: number
+  excerpt: string
+  author: Nullable<UserSummary>
+  createdAt: string
+}
+
+export interface TagSummary {
+  name: string
+  count: number
+}
+
+export interface Site {
+  siteName: string
+  siteDescription: string
+  announcement: string
+  footerText: string
+  allowGuestRead: boolean
+}
+
+export interface Me {
+  user: Nullable<UserSummary>
+  globalPermissions: string[]
+  boardPermissions: Record<string, string[]>
+}
+
+export interface LoginResult {
+  user: UserSummary
+  globalPermissions: string[]
+  boardPermissions: Record<string, string[]>
+}
+
+export type UploadKind = 'post' | 'avatar' | 'background'
+
+export interface UploadResult {
+  id: number
+  url: string
+  width: number
+  height: number
+  mime: string
+  size: number
+}
+
+export interface LikeResult {
+  liked: boolean
+  likeCount: number
+}
+
+export interface FollowResult {
+  following: boolean
+  followerCount: number
 }

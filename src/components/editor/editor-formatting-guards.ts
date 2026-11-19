@@ -1,7 +1,7 @@
 import { Extension } from '@tiptap/core'
 import { Plugin } from '@tiptap/pm/state'
 
-import { sanitizePastedSlice } from '@/lib/tiptap-paste-cleaner'
+import { sanitizePastedSlice, stripDataUrlImages } from '@/lib/tiptap-paste-cleaner'
 import {
   canApplyFeature,
   type FormattingFeature,
@@ -51,7 +51,7 @@ export const FormattingGuards = Extension.create({
       new Plugin({
         props: {
           transformPasted: (slice, view) =>
-            sanitizePastedSlice(slice, view.state),
+            sanitizePastedSlice(stripDataUrlImages(slice), view.state),
         },
       }),
     ]

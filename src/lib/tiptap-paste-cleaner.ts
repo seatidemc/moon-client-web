@@ -265,3 +265,49 @@ function filterNodeMarks(
 
   return node.type.create(node.attrs, node.content, marks)
 }
+
+function stripDataUrlImageNode(
+  node: ProseMirrorNode,
+): ProseMirrorNode | null {
+  if (node.type.name === 'image') {
+    return /^data:/i.test(String(node.attrs.src ?? '')) ? null : node
+  }
+
+  if (node.isLeaf || node.childCount === 0) return node
+
+  const content = stripDataUrlImagesFromFragment(node.content)
+  return content === node.content ? node : node.copy(content)
+}
+
+function stripDataUrlImagesFromFragment(fragment: Fragment): Fragment {
+  const nodes: ProseMirrorNode[] = []
+  let changed = false
+
+  fragment.forEach((node) => {
+    const cleaned = stripDataUrlImageNode(node)
+    if (cleaned === null) {
+      changed = true
+      return
+    }
+    if (cleaned !== node) changed = true
+    nodes.push(cleaned)
+  })
+
+  return changed ? Fragment.fromArray(nodes) : fragment
+}
+
+/**
+ * Removes pasted images that still carry a data URL. Uploads must happen first;
+ * the server rejects `data:` images in stored content.
+ */
+export function stripDataUrlImages(slice: Slice): Slice {
+  const content = stripDataUrlImagesFromFragment(slice.content)
+  if (content === slice.content) return slice
+
+  const maxOpen = Slice.maxOpen(content)
+  return new Slice(
+    content,
+    Math.min(slice.openStart, maxOpen.openStart),
+    Math.min(slice.openEnd, maxOpen.openEnd),
+  )
+}

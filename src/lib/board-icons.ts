@@ -24,8 +24,12 @@ export function isBoardIconName(value: unknown): value is BoardIconName {
   return typeof value === 'string' && value in BOARD_ICONS
 }
 
+export function normalizeBoardIcon(icon: string | undefined): BoardIconName {
+  return isBoardIconName(icon) ? icon : DEFAULT_BOARD_ICON
+}
+
 export function getBoardIcon(
-  icon: BoardIconName | undefined,
+  icon: BoardIconName | string | undefined,
 ): BoardIconComponent {
   return isBoardIconName(icon) ? BOARD_ICONS[icon] : FALLBACK_ICON
 }

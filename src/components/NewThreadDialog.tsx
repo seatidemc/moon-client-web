@@ -14,15 +14,16 @@ import { useNavigate } from 'react-router-dom'
 
 import { EditorExpandToggle } from '@/components/EditorExpandToggle'
 import { RichTextEditor } from '@/components/editor'
+import { isApiError } from '@/lib/api'
 import { getBoardThemeStyle } from '@/lib/board-theme'
-import { useForum } from '@/lib/forum-context'
 import { hasRichTextContent } from '@/lib/html-content'
+import { useBoards, useCreateThread } from '@/lib/queries'
 
 interface NewThreadDialogProps {
   isOpen: boolean
   onOpenChange: (isOpen: boolean) => void
   /** 固定发帖板块；设置后隐藏板块选择 */
-  boardId?: string
+  boardId?: number
 }
 
 export function NewThreadDialog({
@@ -30,7 +31,7 @@ export function NewThreadDialog({
   onOpenChange,
   boardId,
 }: NewThreadDialogProps) {
-  const { boards } = useForum()
+  const boardsQuery = useBoards()
   const [isAdvanced, setIsAdvanced] = useState(false)
   const [formKey, setFormKey] = useState(0)
   const [wasOpen, setWasOpen] = useState(isOpen)
@@ -45,7 +46,7 @@ export function NewThreadDialog({
 
   // 固定板块时，用板块色作为整个弹窗的主题色
   const boardColor = boardId
-    ? boards.find((board) => board.id === boardId)?.color
+    ? boardsQuery.data?.find((board) => board.id === boardId)?.color
     : undefined
   const themeStyle = getBoardThemeStyle(boardColor)
 
@@ -81,14 +82,16 @@ function NewThreadForm({
   isAdvanced,
   onClose,
 }: {
-  boardId?: string
+  boardId?: number
   isAdvanced: boolean
   onClose: () => void
 }) {
-  const { boards, createThread } = useForum()
+  const boardsQuery = useBoards()
+  const createThread = useCreateThread()
   const navigate = useNavigate()
-  const [selectedBoardId, setSelectedBoardId] = useState(
-    () => boardId ?? boards[0]?.id ?? '',
+  const boards = boardsQuery.data ?? []
+  const [selectedBoardId, setSelectedBoardId] = useState<number | ''>(
+    () => boardId ?? '',
   )
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -96,30 +99,36 @@ function NewThreadForm({
   const [contentError, setContentError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  // 板块列表可能晚于弹窗到达；没有手动选择时按当前列表推导默认值。
+  const effectiveBoardId: number | '' =
+    selectedBoardId !== '' ? selectedBoardId : (boardId ?? boards[0]?.id ?? '')
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const nextTitleError = title.trim() ? null : '请填写标题。'
     const nextContentError = hasRichTextContent(content) ? null : '请填写正文。'
+    const nextBoardError = effectiveBoardId === '' ? '请选择板块。' : null
 
     setTitleError(nextTitleError)
     setContentError(nextContentError)
-    setSubmitError(null)
+    setSubmitError(nextBoardError)
 
-    if (nextTitleError || nextContentError) return
+    if (nextTitleError || nextContentError || nextBoardError) return
 
-    const thread = createThread({
-      boardId: selectedBoardId,
-      title,
-      content,
-    })
-    if (!thread) {
-      setSubmitError('登录后才能发帖。')
-      return
+    try {
+      const thread = await createThread.mutateAsync({
+        boardId: Number(effectiveBoardId),
+        title: title.trim(),
+        contentHtml: content,
+      })
+      onClose()
+      navigate(`/thread/${thread.id}`)
+    } catch (error) {
+      setSubmitError(
+        isApiError(error) ? error.message : '发布失败，请稍后再试。',
+      )
     }
-
-    onClose()
-    navigate(`/thread/${thread.id}`)
   }
 
   return (
@@ -176,9 +185,11 @@ function NewThreadForm({
         {boardId ? null : (
           <Select
             fullWidth
-            selectedKey={selectedBoardId || null}
+            selectedKey={String(effectiveBoardId) || null}
             onSelectionChange={(key) =>
-              setSelectedBoardId(key === null ? '' : String(key))
+              setSelectedBoardId(
+                key === null ? '' : Number.parseInt(String(key), 10),
+              )
             }
             className="text-left"
           >
@@ -192,7 +203,7 @@ function NewThreadForm({
                 {boards.map((board) => (
                   <ListBox.Item
                     key={board.id}
-                    id={board.id}
+                    id={String(board.id)}
                     textValue={board.name}
                   >
                     {board.name}
@@ -214,7 +225,11 @@ function NewThreadForm({
         <Button variant="tertiary" onPress={onClose}>
           取消
         </Button>
-        <Button type="submit" variant="primary">
+        <Button
+          type="submit"
+          variant="primary"
+          isDisabled={createThread.isPending}
+        >
           发布帖子
         </Button>
       </Modal.Footer>

@@ -1,9 +1,12 @@
-const MAX_IMAGE_DIMENSION = 1920
 const MAX_SOURCE_BYTES = 12 * 1024 * 1024
 
 const AVATAR_MIN_DIMENSION = 64
 
 export const AVATAR_OUTPUT_SIZE = 512
+export const AVATAR_OUTPUT_QUALITY = 0.88
+
+export const BACKGROUND_MAX_EDGE = 1920
+export const BACKGROUND_OUTPUT_QUALITY = 0.85
 
 export const BACKGROUND_IMAGE_RULES = {
   minWidth: 1280,
@@ -25,11 +28,30 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   })
 }
 
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  quality: number,
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          resolve(blob)
+        } else {
+          reject(new Error('无法处理这张图片。'))
+        }
+      },
+      'image/webp',
+      quality,
+    )
+  })
+}
+
 /**
- * Reads an uploaded image and returns a downscaled data URL, so profile
- * backgrounds stay small enough to persist in localStorage.
+ * 读取主页背景：校验尺寸后居中裁成 16:9，最长边不超过 1920，
+ * 导出 WebP 供上传接口使用。
  */
-export async function imageFileToDataUrl(file: File): Promise<string> {
+export async function imageFileToBackgroundBlob(file: File): Promise<Blob> {
   if (!file.type.startsWith('image/')) {
     throw new Error('请选择图片文件。')
   }
@@ -59,12 +81,23 @@ export async function imageFileToDataUrl(file: File): Promise<string> {
       )
     }
 
-    const scale = Math.min(
-      1,
-      MAX_IMAGE_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight),
-    )
-    const width = Math.max(1, Math.round(image.naturalWidth * scale))
-    const height = Math.max(1, Math.round(image.naturalHeight * scale))
+    // 居中裁切到 16:9，再按最长边缩放。
+    const targetRatio = aspectRatio.width / aspectRatio.height
+    const sourceRatio = image.naturalWidth / image.naturalHeight
+    const cropWidth =
+      sourceRatio > targetRatio
+        ? image.naturalHeight * targetRatio
+        : image.naturalWidth
+    const cropHeight =
+      sourceRatio > targetRatio
+        ? image.naturalHeight
+        : image.naturalWidth / targetRatio
+    const cropX = (image.naturalWidth - cropWidth) / 2
+    const cropY = (image.naturalHeight - cropHeight) / 2
+
+    const scale = Math.min(1, BACKGROUND_MAX_EDGE / cropWidth)
+    const width = Math.max(1, Math.round(cropWidth * scale))
+    const height = Math.max(1, Math.round(cropHeight * scale))
 
     const canvas = document.createElement('canvas')
     canvas.width = width
@@ -73,8 +106,20 @@ export async function imageFileToDataUrl(file: File): Promise<string> {
     const context = canvas.getContext('2d')
     if (!context) throw new Error('无法处理这张图片。')
 
-    context.drawImage(image, 0, 0, width, height)
-    return canvas.toDataURL('image/webp', 0.85)
+    context.imageSmoothingQuality = 'high'
+    context.drawImage(
+      image,
+      cropX,
+      cropY,
+      cropWidth,
+      cropHeight,
+      0,
+      0,
+      width,
+      height,
+    )
+
+    return await canvasToBlob(canvas, BACKGROUND_OUTPUT_QUALITY)
   } finally {
     URL.revokeObjectURL(objectUrl)
   }
@@ -115,20 +160,13 @@ export async function loadAvatarImage(file: File): Promise<LoadedImage> {
   }
 }
 
-/**
- * Crops a square region of an image and returns a square data URL suitable for
- * persisting in localStorage.
- */
-export function cropImageToSquareDataUrl(
+/** Crops a square region of an image and returns a 512×512 WebP blob. */
+export function cropImageToSquareBlob(
   image: HTMLImageElement,
   crop: { x: number; y: number; size: number },
   outputSize = AVATAR_OUTPUT_SIZE,
-): string {
-  const size = Math.min(
-    crop.size,
-    image.naturalWidth,
-    image.naturalHeight,
-  )
+): Promise<Blob> {
+  const size = Math.min(crop.size, image.naturalWidth, image.naturalHeight)
   const x = Math.min(Math.max(0, crop.x), image.naturalWidth - size)
   const y = Math.min(Math.max(0, crop.y), image.naturalHeight - size)
 
@@ -137,9 +175,9 @@ export function cropImageToSquareDataUrl(
   canvas.height = outputSize
 
   const context = canvas.getContext('2d')
-  if (!context) throw new Error('无法处理这张图片。')
+  if (!context) return Promise.reject(new Error('无法处理这张图片。'))
 
   context.imageSmoothingQuality = 'high'
   context.drawImage(image, x, y, size, size, 0, 0, outputSize, outputSize)
-  return canvas.toDataURL('image/webp', 0.88)
+  return canvasToBlob(canvas, AVATAR_OUTPUT_QUALITY)
 }

@@ -1,67 +1,21 @@
 import { createContext, useContext } from 'react'
 
-import type { AvatarShape, Board, ForumThread, Reply, User } from '@/types'
-
-export interface NewThreadInput {
-  boardId: string
-  title: string
-  content: string
-}
-
-export interface NewReplyInput {
-  threadId: string
-  content: string
-}
-
-export interface UpdateThreadInput {
-  title: string
-  content: string
-}
+import type { Site, UserSummary } from '@/types'
 
 export interface ForumContextValue {
-  users: User[]
-  boards: Board[]
-  threads: ForumThread[]
-  replies: Reply[]
-  userLikes: Record<string, string[]>
-  postLikes: Record<string, string[]>
-  boardFollows: Record<string, string[]>
-  userBackgrounds: Record<string, string>
-  avatarShape: AvatarShape
-  readNotificationIds: string[]
-  currentUser: User | null
+  site: Site
+  currentUser: UserSummary | null
+  globalPermissions: string[]
+  boardPermissions: Record<string, string[]>
+  hasPermission: (code: string, boardId?: number | null) => boolean
   loginDialogOpen: boolean
   openLogin: (afterLogin?: () => void) => void
   closeLogin: () => void
-  login: (identifier: string, password: string) => string | null
-  logout: () => void
-  createThread: (input: NewThreadInput) => ForumThread | null
-  updateThread: (threadId: string, input: UpdateThreadInput) => void
-  deleteThread: (threadId: string) => void
-  createReply: (input: NewReplyInput) => Reply | null
-  updateReply: (replyId: string, content: string) => void
-  deleteReply: (replyId: string) => void
-  toggleUserLike: (userId: string) => void
-  togglePostLike: (postKey: string) => void
-  toggleBoardFollow: (boardId: string) => void
-  setUserBackground: (userId: string, background: string | null) => void
-  setAvatarShape: (shape: AvatarShape) => void
-  updateUserAvatar: (userId: string, avatarUrl: string | null) => void
-  updateUserBio: (userId: string, bio: string) => void
-  markNotificationsRead: (notificationIds: string[]) => void
+  login: (username: string, password: string) => Promise<string | null>
+  logout: () => Promise<void>
 }
 
 export const ForumContext = createContext<ForumContextValue | null>(null)
-
-/** 主题楼层在 postLikes 中的键 */
-export function threadPostKey(threadId: string): string {
-  return `thread:${threadId}`
-}
-
-/** 跟帖楼层在 postLikes 中的键 */
-export function replyPostKey(replyId: string): string {
-  return `reply:${replyId}`
-}
 
 export function useForum(): ForumContextValue {
   const context = useContext(ForumContext)

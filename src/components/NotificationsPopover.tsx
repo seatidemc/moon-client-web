@@ -5,22 +5,32 @@ import { Link } from 'react-router-dom'
 
 import { NotificationItem } from '@/components/NotificationItem'
 import { useForum } from '@/lib/forum-context'
-import { useNotifications } from '@/lib/notifications'
-
-const RECENT_NOTIFICATION_LIMIT = 5
+import {
+  useMarkNotificationsRead,
+  useRecentNotifications,
+  useUnreadCount,
+} from '@/lib/notifications'
 
 /** 顶部导航里的通知铃铛：未读时右上角显示红点。 */
 export function NotificationsPopover() {
-  const { currentUser, markNotificationsRead } = useForum()
-  const { notifications, readIds, unreadCount } = useNotifications()
+  const { currentUser } = useForum()
   const [open, setOpen] = useState(false)
+  const recentQuery = useRecentNotifications()
+  const unreadQuery = useUnreadCount()
+  const markRead = useMarkNotificationsRead()
+
+  const recent = recentQuery.data ?? []
+  const unreadCount = unreadQuery.data ?? 0
 
   if (!currentUser) return null
 
-  const recent = notifications.slice(0, RECENT_NOTIFICATION_LIMIT)
-
   function markAllRead() {
-    markNotificationsRead(notifications.map((notification) => notification.id))
+    markRead.mutate({ all: true })
+  }
+
+  function handleSelect(id: number, read: boolean) {
+    if (!read) markRead.mutate({ ids: [id] })
+    setOpen(false)
   }
 
   return (
@@ -78,12 +88,11 @@ export function NotificationsPopover() {
                 <NotificationItem
                   key={notification.id}
                   notification={notification}
-                  read={readIds.has(notification.id)}
+                  read={notification.read}
                   compact
-                  onSelect={() => {
-                    markNotificationsRead([notification.id])
-                    setOpen(false)
-                  }}
+                  onSelect={() =>
+                    handleSelect(notification.id, notification.read)
+                  }
                 />
               ))}
             </div>

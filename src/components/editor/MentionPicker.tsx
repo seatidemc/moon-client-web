@@ -2,7 +2,8 @@ import { ListBox, Surface } from '@heroui/react'
 import { useRef, type RefObject } from 'react'
 
 import { UserAvatar } from '@/components/UserAvatar'
-import type { User } from '@/types'
+import { getDisplayName } from '@/lib/user'
+import type { UserSummary } from '@/types'
 
 import type { MentionTrigger } from './editor-types'
 import { useScrollActiveOption } from './use-scroll-active-option'
@@ -10,9 +11,10 @@ import { useScrollActiveOption } from './use-scroll-active-option'
 interface MentionPickerProps {
   panelRef: RefObject<HTMLDivElement | null>
   trigger: MentionTrigger
-  options: User[]
+  options: UserSummary[]
   activeIndex: number
-  onChoose: (user: User) => void
+  loading?: boolean
+  onChoose: (user: UserSummary) => void
   onHover: (index: number) => void
 }
 
@@ -21,6 +23,7 @@ export function MentionPicker({
   trigger,
   options,
   activeIndex,
+  loading = false,
   onChoose,
   onHover,
 }: MentionPickerProps) {
@@ -48,27 +51,35 @@ export function MentionPicker({
           aria-label="选择要提及的用户"
           selectionMode="single"
           selectedKeys={
-            options[activeIndex] ? [options[activeIndex].id] : []
+            options[activeIndex] ? [String(options[activeIndex].id)] : []
           }
           renderEmptyState={() => (
-            <p className="px-2 py-2 text-sm text-muted">没有匹配的用户。</p>
+            <p className="px-2 py-2 text-sm text-muted">
+              {trigger.query.trim() === ''
+                ? '输入用户名或昵称搜索。'
+                : loading
+                  ? '搜索中…'
+                  : '没有匹配的用户。'}
+            </p>
           )}
           className="pb-1"
         >
           {options.map((user, index) => (
             <ListBox.Item
               key={user.id}
-              id={user.id}
-              textValue={`${user.name} @${user.handle}`}
+              id={String(user.id)}
+              textValue={`${getDisplayName(user)} @${user.username}`}
               onPress={() => onChoose(user)}
               onHoverStart={() => onHover(index)}
               className="rounded-lg aria-selected:bg-default"
             >
               <UserAvatar user={user} className="size-7" />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm">{user.name}</span>
+                <span className="block truncate text-sm">
+                  {getDisplayName(user)}
+                </span>
                 <span className="block truncate text-xs text-muted">
-                  @{user.handle}
+                  @{user.username}
                 </span>
               </span>
             </ListBox.Item>

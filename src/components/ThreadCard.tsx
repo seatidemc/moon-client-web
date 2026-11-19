@@ -1,17 +1,16 @@
 import { Tooltip, cn } from '@heroui/react'
-
-import { useForum } from '@/lib/forum-context'
-import { formatDateTime, formatRelativeTime, makeExcerpt } from '@/lib/utils'
-import type { ForumThread } from '@/types'
 import { Link } from 'react-router-dom'
 
 import { BoardIcon } from '@/components/BoardIcon'
 import { UserAvatar } from '@/components/UserAvatar'
+import { getDisplayName } from '@/lib/user'
+import { formatDateTime, formatRelativeTime, truncateText } from '@/lib/utils'
+import type { ThreadSummary } from '@/types'
 
 type ThreadCardVariant = 'default' | 'compact'
 
 interface ThreadCardProps {
-  thread: ForumThread
+  thread: ThreadSummary
   /** 在卡片右下角显示所属板块（图标 + 板块名） */
   showBoard?: boolean
   showExcerpt?: boolean
@@ -27,14 +26,9 @@ export function ThreadCard({
   variant = 'default',
   className,
 }: ThreadCardProps) {
-  const { users, boards, replies } = useForum()
-  const author = users.find((user) => user.id === thread.authorId)
-  const replyCount = replies.filter((reply) => reply.threadId === thread.id).length
+  const author = thread.author
   const compact = variant === 'compact'
-
-  const board = showBoard
-    ? boards.find((item) => item.id === thread.boardId)
-    : undefined
+  const board = showBoard ? thread.board : undefined
 
   const boardBadge = board ? (
     <span className="ml-auto flex shrink-0 items-center gap-1">
@@ -63,7 +57,7 @@ export function ThreadCard({
     // flex 子项的 display 会被块化，line-clamp 将失效，所以由外层负责撑开
     <div className={cn('mt-1.5', compact && 'flex-1')}>
       <p className="line-clamp-2 text-sm leading-6 text-muted">
-        {makeExcerpt(thread.content)}
+        {truncateText(thread.excerpt, 120)}
       </p>
     </div>
   ) : null
@@ -78,7 +72,7 @@ export function ThreadCard({
     >
       {compact ? null : (
         <span className="absolute top-4 right-4 text-xs text-muted sm:top-5 sm:right-5">
-          <span className="text-foreground">{replyCount}</span> 回复
+          <span className="text-foreground">{thread.replyCount}</span> 回复
         </span>
       )}
 
@@ -91,7 +85,9 @@ export function ThreadCard({
             {author ? (
               <>
                 <UserAvatar user={author} className="size-5" />
-                <span className="truncate text-foreground">{author.name}</span>
+                <span className="truncate text-foreground">
+                  {getDisplayName(author)}
+                </span>
               </>
             ) : (
               <span className="truncate">未知用户</span>
@@ -114,11 +110,14 @@ export function ThreadCard({
             {author ? (
               <Tooltip delay={0} closeDelay={0}>
                 <Tooltip.Trigger className="relative z-10 shrink-0">
-                  <Link to={`/user/${author.id}`} aria-label={author.name}>
+                  <Link
+                    to={`/user/${author.id}`}
+                    aria-label={getDisplayName(author)}
+                  >
                     <UserAvatar user={author} />
                   </Link>
                 </Tooltip.Trigger>
-                <Tooltip.Content>{author.name}</Tooltip.Content>
+                <Tooltip.Content>{getDisplayName(author)}</Tooltip.Content>
               </Tooltip>
             ) : (
               <span className="text-xs text-muted">未知用户</span>

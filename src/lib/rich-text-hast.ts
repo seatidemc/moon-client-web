@@ -29,6 +29,13 @@ function link(
   }
 }
 
+function textContent(node: Root | Element | RootContent): string {
+  if (node.type === 'text') return node.value
+  if (node.type !== 'element') return ''
+
+  return node.children.map((child) => textContent(child)).join('')
+}
+
 /** Floor stored on an atomic reply-reference chip, if the element is one. */
 function chipFloor(element: Element): number | null {
   if (element.properties.dataTagType !== 'reply') {
@@ -42,9 +49,9 @@ function chipFloor(element: Element): number | null {
 function referenceLink(
   floor: number,
   anchors: Map<number, string> | null,
-  threadId: string | undefined,
+  threadId: number | undefined,
 ): Element | null {
-  if (!anchors || !threadId) return null
+  if (!anchors || threadId === undefined) return null
 
   const anchorId = anchors.get(floor)
   if (!anchorId) return null
@@ -63,32 +70,31 @@ function referenceAnchors(options: ReplyReferenceOptions) {
   return new Map<number, string>([
     [0, 'thread-post'],
     ...options.replies.map(
-      (reply, index) => [index + 1, `reply-${reply.id}`] as const,
+      (reply) => [reply.floor, `reply-${reply.id}`] as const,
     ),
   ])
 }
 
-/** Username and profile id stored on an atomic mention chip. */
-function mentionData(
-  element: Element,
-): { userId: string; handle: string } | null {
+/** User id stored on an atomic mention chip. */
+function mentionUserId(element: Element): number | null {
   if (element.properties.dataTagType !== 'mention') {
     return null
   }
 
-  const userId = String(element.properties.dataUserId ?? '')
-  const handle = String(element.properties.dataHandle ?? '')
-
-  return userId && handle ? { userId, handle } : null
+  const userId = Number.parseInt(String(element.properties.dataUserId ?? ''), 10)
+  return Number.isFinite(userId) && userId > 0 ? userId : null
 }
 
 function mentionLink(element: Element): Element | null {
-  const mention = mentionData(element)
-  if (!mention) return null
+  const userId = mentionUserId(element)
+  if (userId === null) return null
+
+  // 服务端保存的 chip 文本就是 @username；本地编辑时也保持同一契约。
+  const label = textContent(element).trim()
 
   return link(
-    { href: `/user/${mention.userId}`, className: ['mention'] },
-    `@${mention.handle}`,
+    { href: `/user/${userId}`, className: ['mention'] },
+    label.startsWith('@') ? label : `@${label}`,
   )
 }
 
@@ -122,7 +128,7 @@ function splitHashtags(value: string): RootContent[] {
 function transformChildren(
   parent: Root | Element,
   anchors: Map<number, string> | null,
-  threadId: string | undefined,
+  threadId: number | undefined,
 ) {
   if (!parent.children) return
 

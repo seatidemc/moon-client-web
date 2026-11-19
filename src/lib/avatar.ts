@@ -1,18 +1,31 @@
-import type { AvatarShape, User } from '@/types'
+import type { AvatarShape, UserSummary } from '@/types'
 
-const DEFAULT_AVATAR_SIZE = 200
+export function isAvatarShape(value: unknown): value is AvatarShape {
+  return value === 'circle' || value === 'square'
+}
 
 /**
- * 用户头像图片地址。未设置自定义头像时，按 handle 拉取同名 Minecraft 玩家的头像，
- * 保证同一个用户在全站（导航栏、帖子列表、用户主页等）始终显示同一张图片。
+ * 头像地址由后端提供：自定义头像或默认头像模板（按 username 生成）。
+ * `avatarUrl` 为空时说明数据尚未加载，返回空字符串让浏览器显示占位。
  */
-export function getAvatarUrl(
-  user: Pick<User, 'handle' | 'avatarUrl'>,
-): string {
-  return (
-    user.avatarUrl ??
-    `https://minotar.net/helm/${encodeURIComponent(user.handle)}/${DEFAULT_AVATAR_SIZE}.png`
-  )
+export function getAvatarUrl(user: Pick<UserSummary, 'avatarUrl'>): string {
+  return user.avatarUrl || ''
+}
+
+/** 用户自己的头像形状，未设置时按圆形处理。 */
+export function getAvatarShape(user: Pick<UserSummary, 'avatarShape'>): AvatarShape {
+  return isAvatarShape(user.avatarShape) ? user.avatarShape : 'circle'
+}
+
+/**
+ * 后端始终返回头像 URL（自定义或默认模板）。默认模板来自 Minotar 时，
+ * 用前缀判断当前是否使用了自定义头像，以便决定是否展示“删除头像”。
+ */
+export function hasCustomAvatar(
+  user: Pick<UserSummary, 'avatarUrl'>,
+): boolean {
+  const url = user.avatarUrl
+  return Boolean(url) && !url.startsWith('https://minotar.net/helm/')
 }
 
 /**

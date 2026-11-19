@@ -19,6 +19,12 @@ import { getBoardThemeStyle } from '@/lib/board-theme'
 import { useForum } from '@/lib/forum-context'
 import { hasRichTextContent } from '@/lib/html-content'
 import { pulseElement } from '@/lib/pulse'
+import {
+  flattenPages,
+  useCreateReply,
+  useThread,
+  useThreadReplies,
+} from '@/lib/queries'
 import { buildReplyReferenceOptions } from '@/lib/reply-reference-options'
 
 export interface ReplyComposerHandle {
@@ -27,34 +33,27 @@ export interface ReplyComposerHandle {
 }
 
 interface ReplyComposerProps {
-  threadId: string
+  threadId: number
   ref?: Ref<ReplyComposerHandle>
 }
 
 export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
-  const {
-    boards,
-    currentUser,
-    openLogin,
-    createReply,
-    users,
-    threads,
-    replies,
-  } = useForum()
-  const thread = threads.find((item) => item.id === threadId)
-  const boardColor = thread
-    ? boards.find((board) => board.id === thread.boardId)?.color
-    : undefined
+  const { currentUser, openLogin } = useForum()
+  const threadQuery = useThread(threadId)
+  const repliesQuery = useThreadReplies(threadId)
+  const createReply = useCreateReply(threadId)
+
+  const thread = threadQuery.data
+  const replies = flattenPages(repliesQuery.data)
+  const boardColor = thread?.board.color
   const themeStyle = getBoardThemeStyle(boardColor)
   const floorOptions = thread
     ? buildReplyReferenceOptions(
         thread,
-        replies
-          .filter((reply) => reply.threadId === thread.id)
-          .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
-        users,
+        [...replies].sort((a, b) => a.floor - b.floor),
       )
     : []
+
   const [content, setContent] = useState('')
   const [follow, setFollow] = useState(true)
   const [floating, setFloating] = useState(false)
@@ -95,7 +94,7 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
     return () => observer.disconnect()
   }, [follow])
 
-  function submitReply() {
+  async function submitReply() {
     if (!currentUser) {
       openLogin()
       return
@@ -103,22 +102,24 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
 
     if (!hasRichTextContent(content)) return
 
-    const reply = createReply({ threadId, content })
-    setContent('')
-    setExpanded(false)
+    try {
+      const reply = await createReply.mutateAsync(content)
+      setContent('')
+      setExpanded(false)
 
-    if (reply) {
       requestAnimationFrame(() => {
         document
           .getElementById(`reply-${reply.id}`)
           ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       })
+    } catch {
+      // 错误信息已由全局处理展示；保留输入内容方便重试。
     }
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    submitReply()
+    void submitReply()
   }
 
   return (
@@ -200,7 +201,9 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
                     size="sm"
                     variant="primary"
                     className="pointer-events-auto shrink-0"
-                    isDisabled={!hasRichTextContent(content)}
+                    isDisabled={
+                      createReply.isPending || !hasRichTextContent(content)
+                    }
                   >
                     发布
                     {quickSend ? (
@@ -265,7 +268,9 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
                   <Button
                     type="submit"
                     variant="primary"
-                    isDisabled={!hasRichTextContent(content)}
+                    isDisabled={
+                      createReply.isPending || !hasRichTextContent(content)
+                    }
                   >
                     发布
                   </Button>

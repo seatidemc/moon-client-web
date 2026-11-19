@@ -1,7 +1,6 @@
 import { Button, Input, Modal } from '@heroui/react'
 import { useState, type FormEvent } from 'react'
 
-import { DEMO_PASSWORD } from '@/lib/constants'
 import { useForum } from '@/lib/forum-context'
 
 export function LoginDialog() {
@@ -30,32 +29,33 @@ export function LoginDialog() {
 }
 
 function LoginForm({ onClose }: { onClose: () => void }) {
-  const { users, login } = useForum()
+  const { site, login } = useForum()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
-  const demoUsers = users.slice(0, 2)
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (submitting) return
 
-    const nextError = login(identifier, password)
-    if (nextError) setError(nextError)
-  }
-
-  function fillDemo(handle: string) {
-    setIdentifier(handle)
-    setPassword(DEMO_PASSWORD)
+    setSubmitting(true)
     setError(null)
+
+    try {
+      const nextError = await login(identifier, password)
+      if (nextError) setError(nextError)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col">
       <Modal.Header>
-        <Modal.Heading>登录 Moon</Modal.Heading>
+        <Modal.Heading>登录 {site.siteName}</Modal.Heading>
         <p className="text-sm text-muted">
-          登录后即可发帖、回复和点赞。Moon 目前不开放注册。
+          登录后即可发帖、回复和点赞。{site.siteName} 目前不开放注册。
         </p>
       </Modal.Header>
       <Modal.Body className="space-y-4">
@@ -93,30 +93,12 @@ function LoginForm({ onClose }: { onClose: () => void }) {
             {error}
           </p>
         ) : null}
-
-        <div className="rounded-lg bg-surface-secondary px-3 py-2.5">
-          <p className="text-xs text-muted">
-            演示账号（密码均为 {DEMO_PASSWORD}）
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {demoUsers.map((user) => (
-              <button
-                key={user.id}
-                type="button"
-                onClick={() => fillDemo(user.handle)}
-                className="rounded-md bg-surface px-2 py-1 text-xs text-foreground transition-colors hover:bg-default"
-              >
-                {user.name} · {user.handle}
-              </button>
-            ))}
-          </div>
-        </div>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="tertiary" onPress={onClose}>
           取消
         </Button>
-        <Button type="submit" variant="primary">
+        <Button type="submit" variant="primary" isDisabled={submitting}>
           登录
         </Button>
       </Modal.Footer>

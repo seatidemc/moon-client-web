@@ -1,10 +1,10 @@
 import { cn } from '@heroui/react'
-import { CornerUpLeft, Heart } from 'lucide-react'
+import { AtSign, CornerUpLeft, Heart } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { UserAvatar } from '@/components/UserAvatar'
-import { useForum } from '@/lib/forum-context'
-import { formatDateTime, formatRelativeTime, makeExcerpt } from '@/lib/utils'
+import { getDisplayName } from '@/lib/user'
+import { formatDateTime, formatRelativeTime } from '@/lib/utils'
 import type { Notification } from '@/types'
 
 interface NotificationItemProps {
@@ -15,22 +15,30 @@ interface NotificationItemProps {
 }
 
 function notificationHref(notification: Notification): string {
-  if (notification.type === 'like-thread') {
-    return `/thread/${notification.threadId}`
+  if (notification.replyId > 0) {
+    return `/thread/${notification.threadId}#reply-${notification.replyId}`
   }
 
-  return `/thread/${notification.threadId}#reply-${notification.replyId}`
+  return `/thread/${notification.threadId}`
 }
 
 function actionLabel(type: Notification['type']): string {
   switch (type) {
     case 'reply':
       return '回复了你的主题'
-    case 'like-thread':
+    case 'like_thread':
       return '赞了你的主题'
-    case 'like-reply':
+    case 'like_reply':
       return '赞了你的回复'
+    case 'mention':
+      return '提到了你'
   }
+}
+
+function NotificationIcon({ type }: { type: Notification['type'] }) {
+  if (type === 'mention') return <AtSign className="size-2.5" />
+  if (type === 'reply') return <CornerUpLeft className="size-2.5" />
+  return <Heart className="size-2.5 fill-current" />
 }
 
 /** 通知中心与通知 popover 共用的单条通知。 */
@@ -40,15 +48,14 @@ export function NotificationItem({
   compact = false,
   onSelect,
 }: NotificationItemProps) {
-  const { users, threads } = useForum()
-  const actor = users.find((user) => user.id === notification.actorId)
-  const thread = threads.find((item) => item.id === notification.threadId)
+  const actor = notification.actor
 
-  if (!actor || !thread) return null
+  if (!actor) return null
 
-  const isLike = notification.type !== 'reply'
+  const isLike =
+    notification.type === 'like_thread' || notification.type === 'like_reply'
   // popover 里不放摘要，只保留动作和主题，列表更紧凑。
-  const excerpt = compact ? '' : makeExcerpt(notification.excerpt, 160)
+  const excerpt = compact ? '' : notification.excerpt
 
   return (
     <Link
@@ -71,18 +78,16 @@ export function NotificationItem({
           )}
           aria-hidden="true"
         >
-          {isLike ? (
-            <Heart className="size-2.5 fill-current" />
-          ) : (
-            <CornerUpLeft className="size-2.5" />
-          )}
+          <NotificationIcon type={notification.type} />
         </span>
       </span>
 
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
           <span className="min-w-0 flex-1 text-sm leading-5">
-            <span className="font-medium text-foreground">{actor.name}</span>{' '}
+            <span className="font-medium text-foreground">
+              {getDisplayName(actor)}
+            </span>{' '}
             <span className="text-muted">
               {actionLabel(notification.type)}
             </span>
@@ -97,7 +102,7 @@ export function NotificationItem({
         </span>
 
         <span className="mt-0.5 block truncate font-minecraft-sc text-sm text-foreground">
-          {thread.title}
+          {notification.threadTitle}
         </span>
 
         {excerpt ? (

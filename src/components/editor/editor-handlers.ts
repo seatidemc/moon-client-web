@@ -3,12 +3,13 @@ import { TextSelection } from '@tiptap/pm/state'
 import { CellSelection } from '@tiptap/pm/tables'
 import { toast } from '@heroui/react'
 
+import { uploadImage } from '@/lib/api'
+
 import {
   TABLE_MENU_MAX_HEIGHT,
   TABLE_MENU_WIDTH,
 } from './editor-constants'
 import type { OpenLinkPopover, TablePanelPosition } from './editor-types'
-import { readImageFileAsDataUrl } from './editor-utils'
 
 /** 单行模式只保留一行文字，粘贴内容里的换行与连续空白压成空格。 */
 export function handleSingleLinePaste(
@@ -51,25 +52,41 @@ export function notifyUnsupportedImages(count: number) {
   )
 }
 
-/** Reads image files and inserts them as data URLs at the current selection. */
+/**
+ * Uploads image files first, then inserts the returned URLs at the current
+ * selection. A failed upload is reported and skipped; data URLs are never
+ * inserted into the document.
+ */
 export function insertImageFiles(view: Editor['view'], files: File[]) {
   const images = filterImageFiles(files)
   const rejected = files.length - images.length
+  if (images.length === 0) {
+    notifyUnsupportedImages(rejected)
+    return
+  }
 
-  // 暂时只把图片作为 data URL 插入文档，不做上传。
-  void Promise.allSettled(images.map(readImageFileAsDataUrl)).then((results) => {
-    const sources = results.flatMap((result) =>
+  void Promise.allSettled(
+    images.map((file) => uploadImage(file, 'post')),
+  ).then((results) => {
+    const uploads = results.flatMap((result) =>
       result.status === 'fulfilled' ? [result.value] : [],
     )
-    notifyUnsupportedImages(rejected + results.length - sources.length)
-    if (sources.length === 0) return
+    const failed = rejected + results.length - uploads.length
+
+    if (uploads.length === 0) {
+      toast.danger('图片上传失败，请稍后再试。')
+      return
+    }
+    if (failed > 0) {
+      toast.danger(`有 ${failed} 张图片上传失败，已跳过。`)
+    }
 
     const imageType = view.state.schema.nodes.image
     if (!imageType) return
 
     let tr = view.state.tr
-    for (const src of sources) {
-      tr = tr.replaceSelectionWith(imageType.create({ src }))
+    for (const upload of uploads) {
+      tr = tr.replaceSelectionWith(imageType.create({ src: upload.url }))
     }
     view.dispatch(tr.scrollIntoView())
   })
