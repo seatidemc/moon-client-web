@@ -1,0 +1,902 @@
+import { Button, Input, Modal, toast } from '@heroui/react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  Eye,
+  Lock,
+  LockOpen,
+  Move,
+  Pin,
+  PinOff,
+  RotateCcw,
+  Trash2,
+} from 'lucide-react'
+import { useMemo, useState, type FormEvent } from 'react'
+
+import { PostContent } from '@/components/PostContent'
+import { UserAvatar } from '@/components/UserAvatar'
+import { formatDateTime } from '@/lib/utils'
+import { getDisplayName } from '@/lib/user'
+
+import { adminApi } from '../api'
+import { ReasonDialog } from '../components/ReasonDialog'
+import {
+  Badge,
+  ErrorPanel,
+  Field,
+  LoadingPanel,
+  PageHeader,
+  Pagination,
+  SelectInput,
+  TableWrap,
+  TD_CLASS,
+  TH_CLASS,
+  TextInput,
+  Toolbar,
+} from '../components/ui'
+import { useAdminPageTitle } from '../components/use-admin-title'
+import { formatDateTimeOrDash } from '../lib'
+import { adminKeys, useAdmin } from '../store'
+import type { AdminBoard, AdminThread, BatchFailure } from '../types'
+
+const PAGE_SIZE = 20
+const BOARD_OPTIONS_QUERY = {
+  includeDisabled: true,
+  includeDeleted: true,
+  pageSize: 100,
+} as const
+
+type ThreadAction =
+  | 'pin'
+  | 'unpin'
+  | 'lock'
+  | 'unlock'
+  | 'delete'
+  | 'restore'
+  | 'move'
+
+const ACTION_LABELS: Record<ThreadAction, string> = {
+  pin: '置顶',
+  unpin: '取消置顶',
+  lock: '锁定',
+  unlock: '解锁',
+  delete: '删除',
+  restore: '恢复',
+  move: '移动板块',
+}
+
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message : '操作失败，请稍后再试。'
+}
+
+function useBoards() {
+  return useQuery({
+    queryKey: adminKeys.boards(BOARD_OPTIONS_QUERY),
+    queryFn: () => adminApi.boards(BOARD_OPTIONS_QUERY),
+    staleTime: 60_000,
+  })
+}
+
+function ThreadDetailDialog({
+  threadId,
+  onClose,
+  onMove,
+  onDelete,
+}: {
+  threadId: number
+  onClose: () => void
+  onMove: (thread: AdminThread) => void
+  onDelete: (thread: AdminThread) => void
+}) {
+  const admin = useAdmin()
+  const queryClient = useQueryClient()
+
+  const detailQuery = useQuery({
+    queryKey: adminKeys.thread(threadId),
+    queryFn: () => adminApi.thread(threadId),
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: (patch: { pinned?: boolean; locked?: boolean }) =>
+      adminApi.updateThread(threadId, patch),
+    meta: { skipGlobalError: true },
+    onSuccess: async () => {
+      toast.success('主题状态已更新')
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'threads'] })
+      await queryClient.invalidateQueries({
+        queryKey: adminKeys.thread(threadId),
+      })
+    },
+    onError: (error) => toast.danger(errorText(error)),
+  })
+
+  const restoreMutation = useMutation({
+    mutationFn: () => adminApi.restoreThread(threadId),
+    meta: { skipGlobalError: true },
+    onSuccess: async () => {
+      toast.success('主题已恢复')
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'threads'] })
+      await queryClient.invalidateQueries({
+        queryKey: adminKeys.thread(threadId),
+      })
+    },
+    onError: (error) => toast.danger(errorText(error)),
+  })
+
+  const thread = detailQuery.data
+
+  return (
+    <Modal isOpen onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <Modal.Backdrop>
+        <Modal.Container size="lg" scroll="inside">
+          <Modal.Dialog>
+            <Modal.CloseTrigger aria-label="关闭主题详情" />
+            <Modal.Header>
+              <Modal.Heading>主题详情</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="space-y-4">
+              {detailQuery.isPending ? (
+                <LoadingPanel />
+              ) : detailQuery.isError ? (
+                <ErrorPanel
+                  message={detailQuery.error.message}
+                  onRetry={() => void detailQuery.refetch()}
+                />
+              ) : !thread ? null : (
+                <>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge tone="accent">{thread.board.name}</Badge>
+                      {thread.pinned ? <Badge tone="warning">置顶</Badge> : null}
+                      {thread.locked ? <Badge>锁定</Badge> : null}
+                      {thread.deleted ? (
+                        <Badge tone="danger">已删除</Badge>
+                      ) : null}
+                    </div>
+                    <h2 className="mt-2 text-lg font-semibold">
+                      {thread.title}
+                    </h2>
+                    <p className="mt-1 text-xs text-muted">
+                      #{thread.id} · 作者{' '}
+                      {thread.author
+                        ? getDisplayName(thread.author)
+                        : '已注销用户'}{' '}
+                      · 创建于 {formatDateTime(thread.createdAt)} · 最后回复{' '}
+                      {formatDateTimeOrDash(thread.lastReplyAt)}
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      回复 {thread.replyCount} · 获赞 {thread.likeCount}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-border bg-surface-secondary px-4 py-3">
+                    {thread.contentHtml ? (
+                      <PostContent>{thread.contentHtml}</PostContent>
+                    ) : (
+                      <p className="text-sm text-muted">正文不可用。</p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {!thread.deleted && admin.can('thread.pin', thread.boardId) ? (
+                      <Button
+                        size="sm"
+                        variant="tertiary"
+                        isDisabled={updateMutation.isPending}
+                        onPress={() =>
+                          updateMutation.mutate({ pinned: !thread.pinned })
+                        }
+                      >
+                        {thread.pinned ? (
+                          <>
+                            <PinOff className="size-4" />
+                            取消置顶
+                          </>
+                        ) : (
+                          <>
+                            <Pin className="size-4" />
+                            置顶主题
+                          </>
+                        )}
+                      </Button>
+                    ) : null}
+
+                    {!thread.deleted && admin.can('thread.lock', thread.boardId) ? (
+                      <Button
+                        size="sm"
+                        variant="tertiary"
+                        isDisabled={updateMutation.isPending}
+                        onPress={() =>
+                          updateMutation.mutate({ locked: !thread.locked })
+                        }
+                      >
+                        {thread.locked ? (
+                          <>
+                            <LockOpen className="size-4" />
+                            解锁主题
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="size-4" />
+                            锁定主题
+                          </>
+                        )}
+                      </Button>
+                    ) : null}
+
+                    {!thread.deleted &&
+                    admin.can('thread.move', thread.boardId) ? (
+                      <Button
+                        size="sm"
+                        variant="tertiary"
+                        onPress={() => onMove(thread)}
+                      >
+                        <Move className="size-4" />
+                        移动主题
+                      </Button>
+                    ) : null}
+
+                    {!thread.deleted &&
+                    admin.can('thread.delete_any', thread.boardId) ? (
+                      <Button
+                        size="sm"
+                        variant="tertiary"
+                        className="text-danger"
+                        onPress={() => onDelete(thread)}
+                      >
+                        <Trash2 className="size-4" />
+                        删除主题
+                      </Button>
+                    ) : null}
+
+                    {thread.deleted &&
+                    admin.can('content.restore', thread.boardId) ? (
+                      <Button
+                        size="sm"
+                        variant="tertiary"
+                        isDisabled={restoreMutation.isPending}
+                        onPress={() => restoreMutation.mutate()}
+                      >
+                        <RotateCcw className="size-4" />
+                        恢复主题
+                      </Button>
+                    ) : null}
+                  </div>
+
+                  {thread.deleted ? (
+                    <p className="text-xs text-muted">
+                      删除于 {formatDateTimeOrDash(thread.deletedAt)}
+                      {thread.deletedBy
+                        ? ` · 操作人 #${thread.deletedBy}`
+                        : ''}
+                    </p>
+                  ) : null}
+                </>
+              )}
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  )
+}
+
+export function ThreadsPage() {
+  useAdminPageTitle('主题管理')
+  const admin = useAdmin()
+  const queryClient = useQueryClient()
+  const boardsQuery = useBoards()
+
+  const [boardId, setBoardId] = useState('')
+  const [status, setStatus] = useState('active')
+  const [pinned, setPinned] = useState('')
+  const [locked, setLocked] = useState('')
+  const [sort, setSort] = useState('created')
+  const [keywordDraft, setKeywordDraft] = useState('')
+  const [keyword, setKeyword] = useState('')
+  const [page, setPage] = useState(1)
+
+  const [selected, setSelected] = useState<number[]>([])
+  const [batchAction, setBatchAction] = useState<ThreadAction>('pin')
+  const [batchReason, setBatchReason] = useState('')
+  const [batchBoardId, setBatchBoardId] = useState('')
+  const [batchFailures, setBatchFailures] = useState<BatchFailure[]>([])
+
+  const [detailId, setDetailId] = useState<number | null>(null)
+  const [reasonTarget, setReasonTarget] = useState<AdminThread | null>(null)
+  const [moveTarget, setMoveTarget] = useState<AdminThread | null>(null)
+  const [moveBoardId, setMoveBoardId] = useState('')
+  const [restoringId, setRestoringId] = useState<number | null>(null)
+
+  const query = useMemo(
+    () => ({
+      boardId: boardId ? Number(boardId) : undefined,
+      status,
+      pinned: pinned === '' ? undefined : pinned === 'true',
+      locked: locked === '' ? undefined : locked === 'true',
+      sort,
+      keyword: keyword || undefined,
+      page,
+      pageSize: PAGE_SIZE,
+    }),
+    [boardId, keyword, locked, page, pinned, sort, status],
+  )
+
+  const threadsQuery = useQuery({
+    queryKey: adminKeys.threads(query),
+    queryFn: () => adminApi.threads(query),
+  })
+
+  const threads = threadsQuery.data?.items ?? []
+  const boards: AdminBoard[] = boardsQuery.data?.items ?? []
+  const moveBoards = boards.filter(
+    (board) => !board.deleted && board.enabled,
+  )
+
+  function refresh() {
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'threads'] })
+    if (detailId !== null) {
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.thread(detailId),
+      })
+    }
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] })
+  }
+
+  const deleteMutation = useMutation({
+    mutationFn: (input: { id: number; reason: string }) =>
+      adminApi.deleteThread(input.id, input.reason || undefined),
+    meta: { skipGlobalError: true },
+    onSuccess: () => {
+      toast.success('主题已删除')
+      refresh()
+    },
+    onError: (error) => toast.danger(errorText(error)),
+  })
+
+  const restoreMutation = useMutation({
+    mutationFn: (id: number) => adminApi.restoreThread(id),
+    meta: { skipGlobalError: true },
+    onSuccess: () => {
+      toast.success('主题已恢复')
+      refresh()
+    },
+    onError: (error) => toast.danger(errorText(error)),
+  })
+
+  const moveMutation = useMutation({
+    mutationFn: (input: { id: number; boardId: number }) =>
+      adminApi.updateThread(input.id, { boardId: input.boardId }),
+    meta: { skipGlobalError: true },
+    onSuccess: () => {
+      toast.success('主题已移动')
+      setMoveTarget(null)
+      refresh()
+    },
+    onError: (error) => toast.danger(errorText(error)),
+  })
+
+  const batchMutation = useMutation({
+    mutationFn: () =>
+      adminApi.batchThreads({
+        ids: selected,
+        action: batchAction,
+        boardId:
+          batchAction === 'move' && batchBoardId
+            ? Number(batchBoardId)
+            : undefined,
+        reason: batchReason.trim() || undefined,
+      }),
+    meta: { skipGlobalError: true },
+    onSuccess: (result) => {
+      if (result.succeeded.length > 0) {
+        toast.success(`批量操作成功 ${result.succeeded.length} 条`)
+      }
+      if (result.failed.length > 0) {
+        setBatchFailures(result.failed)
+        toast.danger(`批量操作失败 ${result.failed.length} 条`)
+      } else {
+        setBatchFailures([])
+      }
+      setSelected([])
+      refresh()
+    },
+    onError: (error) => toast.danger(errorText(error)),
+  })
+
+  function toggleSelected(id: number) {
+    setSelected((current) =>
+      current.includes(id)
+        ? current.filter((value) => value !== id)
+        : [...current, id],
+    )
+  }
+
+  function toggleAll() {
+    setSelected((current) =>
+      current.length === threads.length
+        ? []
+        : threads.map((thread) => thread.id),
+    )
+  }
+
+  function applyFilters(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setKeyword(keywordDraft.trim())
+    setPage(1)
+  }
+
+  function resetFilters() {
+    setBoardId('')
+    setStatus('active')
+    setPinned('')
+    setLocked('')
+    setSort('created')
+    setKeywordDraft('')
+    setKeyword('')
+    setPage(1)
+  }
+
+  return (
+    <div>
+      <PageHeader
+        title="主题管理"
+        description="筛选、审核、移动与恢复论坛主题。删除操作写入审计日志。"
+      />
+
+      <Toolbar>
+        <form
+          onSubmit={applyFilters}
+          className="flex flex-wrap items-end gap-3"
+        >
+          <Field label="板块" htmlFor="thread-board">
+            <SelectInput
+              id="thread-board"
+              value={boardId}
+              onChange={(event) => {
+                setBoardId(event.target.value)
+                setPage(1)
+              }}
+            >
+              <option value="">全部板块</option>
+              {boards.map((board) => (
+                <option key={board.id} value={board.id}>
+                  {board.name}
+                </option>
+              ))}
+            </SelectInput>
+          </Field>
+
+          <Field label="状态" htmlFor="thread-status">
+            <SelectInput
+              id="thread-status"
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value)
+                setPage(1)
+              }}
+            >
+              <option value="active">正常</option>
+              <option value="deleted">已删除</option>
+              <option value="all">全部</option>
+            </SelectInput>
+          </Field>
+
+          <Field label="置顶" htmlFor="thread-pinned">
+            <SelectInput
+              id="thread-pinned"
+              value={pinned}
+              onChange={(event) => {
+                setPinned(event.target.value)
+                setPage(1)
+              }}
+            >
+              <option value="">不限</option>
+              <option value="true">已置顶</option>
+              <option value="false">未置顶</option>
+            </SelectInput>
+          </Field>
+
+          <Field label="锁定" htmlFor="thread-locked">
+            <SelectInput
+              id="thread-locked"
+              value={locked}
+              onChange={(event) => {
+                setLocked(event.target.value)
+                setPage(1)
+              }}
+            >
+              <option value="">不限</option>
+              <option value="true">已锁定</option>
+              <option value="false">未锁定</option>
+            </SelectInput>
+          </Field>
+
+          <Field label="排序" htmlFor="thread-sort">
+            <SelectInput
+              id="thread-sort"
+              value={sort}
+              onChange={(event) => setSort(event.target.value)}
+            >
+              <option value="created">创建时间</option>
+              <option value="pinned">置顶时间</option>
+              <option value="last_reply">最后回复</option>
+            </SelectInput>
+          </Field>
+
+          <Field label="关键词" htmlFor="thread-keyword" className="min-w-52">
+            <Input
+              id="thread-keyword"
+              fullWidth
+              placeholder="标题或正文"
+              value={keywordDraft}
+              onChange={(event) => setKeywordDraft(event.target.value)}
+            />
+          </Field>
+
+          <Button type="submit" variant="primary">
+            查询
+          </Button>
+          <Button variant="tertiary" onPress={resetFilters}>
+            重置
+          </Button>
+        </form>
+      </Toolbar>
+
+      <div className="mb-4 rounded-xl border border-border bg-surface p-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <p className="text-sm text-muted">已选 {selected.length} 条</p>
+
+          <Field label="批量操作" htmlFor="batch-action">
+            <SelectInput
+              id="batch-action"
+              value={batchAction}
+              onChange={(event) =>
+                setBatchAction(event.target.value as ThreadAction)
+              }
+            >
+              {(Object.keys(ACTION_LABELS) as ThreadAction[]).map((action) => (
+                <option key={action} value={action}>
+                  {ACTION_LABELS[action]}
+                </option>
+              ))}
+            </SelectInput>
+          </Field>
+
+          {batchAction === 'move' ? (
+            <Field label="目标板块" htmlFor="batch-board">
+              <SelectInput
+                id="batch-board"
+                value={batchBoardId}
+                onChange={(event) => setBatchBoardId(event.target.value)}
+              >
+                <option value="">选择目标板块</option>
+                {moveBoards.map((board) => (
+                  <option key={board.id} value={board.id}>
+                    {board.name}
+                  </option>
+                ))}
+              </SelectInput>
+            </Field>
+          ) : null}
+
+          <Field label="原因（可选）" htmlFor="batch-reason">
+            <TextInput
+              id="batch-reason"
+              value={batchReason}
+              placeholder="写入审计日志"
+              onChange={(event) => setBatchReason(event.target.value)}
+            />
+          </Field>
+
+          <Button
+            variant="primary"
+            isDisabled={
+              selected.length === 0 ||
+              batchMutation.isPending ||
+              (batchAction === 'move' && !batchBoardId)
+            }
+            onPress={() => batchMutation.mutate()}
+          >
+            执行批量操作
+          </Button>
+          <Button
+            variant="tertiary"
+            isDisabled={selected.length === 0}
+            onPress={() => setSelected([])}
+          >
+            清空选择
+          </Button>
+        </div>
+
+        {batchFailures.length > 0 ? (
+          <div className="mt-3 rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">
+            <p className="font-medium">以下条目操作失败：</p>
+            <ul className="mt-1 list-disc pl-4">
+              {batchFailures.map((failure) => (
+                <li key={failure.id}>
+                  #{failure.id}：{failure.reason}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </div>
+
+      {threadsQuery.isPending ? (
+        <LoadingPanel />
+      ) : threadsQuery.isError ? (
+        <ErrorPanel
+          message={threadsQuery.error.message}
+          onRetry={() => void threadsQuery.refetch()}
+        />
+      ) : (
+        <>
+          <TableWrap>
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  <th className={TH_CLASS}>
+                    <input
+                      type="checkbox"
+                      aria-label="选择本页全部主题"
+                      className="size-4"
+                      checked={
+                        threads.length > 0 &&
+                        selected.length === threads.length
+                      }
+                      onChange={toggleAll}
+                    />
+                  </th>
+                  <th className={TH_CLASS}>ID</th>
+                  <th className={TH_CLASS}>标题</th>
+                  <th className={TH_CLASS}>板块</th>
+                  <th className={TH_CLASS}>作者</th>
+                  <th className={TH_CLASS}>互动</th>
+                  <th className={TH_CLASS}>状态</th>
+                  <th className={`${TH_CLASS} hidden 2xl:table-cell`}>创建时间</th>
+                  <th className={TH_CLASS}>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {threads.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={9}
+                      className="px-3 py-10 text-center text-muted"
+                    >
+                      没有符合条件的主题
+                    </td>
+                  </tr>
+                ) : (
+                  threads.map((thread) => (
+                    <tr key={thread.id}>
+                      <td className={TD_CLASS}>
+                        <input
+                          type="checkbox"
+                          aria-label={`选择主题 ${thread.id}`}
+                          className="size-4"
+                          checked={selected.includes(thread.id)}
+                          onChange={() => toggleSelected(thread.id)}
+                        />
+                      </td>
+                      <td className={TD_CLASS}>{thread.id}</td>
+                      <td className={TD_CLASS}>
+                        <p className="max-w-xs truncate font-medium">
+                          {thread.title}
+                        </p>
+                        <p className="max-w-xs truncate text-xs text-muted">
+                          {thread.excerpt}
+                        </p>
+                      </td>
+                      <td className={TD_CLASS}>{thread.board.name}</td>
+                      <td className={TD_CLASS}>
+                        {thread.author ? (
+                          <span className="flex items-center gap-1.5">
+                            <UserAvatar user={thread.author} />
+                            <span className="max-w-24 truncate">
+                              {getDisplayName(thread.author)}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-muted">已注销</span>
+                        )}
+                      </td>
+                      <td className={TD_CLASS}>
+                        <span className="text-xs text-muted">
+                          {thread.replyCount} 回复 · {thread.likeCount} 赞
+                        </span>
+                      </td>
+                      <td className={TD_CLASS}>
+                        <div className="flex flex-wrap gap-1">
+                          {thread.deleted ? (
+                            <Badge tone="danger">已删除</Badge>
+                          ) : null}
+                          {thread.pinned ? (
+                            <Badge tone="warning">置顶</Badge>
+                          ) : null}
+                          {thread.locked ? <Badge>锁定</Badge> : null}
+                          {!thread.deleted &&
+                          !thread.pinned &&
+                          !thread.locked ? (
+                            <Badge tone="success">正常</Badge>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td className={`${TD_CLASS} hidden 2xl:table-cell`}>
+                        <span className="text-xs text-muted">
+                          {formatDateTime(thread.createdAt)}
+                        </span>
+                      </td>
+                      <td className={TD_CLASS}>
+                        <div className="flex flex-wrap gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            aria-label={`查看主题 ${thread.id}`}
+                            onPress={() => setDetailId(thread.id)}
+                          >
+                            <Eye className="size-3.5" />
+                            详情
+                          </Button>
+
+                          {!thread.deleted &&
+                          admin.can('thread.pin', thread.boardId) ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              aria-label={
+                                thread.pinned ? '取消置顶' : '置顶主题'
+                              }
+                              onPress={async () => {
+                                try {
+                                  await adminApi.updateThread(thread.id, {
+                                    pinned: !thread.pinned,
+                                  })
+                                  toast.success(
+                                    thread.pinned ? '已取消置顶' : '已置顶',
+                                  )
+                                  refresh()
+                                } catch (error) {
+                                  toast.danger(errorText(error))
+                                }
+                              }}
+                            >
+                              {thread.pinned ? '取消置顶' : '置顶'}
+                            </Button>
+                          ) : null}
+
+                          {!thread.deleted &&
+                          admin.can('thread.delete_any', thread.boardId) ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-danger"
+                              aria-label="删除主题"
+                              onPress={() => setReasonTarget(thread)}
+                            >
+                              删除
+                            </Button>
+                          ) : null}
+
+                          {thread.deleted &&
+                          admin.can('content.restore', thread.boardId) ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              aria-label="恢复主题"
+                              isDisabled={restoringId === thread.id}
+                              onPress={() => {
+                                setRestoringId(thread.id)
+                                restoreMutation.mutate(thread.id, {
+                                  onSettled: () => setRestoringId(null),
+                                })
+                              }}
+                            >
+                              恢复
+                            </Button>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </TableWrap>
+
+          <Pagination
+            page={threadsQuery.data.page}
+            pageSize={threadsQuery.data.pageSize}
+            total={threadsQuery.data.total}
+            onChange={setPage}
+          />
+        </>
+      )}
+
+      {detailId !== null ? (
+        <ThreadDetailDialog
+          threadId={detailId}
+          onClose={() => setDetailId(null)}
+          onMove={(thread) => {
+            setMoveTarget(thread)
+            setMoveBoardId('')
+          }}
+          onDelete={(thread) => setReasonTarget(thread)}
+        />
+      ) : null}
+
+      <ReasonDialog
+        isOpen={Boolean(reasonTarget)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setReasonTarget(null)
+        }}
+        title={`删除主题「${reasonTarget?.title ?? ''}」？`}
+        description="删除后主题会从公开列表移除，可在“已删除”筛选中恢复。"
+        confirmLabel="删除主题"
+        onConfirm={(reason) => {
+          if (reasonTarget) {
+            deleteMutation.mutate({ id: reasonTarget.id, reason })
+          }
+        }}
+      />
+
+      <Modal
+        isOpen={Boolean(moveTarget)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setMoveTarget(null)
+        }}
+      >
+        <Modal.Backdrop>
+          <Modal.Container size="sm">
+            <Modal.Dialog>
+              <Modal.CloseTrigger aria-label="关闭移动主题窗口" />
+              <Modal.Header>
+                <Modal.Heading>移动主题</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="space-y-3">
+                <p className="text-sm text-muted">
+                  {moveTarget?.title}（当前：{moveTarget?.board.name}）
+                </p>
+                <Field label="目标板块" htmlFor="move-board">
+                  <SelectInput
+                    id="move-board"
+                    value={moveBoardId}
+                    onChange={(event) => setMoveBoardId(event.target.value)}
+                  >
+                    <option value="">选择目标板块</option>
+                    {moveBoards
+                      .filter((board) => board.id !== moveTarget?.boardId)
+                      .map((board) => (
+                        <option key={board.id} value={board.id}>
+                          {board.name}
+                        </option>
+                      ))}
+                  </SelectInput>
+                </Field>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="tertiary" onPress={() => setMoveTarget(null)}>
+                  取消
+                </Button>
+                <Button
+                  variant="primary"
+                  isDisabled={!moveBoardId || moveMutation.isPending}
+                  onPress={() => {
+                    if (moveTarget) {
+                      moveMutation.mutate({
+                        id: moveTarget.id,
+                        boardId: Number(moveBoardId),
+                      })
+                    }
+                  }}
+                >
+                  移动
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+    </div>
+  )
+}

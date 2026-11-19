@@ -1,6 +1,10 @@
-# 论坛前台 E2E
+# 论坛 E2E（前台 + 管理后台）
 
 真实后端 + 真实前端的 Playwright 主流程测试，对应 `moon-front-plan.md` 第 9.1 节。
+
+- 前台：`tests/e2e/forum.spec.ts`，入口 `http://localhost:5174/`。
+- 管理后台：`tests/e2e/admin.spec.ts`，入口 `http://localhost:5174/admin.html`，使用后端独立的
+  `forum_admin_session`，与前台登录态互不影响。
 
 ## 前置条件
 
@@ -25,6 +29,12 @@
 npm run test:e2e
 ```
 
+只跑管理后台：
+
+```bash
+npx playwright test tests/e2e/admin.spec.ts
+```
+
 调试时可使用 `npm run test:e2e:headed`，失败时 `playwright-report/` 中会保留 trace 和截图。
 
 ## 测试数据
@@ -35,6 +45,8 @@ npm run test:e2e
 - 首次登录并补齐默认论坛权限。
 - 创建 `e2e-general`、`e2e-other` 两个板块。
 - 只给 `e2ecarol` 在 `e2e-general` 授予板块级审核权限，用于验证跨板块无管理按钮。
+- 管理后台用例额外通过管理 API 给 `e2ecarol` 授予 `e2e-general` 的板块级后台权限，用于验证
+  看板/用户/设置等全局入口对板块管理员不可见。
 
 可用环境变量：
 
