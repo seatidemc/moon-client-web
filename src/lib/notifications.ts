@@ -71,7 +71,7 @@ export function useRecentNotifications() {
   })
 }
 
-/** 未读数：每 30 秒轮询，窗口聚焦时刷新。 */
+/** 未读数：初始拉取；后续由统一 SSE 推送更新，窗口聚焦时补偿刷新。 */
 export function useUnreadCount() {
   const { currentUser } = useForum()
 
@@ -84,13 +84,12 @@ export function useUnreadCount() {
       return result.count
     },
     enabled: Boolean(currentUser),
-    refetchInterval: 30_000,
     refetchOnWindowFocus: true,
     staleTime: 10_000,
   })
 }
 
-function patchNotificationCaches(
+export function patchNotificationCaches(
   queryClient: QueryClient,
   ids: number[] | null,
 ) {

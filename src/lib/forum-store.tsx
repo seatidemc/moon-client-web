@@ -18,6 +18,7 @@ import {
 
 import { isApiError, request } from '@/lib/api'
 import { DEFAULT_SITE } from '@/lib/constants'
+import { useNotificationStream } from '@/lib/realtime'
 import {
   ForumContext,
   type ForumContextValue,
@@ -142,6 +143,8 @@ function AuthState({ children }: AuthStateProps) {
   const me = meQuery.data ?? EMPTY_ME
   const site = siteQuery.data ?? EMPTY_SITE
   const currentUser: UserSummary | null = me.user
+
+  useNotificationStream(currentUser?.id)
 
   const hasPermission = useCallback(
     (code: string, boardId?: number | null) => {

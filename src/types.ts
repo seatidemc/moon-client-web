@@ -98,9 +98,12 @@ export interface Reply {
 
 export type NotificationType =
   | 'reply'
+  | 'quote'
   | 'like_thread'
   | 'like_reply'
+  | 'like_user'
   | 'mention'
+  | 'board_thread'
 
 export interface Notification {
   id: number
@@ -108,8 +111,10 @@ export interface Notification {
   actor: Nullable<UserSummary>
   threadId: number
   threadTitle: string
-  /** 0 表示与主题本身相关（主题提及或主题点赞） */
+  /** 0 表示与主题本身相关（主题提及、主题点赞、主页点赞或板块关注） */
   replyId: number
+  /** quote 类型引用的楼层号；其他类型为 0 */
+  quotedFloor: number
   excerpt: string
   read: boolean
   createdAt: string

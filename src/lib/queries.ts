@@ -658,7 +658,7 @@ export function useSetBoardFollow(slug: string | undefined) {
   })
 }
 
-function patchBoardCaches(
+export function patchBoardCaches(
   queryClient: QueryClient,
   slug: string | undefined,
   patch: Partial<BoardSummary>,

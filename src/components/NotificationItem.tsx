@@ -1,5 +1,5 @@
 import { cn } from '@heroui/react'
-import { AtSign, CornerUpLeft, Heart } from 'lucide-react'
+import { AtSign, CornerUpLeft, Heart, MessageSquare } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { UserAvatar } from '@/components/UserAvatar'
@@ -15,6 +15,10 @@ interface NotificationItemProps {
 }
 
 function notificationHref(notification: Notification): string {
+  if (notification.type === 'like_user' && notification.actor) {
+    return `/user/${notification.actor.id}`
+  }
+
   if (notification.replyId > 0) {
     return `/thread/${notification.threadId}#reply-${notification.replyId}`
   }
@@ -22,22 +26,35 @@ function notificationHref(notification: Notification): string {
   return `/thread/${notification.threadId}`
 }
 
-function actionLabel(type: Notification['type']): string {
-  switch (type) {
+function actionLabel(notification: Notification): string {
+  switch (notification.type) {
     case 'reply':
       return '回复了你的主题'
+    case 'quote':
+      return notification.quotedFloor > 0
+        ? `回复了你的 #${notification.quotedFloor} 楼`
+        : '回复了你的楼层'
     case 'like_thread':
       return '赞了你的主题'
     case 'like_reply':
       return '赞了你的回复'
+    case 'like_user':
+      return '赞了你的个人主页'
     case 'mention':
       return '提到了你'
+    case 'board_thread':
+      return '在关注的板块发布了新主题'
   }
 }
 
 function NotificationIcon({ type }: { type: Notification['type'] }) {
   if (type === 'mention') return <AtSign className="size-2.5" />
-  if (type === 'reply') return <CornerUpLeft className="size-2.5" />
+  if (type === 'reply' || type === 'quote') {
+    return <CornerUpLeft className="size-2.5" />
+  }
+  if (type === 'board_thread') {
+    return <MessageSquare className="size-2.5" />
+  }
   return <Heart className="size-2.5 fill-current" />
 }
 
@@ -53,7 +70,9 @@ export function NotificationItem({
   if (!actor) return null
 
   const isLike =
-    notification.type === 'like_thread' || notification.type === 'like_reply'
+    notification.type === 'like_thread' ||
+    notification.type === 'like_reply' ||
+    notification.type === 'like_user'
   // popover 里不放摘要，只保留动作和主题，列表更紧凑。
   const excerpt = compact ? '' : notification.excerpt
 
@@ -89,7 +108,7 @@ export function NotificationItem({
               {getDisplayName(actor)}
             </span>{' '}
             <span className="text-muted">
-              {actionLabel(notification.type)}
+              {actionLabel(notification)}
             </span>
           </span>
           <time
@@ -101,14 +120,18 @@ export function NotificationItem({
           </time>
         </span>
 
-        <span className="mt-0.5 block truncate font-minecraft-sc text-sm text-foreground">
-          {notification.threadTitle}
-        </span>
+        {notification.type !== 'like_user' ? (
+          <>
+            <span className="mt-0.5 block truncate font-minecraft-sc text-sm text-foreground">
+              {notification.threadTitle}
+            </span>
 
-        {excerpt ? (
-          <span className="mt-0.5 line-clamp-2 block text-xs leading-5 text-muted">
-            {excerpt}
-          </span>
+            {excerpt ? (
+              <span className="mt-0.5 line-clamp-2 block text-xs leading-5 text-muted">
+                {excerpt}
+              </span>
+            ) : null}
+          </>
         ) : null}
       </span>
     </Link>
