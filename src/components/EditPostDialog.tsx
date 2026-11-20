@@ -1,10 +1,10 @@
 import {
   Button,
   cn,
-  FieldError,
   Input,
   Modal,
   TextField,
+  toast,
 } from '@heroui/react'
 import { useState, type FormEvent } from 'react'
 
@@ -110,21 +110,20 @@ function EditPostForm({
   const isThread = initialTitle !== undefined
   const [title, setTitle] = useState(initialTitle ?? '')
   const [content, setContent] = useState(initialContent)
-  const [titleError, setTitleError] = useState<string | null>(null)
-  const [contentError, setContentError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (saving) return
 
-    const nextTitleError = isThread && !title.trim() ? '请填写标题。' : null
-    const nextContentError = hasRichTextContent(content) ? null : '请填写正文。'
+    const errors: string[] = []
+    if (isThread && !title.trim()) errors.push('请填写标题。')
+    if (!hasRichTextContent(content)) errors.push('请填写正文。')
 
-    setTitleError(nextTitleError)
-    setContentError(nextContentError)
-
-    if (nextTitleError || nextContentError) return
+    if (errors.length > 0) {
+      toast.danger(errors.join(' '))
+      return
+    }
 
     setSaving(true)
     try {
@@ -152,42 +151,25 @@ function EditPostForm({
         className={cn('space-y-4', isAdvanced && 'flex min-h-0 flex-1 flex-col')}
       >
         {isThread ? (
-          <TextField
-            fullWidth
-            isRequired
-            isInvalid={Boolean(titleError)}
-            className="text-left"
-          >
+          <TextField fullWidth isRequired className="text-left">
             <Input
               autoFocus
               maxLength={120}
               placeholder="用一句话说清楚主题"
               value={title}
-              onChange={(event) => {
-                setTitle(event.target.value)
-                if (titleError) setTitleError(null)
-              }}
+              onChange={(event) => setTitle(event.target.value)}
             />
-            <FieldError>{titleError}</FieldError>
           </TextField>
         ) : null}
 
         <div className={cn(isAdvanced && 'flex min-h-0 flex-1 flex-col')}>
           <RichTextEditor
             value={content}
-            onChange={(nextContent) => {
-              setContent(nextContent)
-              if (contentError) setContentError(null)
-            }}
+            onChange={setContent}
             fillHeight={isAdvanced}
             advanced={isAdvanced}
             floorOptions={floorOptions}
           />
-          {contentError ? (
-            <p className="mt-1 text-xs text-danger" role="alert">
-              {contentError}
-            </p>
-          ) : null}
         </div>
       </Modal.Body>
 

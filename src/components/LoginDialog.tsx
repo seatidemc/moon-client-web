@@ -1,4 +1,4 @@
-import { Button, Input, Modal } from '@heroui/react'
+import { Button, Input, Modal, toast } from '@heroui/react'
 import { useState, type FormEvent } from 'react'
 
 import { useForum } from '@/lib/forum-context'
@@ -32,19 +32,22 @@ function LoginForm({ onClose }: { onClose: () => void }) {
   const { site, login } = useForum()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (submitting) return
 
+    if (!identifier.trim() || !password) {
+      toast.danger('请输入账号和密码。')
+      return
+    }
+
     setSubmitting(true)
-    setError(null)
 
     try {
       const nextError = await login(identifier, password)
-      if (nextError) setError(nextError)
+      if (nextError) toast.danger(nextError)
     } finally {
       setSubmitting(false)
     }
@@ -53,10 +56,9 @@ function LoginForm({ onClose }: { onClose: () => void }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col">
       <Modal.Header>
-        <Modal.Heading>登录 {site.siteName}</Modal.Heading>
-        <p className="text-sm text-muted">
-          登录后即可发帖、回复和点赞。{site.siteName} 目前不开放注册。
-        </p>
+        <Modal.Heading className="brand-logo text-2xl tracking-tight">
+          {site.siteName}
+        </Modal.Heading>
       </Modal.Header>
       <Modal.Body className="space-y-4">
         <div className="space-y-1.5">
@@ -87,12 +89,6 @@ function LoginForm({ onClose }: { onClose: () => void }) {
             onChange={(event) => setPassword(event.target.value)}
           />
         </div>
-
-        {error ? (
-          <p className="text-sm text-danger" role="alert">
-            {error}
-          </p>
-        ) : null}
       </Modal.Body>
       <Modal.Footer>
         <Button variant="tertiary" onPress={onClose}>

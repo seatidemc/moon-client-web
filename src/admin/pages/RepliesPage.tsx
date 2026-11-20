@@ -49,7 +49,6 @@ function EditReplyDialog({
 }) {
   const [content, setContent] = useState('')
   const [initialized, setInitialized] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const contentQuery = useQuery({
@@ -66,19 +65,18 @@ function EditReplyDialog({
   async function handleSave() {
     if (saving) return
     if (!content.replace(/<[^>]*>/g, '').trim()) {
-      setError('跟帖正文不能为空。')
+      toast.danger('跟帖正文不能为空。')
       return
     }
 
     setSaving(true)
-    setError(null)
     try {
       await adminApi.updateReply(reply.id, content)
       toast.success('跟帖已保存')
       onSaved()
       onClose()
     } catch (mutationError) {
-      setError(errorText(mutationError))
+      toast.danger(errorText(mutationError))
     } finally {
       setSaving(false)
     }
@@ -111,12 +109,7 @@ function EditReplyDialog({
                   advanced={false}
                 />
               )}
-              {error ? (
-                <p className="text-sm text-danger" role="alert">
-                  {error}
-                </p>
-              ) : null}
-            </Modal.Body>
+              </Modal.Body>
             <Modal.Footer>
               <Button variant="tertiary" onPress={onClose}>
                 取消

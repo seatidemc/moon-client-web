@@ -1,13 +1,13 @@
 import {
   Button,
   cn,
-  FieldError,
   Input,
   Label,
   ListBox,
   Modal,
   Select,
   TextField,
+  toast,
 } from '@heroui/react'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -96,8 +96,6 @@ function NewThreadForm({
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [titleError, setTitleError] = useState<string | null>(null)
-  const [contentError, setContentError] = useState<string | null>(null)
-  const [submitError, setSubmitError] = useState<string | null>(null)
 
   // 板块列表可能晚于弹窗到达；没有手动选择时按当前列表推导默认值。
   const effectiveBoardId: number | '' =
@@ -111,10 +109,14 @@ function NewThreadForm({
     const nextBoardError = effectiveBoardId === '' ? '请选择板块。' : null
 
     setTitleError(nextTitleError)
-    setContentError(nextContentError)
-    setSubmitError(nextBoardError)
 
-    if (nextTitleError || nextContentError || nextBoardError) return
+    const errors = [nextTitleError, nextContentError, nextBoardError].filter(
+      (message): message is string => Boolean(message),
+    )
+    if (errors.length > 0) {
+      toast.danger(errors.join(' '))
+      return
+    }
 
     try {
       const thread = await createThread.mutateAsync({
@@ -125,7 +127,7 @@ function NewThreadForm({
       onClose()
       navigate(`/thread/${thread.id}`)
     } catch (error) {
-      setSubmitError(
+      toast.danger(
         isApiError(error) ? error.message : '发布失败，请稍后再试。',
       )
     }
@@ -162,24 +164,15 @@ function NewThreadForm({
               if (titleError) setTitleError(null)
             }}
           />
-          <FieldError>{titleError}</FieldError>
         </TextField>
 
         <div className={cn(isAdvanced && 'flex min-h-0 flex-1 flex-col')}>
           <RichTextEditor
             value={content}
-            onChange={(nextContent) => {
-              setContent(nextContent)
-              if (contentError) setContentError(null)
-            }}
+            onChange={setContent}
             fillHeight={isAdvanced}
             advanced={isAdvanced}
           />
-          {contentError ? (
-            <p className="mt-1 text-xs text-danger" role="alert">
-              {contentError}
-            </p>
-          ) : null}
         </div>
 
         {boardId ? null : (
@@ -213,12 +206,6 @@ function NewThreadForm({
             </Select.Popover>
           </Select>
         )}
-
-        {submitError ? (
-          <p className="text-sm text-danger" role="alert">
-            {submitError}
-          </p>
-        ) : null}
       </Modal.Body>
 
       <Modal.Footer>

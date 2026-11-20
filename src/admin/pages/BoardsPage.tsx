@@ -82,7 +82,6 @@ function BoardFormDialog({
   const [form, setForm] = useState<BoardFormState>(
     board ? formFromBoard(board) : EMPTY_FORM,
   )
-  const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   function update<K extends keyof BoardFormState>(
@@ -97,15 +96,15 @@ function BoardFormDialog({
     if (submitting) return
 
     if (!form.name.trim()) {
-      setError('板块名称不能为空。')
+      toast.danger('板块名称不能为空。')
       return
     }
     if (!board && !form.slug.trim()) {
-      setError('slug 不能为空。')
+      toast.danger('slug 不能为空。')
       return
     }
     if (!/^#[0-9a-fA-F]{6}$/.test(form.color)) {
-      setError('颜色必须是 #RRGGBB 格式。')
+      toast.danger('颜色必须是 #RRGGBB 格式。')
       return
     }
 
@@ -119,7 +118,6 @@ function BoardFormDialog({
     }
 
     setSubmitting(true)
-    setError(null)
     try {
       if (board) {
         await adminApi.updateBoard(board.id, input)
@@ -131,7 +129,7 @@ function BoardFormDialog({
       onSaved()
       onClose()
     } catch (mutationError) {
-      setError(errorText(mutationError))
+      toast.danger(errorText(mutationError))
     } finally {
       setSubmitting(false)
     }
@@ -234,12 +232,7 @@ function BoardFormDialog({
                   />
                 </div>
 
-                {error ? (
-                  <p className="text-sm text-danger" role="alert">
-                    {error}
-                  </p>
-                ) : null}
-              </Modal.Body>
+                </Modal.Body>
 
               <Modal.Footer>
                 <Button variant="tertiary" onPress={onClose}>

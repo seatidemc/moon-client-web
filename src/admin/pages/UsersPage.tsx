@@ -65,7 +65,6 @@ function PermissionEditor({
   const [initialized, setInitialized] = useState(false)
   const [code, setCode] = useState('')
   const [boardId, setBoardId] = useState('')
-  const [error, setError] = useState<string | null>(null)
 
   const catalogQuery = useQuery({
     queryKey: adminKeys.permissionCatalog,
@@ -117,7 +116,7 @@ function PermissionEditor({
       void queryClient.invalidateQueries({ queryKey: ['admin', 'user', userId] })
       void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
     },
-    onError: (mutationError) => setError(errorText(mutationError)),
+    onError: (mutationError) => toast.danger(errorText(mutationError)),
   })
 
   function addGrant() {
@@ -129,10 +128,9 @@ function PermissionEditor({
       boardId: nextBoardId,
     }
     if (grants.some((item) => grantKey(item) === grantKey(grant))) {
-      setError('该授权已存在。')
+      toast.danger('该授权已存在。')
       return
     }
-    setError(null)
     setGrants((current) => [...current, grant])
   }
 
@@ -240,12 +238,6 @@ function PermissionEditor({
             </Button>
           </div>
 
-          {error ? (
-            <p className="text-sm text-danger" role="alert">
-              {error}
-            </p>
-          ) : null}
-
           <Button
             variant="primary"
             isDisabled={saveMutation.isPending}
@@ -350,7 +342,6 @@ function UserDetailDialog({
   const [nickname, setNickname] = useState('')
   const [bio, setBio] = useState('')
   const [profileInitialized, setProfileInitialized] = useState(false)
-  const [profileError, setProfileError] = useState<string | null>(null)
   const [profileSaving, setProfileSaving] = useState(false)
   const [banOpen, setBanOpen] = useState(false)
   const [tab, setTab] = useState<'profile' | 'permissions' | 'logins'>('profile')
@@ -373,7 +364,6 @@ function UserDetailDialog({
   async function saveProfile() {
     if (profileSaving) return
     setProfileSaving(true)
-    setProfileError(null)
     try {
       const updated = await adminApi.updateUserProfile(userId, {
         nickname: nickname.trim() ? nickname.trim() : null,
@@ -383,7 +373,7 @@ function UserDetailDialog({
       void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
       toast.success('用户资料已保存')
     } catch (error) {
-      setProfileError(errorText(error))
+      toast.danger(errorText(error))
     } finally {
       setProfileSaving(false)
     }
@@ -524,11 +514,6 @@ function UserDetailDialog({
                           onChange={(event) => setBio(event.target.value)}
                         />
                       </Field>
-                      {profileError ? (
-                        <p className="text-sm text-danger" role="alert">
-                          {profileError}
-                        </p>
-                      ) : null}
                       {canManageProfile ? (
                         <Button
                           variant="primary"

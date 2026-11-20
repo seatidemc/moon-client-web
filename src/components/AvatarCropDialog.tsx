@@ -212,7 +212,6 @@ function AvatarCropPanel({
   const [dragging, setDragging] = useState(false)
   const [dropActive, setDropActive] = useState(false)
   const [processing, setProcessing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     disposedRef.current = false
@@ -291,7 +290,6 @@ function AvatarCropPanel({
     if (!file || processing) return
 
     setProcessing(true)
-    setError(null)
 
     try {
       const next = await loadAvatarImage(file)
@@ -303,7 +301,7 @@ function AvatarCropPanel({
 
       setSource(next)
     } catch (cause) {
-      setError(
+      toast.danger(
         cause instanceof Error ? cause.message : '无法读取这张图片。',
       )
     } finally {
@@ -406,7 +404,6 @@ function AvatarCropPanel({
     if (processing) return
 
     setProcessing(true)
-    setError(null)
 
     try {
       if (source && viewport > 0) {
@@ -427,7 +424,7 @@ function AvatarCropPanel({
       toast.success(source ? '头像已更新。' : '头像形状已更新。')
       onClose()
     } catch (cause) {
-      setError(
+      toast.danger(
         cause instanceof Error
           ? cause.message
           : '无法保存头像，请换一张图片试试。',
@@ -444,7 +441,7 @@ function AvatarCropPanel({
       toast.success('头像已删除。')
       onClose()
     } catch (cause) {
-      setError(
+      toast.danger(
         cause instanceof Error ? cause.message : '无法删除头像。',
       )
     } finally {
@@ -619,12 +616,6 @@ function AvatarCropPanel({
               </span>
             </div>
           )}
-
-          {error ? (
-            <p role="alert" className="text-xs text-danger">
-              {error}
-            </p>
-          ) : null}
 
           <input
             ref={inputRef}

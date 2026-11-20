@@ -1,5 +1,4 @@
-import { Button, Input } from '@heroui/react'
-import { ShieldCheck } from 'lucide-react'
+import { Button, Input, toast } from '@heroui/react'
 import { useState, type FormEvent } from 'react'
 
 import { useAdmin } from '../store'
@@ -8,18 +7,21 @@ export function LoginPage() {
   const { login } = useAdmin()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (submitting) return
 
+    if (!username.trim() || !password) {
+      toast.danger('请输入账号和密码。')
+      return
+    }
+
     setSubmitting(true)
-    setError(null)
     try {
       const nextError = await login(username.trim(), password)
-      if (nextError) setError(nextError)
+      if (nextError) toast.danger(nextError)
     } finally {
       setSubmitting(false)
     }
@@ -28,22 +30,12 @@ export function LoginPage() {
   return (
     <div className="flex min-h-svh items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-sm">
-        <div className="mb-6 flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-accent text-white">
-            <ShieldCheck className="size-5" aria-hidden="true" />
-          </span>
-          <div>
-            <p className="text-lg font-semibold tracking-tight">
-              Moon 管理后台
-            </p>
-            <p className="text-xs text-muted">论坛运营与内容审核</p>
-          </div>
-        </div>
-
         <form
           onSubmit={handleSubmit}
           className="space-y-4 rounded-xl border border-border bg-surface p-5"
         >
+          <p className="brand-logo text-2xl tracking-tight">Tide</p>
+
           <div className="space-y-1.5">
             <label htmlFor="admin-account" className="text-sm font-medium">
               管理员账号
@@ -74,12 +66,6 @@ export function LoginPage() {
             />
           </div>
 
-          {error ? (
-            <p className="text-sm text-danger" role="alert">
-              {error}
-            </p>
-          ) : null}
-
           <Button
             type="submit"
             variant="primary"
@@ -88,10 +74,6 @@ export function LoginPage() {
           >
             登录管理后台
           </Button>
-
-          <p className="text-center text-xs text-muted">
-            管理后台使用独立登录态，与论坛前台互不影响。
-          </p>
         </form>
       </div>
     </div>

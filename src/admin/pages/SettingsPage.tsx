@@ -52,7 +52,6 @@ export function SettingsPage() {
   useAdminPageTitle('站点设置')
   const queryClient = useQueryClient()
   const [form, setForm] = useState<SettingsForm | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const settingsQuery = useQuery({
@@ -78,7 +77,7 @@ export function SettingsPage() {
     if (!form || saving) return
 
     if (!form.siteName.trim()) {
-      setError('站点名称不能为空。')
+      toast.danger('站点名称不能为空。')
       return
     }
 
@@ -94,14 +93,13 @@ export function SettingsPage() {
     }
 
     setSaving(true)
-    setError(null)
     try {
       const updated = await adminApi.updateSettings(updates)
       queryClient.setQueryData(adminKeys.settings, updated)
       setForm(formFromSettings(updated))
       toast.success('站点设置已保存')
     } catch (mutationError) {
-      setError(
+      toast.danger(
         mutationError instanceof Error
           ? mutationError.message
           : '保存设置失败，请稍后再试。',
@@ -202,12 +200,6 @@ export function SettingsPage() {
               />
             </div>
 
-            {error ? (
-              <p className="text-sm text-danger" role="alert">
-                {error}
-              </p>
-            ) : null}
-
             <div className="flex gap-2">
               <Button type="submit" variant="primary" isDisabled={saving}>
                 保存设置
@@ -217,7 +209,6 @@ export function SettingsPage() {
                 onPress={() => {
                   if (settingsQuery.data) {
                     setForm(formFromSettings(settingsQuery.data))
-                    setError(null)
                   }
                 }}
               >
