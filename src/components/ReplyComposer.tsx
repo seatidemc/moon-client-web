@@ -177,7 +177,15 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
          * pointer-events-none，避免透明的栏体拦住目录横线的点击。
          */}
         <div className="mx-auto w-full max-w-[69.25rem] px-4 pt-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:grid lg:grid-cols-[minmax(0,48rem)_18rem] lg:gap-5">
-          {currentUser ? (
+          {thread?.locked ? (
+            <div
+              className={`pointer-events-auto min-w-0 rounded-2xl border border-field-border bg-field px-3 py-2 text-sm text-muted transition duration-150 ${
+                follow && floating ? 'shadow-lg' : 'shadow-none'
+              }`}
+            >
+              主题已锁定，无法回复
+            </div>
+          ) : currentUser ? (
             <form
               onSubmit={handleSubmit}
               className="pointer-events-auto min-w-0"
@@ -270,12 +278,20 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
               </div>
             </form>
           ) : (
-            <div className="pointer-events-auto flex min-w-0 flex-wrap items-center justify-between gap-3">
+            /*
+             * 未登录时没有编辑器撑起整块浮层，但同样需要不透明卡片：否则
+             * 上一条回复的点赞、回复按钮会从提示文字背后透出来。
+             */
+            <div
+              className={`pointer-events-auto flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-2xl border border-field-border bg-field px-3 py-2 transition duration-150 ${
+                follow && floating ? 'shadow-lg' : 'shadow-none'
+              }`}
+            >
               <p className="text-sm text-muted">登录后参与讨论。</p>
               <Button
                 type="button"
                 size="sm"
-                variant="outline"
+                variant="primary"
                 onPress={() => openLogin()}
               >
                 登录

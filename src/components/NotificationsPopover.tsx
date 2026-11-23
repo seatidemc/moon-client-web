@@ -99,7 +99,7 @@ export function NotificationsPopover() {
           ) : (
             <div className="px-4 py-10 text-center">
               <Bell className="mx-auto size-6 text-muted" aria-hidden="true" />
-              <p className="mt-3 text-sm text-muted">还没有通知。</p>
+              <p className="mt-3 text-sm text-muted">还没有通知</p>
             </div>
           )}
 

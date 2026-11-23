@@ -69,9 +69,14 @@ export function SearchPage() {
             <SearchField.ClearButton aria-label="清空搜索" />
           </SearchField.Group>
         </SearchField>
-        <Button type="submit" variant="primary" className="shrink-0">
+        <Button
+          type="submit"
+          variant="primary"
+          aria-label="搜索"
+          className="shrink-0 max-sm:w-10 max-sm:px-0"
+        >
           <Search />
-          搜索
+          <span className="max-sm:hidden">搜索</span>
         </Button>
       </form>
 

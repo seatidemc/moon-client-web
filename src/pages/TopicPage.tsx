@@ -75,7 +75,9 @@ export function TopicPage() {
   }
 
   return (
-    <div className="relative">
+    // 装饰图标的遮罩会向右外溢；不裁切的话移动端的布局视口会被撑宽，
+    // 右下角的悬浮按钮也会被推到屏幕外。
+    <div className="relative overflow-x-clip">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-48"
@@ -143,7 +145,7 @@ export function TopicPage() {
               </div>
             ) : (
               <div className="py-16 text-center">
-                <p className="text-sm text-muted">这个板块还没有主题。</p>
+                <p className="text-sm text-muted">这个板块还没有主题</p>
                 <Button
                   type="button"
                   size="sm"

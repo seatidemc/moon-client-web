@@ -1,6 +1,6 @@
 import { Button, TextArea, Tooltip, cn } from '@heroui/react'
 import { Brush, Camera, Heart, Pencil, Plus } from 'lucide-react'
-import { useRef, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { AvatarCropDialog } from '@/components/AvatarCropDialog'
@@ -44,9 +44,6 @@ export function UserPage() {
   const threadsPage = pages.userId === userId ? pages.threads : 1
   const repliesPage = pages.userId === userId ? pages.replies : 1
 
-  const threadsHeadingRef = useRef<HTMLHeadingElement>(null)
-  const repliesHeadingRef = useRef<HTMLHeadingElement>(null)
-
   const threadsQuery = useUserThreads(userId, threadsPage)
   const repliesQuery = useUserReplies(userId, repliesPage)
   const likeUser = useSetUserLike(userId)
@@ -55,6 +52,14 @@ export function UserPage() {
   const user = userQuery.data
   const userThreads = threadsQuery.data?.items ?? []
   const userReplies = repliesQuery.data?.items ?? []
+  const threadsEmpty =
+    userThreads.length === 0 &&
+    !threadsQuery.isPending &&
+    !threadsQuery.isError
+  const repliesEmpty =
+    userReplies.length === 0 &&
+    !repliesQuery.isPending &&
+    !repliesQuery.isError
 
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
@@ -66,7 +71,6 @@ export function UserPage() {
     }
 
     setPages((current) => ({ ...current, threads: next }))
-    threadsHeadingRef.current?.scrollIntoView({ block: 'start' })
   }
 
   function changeRepliesPage(next: number) {
@@ -76,10 +80,16 @@ export function UserPage() {
     }
 
     setPages((current) => ({ ...current, replies: next }))
-    repliesHeadingRef.current?.scrollIntoView({ block: 'start' })
   }
 
-  usePageTitle(user ? `${getDisplayName(user)} 的主页` : '用户不存在')
+  // 加载中保持当前标题，避免闪现“用户不存在”或默认标题。
+  usePageTitle(
+    user
+      ? `${getDisplayName(user)} 的主页`
+      : userQuery.isError
+        ? '用户不存在'
+        : null,
+  )
 
   if (!Number.isFinite(userId) || userId <= 0 || userQuery.isError) {
     return <NotFoundPage />
@@ -240,7 +250,13 @@ export function UserPage() {
             ) : null}
           </div>
 
-          <div className="ml-auto flex shrink-0 flex-col items-end gap-3">
+          <div
+            className={cn(
+              'flex shrink-0 flex-col gap-3',
+              // 概览在移动端换行后居左，桌面端仍靠右。
+              background ? 'sm:ml-auto sm:items-end' : 'ml-auto items-end',
+            )}
+          >
             {background ? overview : actionButtons}
           </div>
         </header>
@@ -261,7 +277,6 @@ export function UserPage() {
         <section className="mt-8" aria-labelledby="user-threads-heading">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2
-              ref={threadsHeadingRef}
               id="user-threads-heading"
               className="text-base font-medium"
             >
@@ -280,7 +295,8 @@ export function UserPage() {
           </div>
           <div
             className={cn(
-              'mt-4 space-y-5 transition-opacity',
+              'transition-opacity',
+              !threadsEmpty && 'mt-4 space-y-5',
               threadsQuery.isPlaceholderData && 'opacity-60',
             )}
             aria-busy={threadsQuery.isFetching}
@@ -292,9 +308,9 @@ export function UserPage() {
             ) : threadsQuery.isPending ? (
               <p className="py-8 text-sm text-muted">正在加载主题…</p>
             ) : threadsQuery.isError ? (
-              <p className="py-8 text-sm text-muted">主题加载失败，请稍后重试。</p>
+              <p className="py-8 text-sm text-muted">主题加载失败，请稍后重试</p>
             ) : (
-              <p className="py-8 text-sm text-muted">还没有发布主题。</p>
+              <p className="mt-2 pb-8 text-sm text-muted">还没有发布主题</p>
             )}
           </div>
         </section>
@@ -302,7 +318,6 @@ export function UserPage() {
         <section className="mt-10" aria-labelledby="user-replies-heading">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2
-              ref={repliesHeadingRef}
               id="user-replies-heading"
               className="text-base font-medium"
             >
@@ -321,7 +336,8 @@ export function UserPage() {
           </div>
           <div
             className={cn(
-              'mt-2 divide-y divide-border transition-opacity',
+              'divide-y divide-border transition-opacity',
+              !repliesEmpty && 'mt-2',
               repliesQuery.isPlaceholderData && 'opacity-60',
             )}
             aria-busy={repliesQuery.isFetching}
@@ -354,7 +370,7 @@ export function UserPage() {
             ) : repliesQuery.isError ? (
               <p className="py-8 text-sm text-muted">回复加载失败，请稍后重试。</p>
             ) : (
-              <p className="py-8 text-sm text-muted">还没有回复。</p>
+              <p className="mt-2 pb-8 text-sm text-muted">还没有回复。</p>
             )}
           </div>
         </section>

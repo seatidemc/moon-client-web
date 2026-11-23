@@ -15,9 +15,9 @@ export function BoardsPage() {
 
       {boards.length === 0 && !boardsQuery.isPending ? (
         <div className="mt-8 rounded-2xl bg-surface px-6 py-16 text-center">
-          <p className="text-sm text-muted">还没有板块。</p>
+          <p className="text-sm text-muted">还没有板块</p>
           <p className="mt-2 text-xs text-muted">
-            请联系管理员创建板块后再发布主题。
+            请联系管理员创建板块后再发布主题
           </p>
         </div>
       ) : (

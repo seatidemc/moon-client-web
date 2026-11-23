@@ -1,7 +1,9 @@
 import { Button, Input, Modal, toast } from '@heroui/react'
 import { useState, type FormEvent } from 'react'
 
+import { getBoardThemeStyle } from '@/lib/board-theme'
 import { useForum } from '@/lib/forum-context'
+import { useCurrentBoardColor } from '@/lib/use-current-board-color'
 
 export function LoginDialog() {
   const { loginDialogOpen, closeLogin } = useForum()
@@ -30,6 +32,7 @@ export function LoginDialog() {
 
 function LoginForm({ onClose }: { onClose: () => void }) {
   const { site, login } = useForum()
+  const boardColor = useCurrentBoardColor()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -94,7 +97,12 @@ function LoginForm({ onClose }: { onClose: () => void }) {
         <Button variant="tertiary" onPress={onClose}>
           取消
         </Button>
-        <Button type="submit" variant="primary" isDisabled={submitting}>
+        <Button
+          type="submit"
+          variant="primary"
+          isDisabled={submitting}
+          style={getBoardThemeStyle(boardColor)}
+        >
           登录
         </Button>
       </Modal.Footer>

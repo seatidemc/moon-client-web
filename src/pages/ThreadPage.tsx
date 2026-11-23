@@ -560,20 +560,7 @@ export function ThreadPage() {
         </div>
       </main>
 
-      {thread.locked ? (
-        <div
-          className="pointer-events-none sticky bottom-0 z-20 mt-auto"
-          style={themeStyle}
-        >
-          <div className="mx-auto w-full max-w-[69.25rem] px-4 pt-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:grid lg:grid-cols-[minmax(0,48rem)_18rem] lg:gap-5">
-            <p className="pointer-events-auto min-w-0 text-sm text-muted">
-              主题已锁定，无法回复
-            </p>
-          </div>
-        </div>
-      ) : (
-        <ReplyComposer ref={composerRef} threadId={thread.id} />
-      )}
+      <ReplyComposer ref={composerRef} threadId={thread.id} />
 
       <EditPostDialog
         isOpen={editTarget !== null}

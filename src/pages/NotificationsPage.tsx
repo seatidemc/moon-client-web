@@ -124,8 +124,8 @@ export function NotificationsPage() {
             />
             <p className="mt-4 text-sm text-muted">
               {filter === 'unread'
-                ? '没有未读通知。'
-                : '还没有通知。收到回复或点赞后会出现在这里。'}
+                ? '没有未读通知'
+                : '还没有通知，收到回复或点赞后会出现在这里'}
             </p>
           </div>
         )}

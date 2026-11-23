@@ -107,3 +107,15 @@ export function scrollIntoViewAbove(
       : 'smooth',
   })
 }
+
+/** Smoothly scrolls the page back to the top, matching the site's motion rules. */
+export function scrollToTop() {
+  cancelScrollEffect()
+
+  window.scrollTo({
+    top: 0,
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'auto'
+      : 'smooth',
+  })
+}

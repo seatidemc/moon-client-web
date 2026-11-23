@@ -188,7 +188,7 @@ export function BoardDecoration({
   return (
     <div
       aria-hidden="true"
-      className={`pointer-events-none absolute -top-1 -left-1 ${layout.containerClassName} origin-top-left scale-150 select-none`}
+      className={`pointer-events-none absolute -top-1 -left-1 ${layout.containerClassName} origin-top-left scale-125 select-none sm:scale-150`}
       style={{ color }}
     >
       <Mask

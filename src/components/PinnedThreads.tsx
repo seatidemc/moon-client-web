@@ -147,6 +147,7 @@ export function PinnedThreads({ boardSlug }: PinnedThreadsProps) {
                   <ThreadCard
                     thread={thread}
                     variant="compact"
+                    reserveExcerptHeight
                     showBoard={!boardSlug}
                     className="h-full"
                   />

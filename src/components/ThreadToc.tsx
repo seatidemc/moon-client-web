@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { scrollToAndEmphasize } from '@/lib/scroll'
 import { formatRelativeTime } from '@/lib/utils'
@@ -14,6 +14,7 @@ const ACTIVE_OFFSET = 96
 
 export function ThreadToc({ items }: { items: ThreadTocItem[] }) {
   const [activeId, setActiveId] = useState(items[0]?.id ?? '')
+  const listRef = useRef<HTMLUListElement | null>(null)
   const itemsKey = items.map((item) => item.id).join('\n')
 
   useEffect(() => {
@@ -65,6 +66,28 @@ export function ThreadToc({ items }: { items: ThreadTocItem[] }) {
     }
   }, [itemsKey])
 
+  /*
+   * 楼层很多时目录列表会高于视口，列表自身负责滚动，
+   * 随着页面滚动把当前激活的楼层保持在列表可视区域内。
+   * 这里用 overflow-hidden（而不是 overflow-y-auto）：目录只应跟随页面
+   * 自动滚动，若声明成可滚动容器，程序化滚动会触发全站叠层滚动条闪烁。
+   */
+  useEffect(() => {
+    const list = listRef.current
+    const active = list?.querySelector<HTMLElement>('[aria-current="location"]')
+    if (!list || !active) return
+
+    const listRect = list.getBoundingClientRect()
+    const itemRect = active.getBoundingClientRect()
+    const margin = 16
+
+    if (itemRect.top < listRect.top + margin) {
+      list.scrollTop -= listRect.top + margin - itemRect.top
+    } else if (itemRect.bottom > listRect.bottom - margin) {
+      list.scrollTop += itemRect.bottom - (listRect.bottom - margin)
+    }
+  }, [activeId, itemsKey])
+
   if (items.length === 0) return null
 
   return (
@@ -72,7 +95,10 @@ export function ThreadToc({ items }: { items: ThreadTocItem[] }) {
       aria-label="楼层导航"
       className="hidden lg:block"
     >
-      <ul className="flex flex-col items-start">
+      <ul
+        ref={listRef}
+        className="flex max-h-[calc(100dvh-3rem)] flex-col items-start overflow-hidden"
+      >
         {items.map((item) => {
           const isActive = item.id === activeId
 

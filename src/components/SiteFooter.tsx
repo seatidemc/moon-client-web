@@ -28,7 +28,7 @@ export function SiteFooter() {
         ) : null}
 
         <p className="text-xs">
-          © {COPYRIGHT_YEAR} {site.siteName}. 保留所有权利。
+          © {COPYRIGHT_YEAR} Seatide Minecraft 服务器
         </p>
       </div>
     </footer>

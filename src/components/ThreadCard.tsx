@@ -16,6 +16,8 @@ interface ThreadCardProps {
   showExcerpt?: boolean
   /** compact：置顶卡片用的紧凑排布，作者信息收在卡片底部 */
   variant?: ThreadCardVariant
+  /** 摘要始终预留两行高度，让卡片与普通卡片等高（置顶卡片用） */
+  reserveExcerptHeight?: boolean
   className?: string
 }
 
@@ -24,6 +26,7 @@ export function ThreadCard({
   showBoard = false,
   showExcerpt = true,
   variant = 'default',
+  reserveExcerptHeight = false,
   className,
 }: ThreadCardProps) {
   const author = thread.author
@@ -55,7 +58,13 @@ export function ThreadCard({
 
   const excerpt = showExcerpt ? (
     // flex 子项的 display 会被块化，line-clamp 将失效，所以由外层负责撑开
-    <div className={cn('mt-1.5', compact && 'flex-1')}>
+    <div
+      className={cn(
+        'mt-1.5',
+        compact && 'flex-1',
+        reserveExcerptHeight && 'min-h-12',
+      )}
+    >
       <p className="line-clamp-2 text-sm leading-6 text-muted">
         {truncateText(thread.excerpt, 120)}
       </p>
@@ -66,7 +75,8 @@ export function ThreadCard({
     <article
       className={cn(
         'relative rounded-2xl border-2 border-transparent bg-surface transition duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:bg-surface-secondary active:scale-[0.98] active:bg-surface-tertiary active:duration-100',
-        compact ? 'flex flex-col p-4' : 'p-4 sm:p-5',
+        'p-4 sm:p-5',
+        compact && 'flex flex-col',
         className,
       )}
     >
@@ -78,13 +88,13 @@ export function ThreadCard({
 
       {compact ? (
         <>
-          {title}
+          <div className="flex min-h-8 items-center">{title}</div>
           {excerpt}
 
-          <div className="mt-3 flex min-w-0 items-center gap-2 text-xs text-muted">
+          <div className="mt-2 flex min-w-0 items-center gap-2 text-xs text-muted">
             {author ? (
               <>
-                <UserAvatar user={author} className="size-5" />
+                <UserAvatar user={author} className="size-4" />
                 <span className="truncate text-foreground">
                   {getDisplayName(author)}
                 </span>
