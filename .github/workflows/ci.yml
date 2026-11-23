@@ -18,7 +18,7 @@ env:
   NODE_VERSION: 22.18.0
 
 jobs:
-  lint:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,21 +30,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-
-  build:
-    # Lint is cheap; gate the production build on it so a style/rule failure
-    # never burns a full build.
-    needs: lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-      - run: npm ci
       # `build` runs `tsc -b` before Vite, so type checking happens here too.
       - run: npm run build
       - uses: actions/upload-artifact@v4
