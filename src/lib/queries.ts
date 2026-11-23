@@ -1,7 +1,7 @@
 import {
+  keepPreviousData,
   useInfiniteQuery,
   useMutation,
-  useQueries,
   useQuery,
   useQueryClient,
   type QueryClient,
@@ -10,7 +10,11 @@ import {
 import { toast } from '@heroui/react'
 
 import { buildQuery, isApiError, request } from '@/lib/api'
-import { PAGE_SIZE } from '@/lib/constants'
+import {
+  PAGE_SIZE,
+  THREAD_LIST_PAGE_SIZE,
+  USER_LIST_PAGE_SIZE,
+} from '@/lib/constants'
 import type {
   BoardSummary,
   FollowResult,
@@ -37,8 +41,10 @@ export const queryKeys = {
   thread: (id: number) => ['thread', id] as const,
   replies: (id: number) => ['replies', id] as const,
   user: (id: number) => ['user', id] as const,
-  userThreads: (id: number) => ['user-threads', id] as const,
-  userReplies: (id: number) => ['user-replies', id] as const,
+  userThreads: (id: number, page: number) =>
+    ['user-threads', id, page] as const,
+  userReplies: (id: number, page: number) =>
+    ['user-replies', id, page] as const,
   mentionUsers: (query: string) => ['mention-users', query] as const,
   search: (query: string, boardSlug: string) =>
     ['search', query, boardSlug] as const,
@@ -193,7 +199,7 @@ export function useThreads(boardSlug?: string) {
     queryKey: queryKeys.threads(board),
     queryFn: ({ pageParam }) =>
       request<Page<ThreadSummary>>(
-        `/threads${buildQuery({ board, page: pageParam, pageSize: PAGE_SIZE })}`,
+        `/threads${buildQuery({ board, page: pageParam, pageSize: THREAD_LIST_PAGE_SIZE })}`,
       ),
     initialPageParam: 1,
     getNextPageParam: nextPage,
@@ -219,18 +225,6 @@ export function useThread(id: number) {
     queryKey: queryKeys.thread(id),
     queryFn: () => request<ThreadDetail>(`/threads/${id}`),
     enabled: Number.isFinite(id) && id > 0,
-  })
-}
-
-/** 用户回复列表只带 threadId；批量取主题标题用于展示。 */
-export function useThreadSummaries(ids: number[]) {
-  return useQueries({
-    queries: ids.map((id) => ({
-      queryKey: queryKeys.thread(id),
-      queryFn: () => request<ThreadDetail>(`/threads/${id}`),
-      enabled: Number.isFinite(id) && id > 0,
-      staleTime: 60_000,
-    })),
   })
 }
 
@@ -269,28 +263,26 @@ export function useUserProfile(id: number) {
   })
 }
 
-export function useUserThreads(id: number) {
-  return useInfiniteQuery({
-    queryKey: queryKeys.userThreads(id),
-    queryFn: ({ pageParam }) =>
+export function useUserThreads(id: number, page: number) {
+  return useQuery({
+    queryKey: queryKeys.userThreads(id, page),
+    queryFn: () =>
       request<Page<ThreadSummary>>(
-        `/users/${id}/threads${buildQuery({ page: pageParam, pageSize: PAGE_SIZE })}`,
+        `/users/${id}/threads${buildQuery({ page, pageSize: USER_LIST_PAGE_SIZE })}`,
       ),
-    initialPageParam: 1,
-    getNextPageParam: nextPage,
+    placeholderData: keepPreviousData,
     enabled: Number.isFinite(id) && id > 0,
   })
 }
 
-export function useUserReplies(id: number) {
-  return useInfiniteQuery({
-    queryKey: queryKeys.userReplies(id),
-    queryFn: ({ pageParam }) =>
+export function useUserReplies(id: number, page: number) {
+  return useQuery({
+    queryKey: queryKeys.userReplies(id, page),
+    queryFn: () =>
       request<Page<Reply>>(
-        `/users/${id}/replies${buildQuery({ page: pageParam, pageSize: PAGE_SIZE })}`,
+        `/users/${id}/replies${buildQuery({ page, pageSize: USER_LIST_PAGE_SIZE })}`,
       ),
-    initialPageParam: 1,
-    getNextPageParam: nextPage,
+    placeholderData: keepPreviousData,
     enabled: Number.isFinite(id) && id > 0,
   })
 }

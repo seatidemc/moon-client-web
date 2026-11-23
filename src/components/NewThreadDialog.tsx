@@ -12,6 +12,7 @@ import {
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { BoardIcon } from '@/components/BoardIcon'
 import { EditorExpandToggle } from '@/components/EditorExpandToggle'
 import { RichTextEditor } from '@/components/editor'
 import { isApiError } from '@/lib/api'
@@ -157,7 +158,7 @@ function NewThreadForm({
           <Input
             autoFocus
             maxLength={120}
-            placeholder="用一句话说清楚主题"
+            placeholder="标题"
             value={title}
             onChange={(event) => {
               setTitle(event.target.value)
@@ -199,7 +200,14 @@ function NewThreadForm({
                     id={String(board.id)}
                     textValue={board.name}
                   >
-                    {board.name}
+                    <span className="flex items-center gap-2">
+                      <BoardIcon
+                        icon={board.icon}
+                        color={board.color}
+                        className="size-3.5 shrink-0"
+                      />
+                      {board.name}
+                    </span>
                   </ListBox.Item>
                 ))}
               </ListBox>

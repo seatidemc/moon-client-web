@@ -36,6 +36,7 @@
     "hast-util-sanitize": "^5.0.2",
     "hast-util-to-jsx-runtime": "^2.3.7",
     "lucide-react": "^1.71.0",
+    "photoswipe": "^5.4.4",
     "pixelarticons": "^2.4.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

@@ -3,6 +3,7 @@ import { CornerDownLeft, Maximize2, Pin } from 'lucide-react'
 import {
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
   useState,
   type FormEvent,
@@ -16,6 +17,7 @@ import {
   type RichTextEditorHandle,
 } from '@/components/editor'
 import { getBoardThemeStyle } from '@/lib/board-theme'
+import { PAGE_SIZE } from '@/lib/constants'
 import { useForum } from '@/lib/forum-context'
 import { hasRichTextContent } from '@/lib/html-content'
 import { pulseElement } from '@/lib/pulse'
@@ -26,6 +28,8 @@ import {
   useThreadReplies,
 } from '@/lib/queries'
 import { buildReplyReferenceOptions } from '@/lib/reply-reference-options'
+import { scrollIntoViewAbove } from '@/lib/scroll'
+import type { Reply } from '@/types'
 
 export interface ReplyComposerHandle {
   /** 在跟帖末尾追加楼层引用 chip，并聚焦输入框 */
@@ -59,8 +63,11 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
   const [floating, setFloating] = useState(false)
   const [quickSend, setQuickSend] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [pendingReplyId, setPendingReplyId] = useState<number | null>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const replyAreaRef = useRef<HTMLDivElement>(null)
+  const stickyBarRef = useRef<HTMLDivElement>(null)
+  const scrolledReplyRef = useRef<number | null>(null)
   const editorRef = useRef<RichTextEditorHandle>(null)
 
   useImperativeHandle(
@@ -94,6 +101,22 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
     return () => observer.disconnect()
   }, [follow])
 
+  // 新楼层渲染进列表后平滑滚到它；用 layout effect 让滚动在新内容绘制前
+  // 就开始，避免先闪一帧停在原位。刚发布的这条不做入场动画：平滑滚动要
+  // 走一段路，挂载时的动画只会在视野外播完，没有意义。
+  useLayoutEffect(() => {
+    if (pendingReplyId === null || scrolledReplyRef.current === pendingReplyId) {
+      return
+    }
+
+    const element = document.getElementById(`reply-${pendingReplyId}`)
+    if (!element) return
+
+    scrolledReplyRef.current = pendingReplyId
+    element.classList.remove('moon-reveal')
+    scrollIntoViewAbove(element, stickyBarRef.current)
+  }, [pendingReplyId, replies])
+
   async function submitReply() {
     if (!currentUser) {
       openLogin()
@@ -106,14 +129,32 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
       const reply = await createReply.mutateAsync(content)
       setContent('')
       setExpanded(false)
-
-      requestAnimationFrame(() => {
-        document
-          .getElementById(`reply-${reply.id}`)
-          ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      })
+      await loadReplyPage(reply)
+      // 等新楼层随列表刷新渲染出来再滚动，落点按最新布局计算。
+      setPendingReplyId(reply.id)
     } catch {
       // 错误信息已由全局处理展示；保留输入内容方便重试。
+    }
+  }
+
+  /**
+   * 新楼层排在最后一页。用户还没滑到那里时该页尚未加载，列表里就不会
+   * 出现这条回复；这里把它所在的分页补齐，后续的滚动才有目标可去。
+   */
+  async function loadReplyPage(reply: Reply) {
+    const replyPage = Math.ceil(reply.floor / PAGE_SIZE)
+    let loadedPages = repliesQuery.data?.pages.length ?? 0
+
+    try {
+      while (loadedPages < replyPage) {
+        const result = await repliesQuery.fetchNextPage()
+        const nextLoaded = result.data?.pages.length ?? 0
+        if (nextLoaded <= loadedPages) break
+        loadedPages = nextLoaded
+        if (!result.hasNextPage) break
+      }
+    } catch {
+      // 分页加载失败不影响发布结果，回复会在下次加载该页时出现。
     }
   }
 
@@ -125,12 +166,22 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
   return (
     <>
       <div
-        className={follow ? 'sticky bottom-0 z-20 mt-auto' : 'mt-auto'}
+        ref={stickyBarRef}
+        className={`pointer-events-none ${follow ? 'sticky bottom-0 z-20 mt-auto' : 'mt-auto'}`}
         style={themeStyle}
       >
-        <div className="mx-auto w-full max-w-[69.25rem] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        {/*
+         * 和主题页正文使用同一套网格，让输入框宽度始终跟随正文列：
+         * 屏幕在 lg 与容器最大宽度之间时正文列会收窄，输入框若固定
+         * max-w-3xl 就会溢出到右侧目录上方。外层还设为
+         * pointer-events-none，避免透明的栏体拦住目录横线的点击。
+         */}
+        <div className="mx-auto w-full max-w-[69.25rem] px-4 pt-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:grid lg:grid-cols-[minmax(0,48rem)_18rem] lg:gap-5">
           {currentUser ? (
-            <form onSubmit={handleSubmit} className="max-w-3xl">
+            <form
+              onSubmit={handleSubmit}
+              className="pointer-events-auto min-w-0"
+            >
               <div
                 ref={replyAreaRef}
                 className={`flex flex-col rounded-2xl border border-field-border bg-field transition duration-150 focus-within:border-field-border-focus focus-within:bg-field-focus focus-within:status-focused-field ${
@@ -219,7 +270,7 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
               </div>
             </form>
           ) : (
-            <div className="flex max-w-3xl flex-wrap items-center justify-between gap-3">
+            <div className="pointer-events-auto flex min-w-0 flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-muted">登录后参与讨论。</p>
               <Button
                 type="button"

@@ -352,6 +352,16 @@ body {
     border-radius: 0.5rem;
   }
 
+  /* 可放大的正文图片：点击热区与键盘焦点提示。 */
+  .moon-rich-text img[data-post-image] {
+    cursor: zoom-in;
+  }
+
+  .moon-rich-text img[data-post-image]:focus-visible {
+    outline: 2px solid var(--content-accent, var(--link));
+    outline-offset: 2px;
+  }
+
   /*
    * 编辑器里的图片按真实尺寸显示，不被输入框宽度挤压；超出部分通过
    * 编辑区的横向滚动平移。渲染出的帖子仍受 max-width: 100% 约束。
@@ -466,4 +476,24 @@ body {
   /* No separation - ring sits directly against the element */
   --tw-ring-offset-width: 0px;
   border-color: transparent;
+}
+
+/*
+ * 内容入场：轻微上浮并淡入。只写起始帧，结束帧就是元素自身的样式，因此
+ * 用 backwards 而不是 forwards：延迟期间保持隐藏，播完立即交还样式控制权，
+ * 不会把 transform 锁在动画值上（卡片的按下缩放等交互仍生效）。
+ */
+@keyframes moon-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@utility moon-reveal {
+  animation: moon-reveal 260ms cubic-bezier(0.2, 0, 0, 1) backwards;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }

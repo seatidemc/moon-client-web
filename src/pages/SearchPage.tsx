@@ -37,6 +37,11 @@ export function SearchPage() {
   usePageTitle(query ? `搜索：${query}` : '搜索')
 
   function updateInput(value: string) {
+    if (value.trim() === '') {
+      setDraft(null)
+      if (query) setSearchParams({})
+      return
+    }
     setDraft({ paramsKey, value })
   }
 

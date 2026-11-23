@@ -82,6 +82,8 @@ export interface ThreadDetail extends ThreadSummary {
 export interface Reply {
   id: number
   threadId: number
+  /** 仅用户主页等跨主题列表返回。 */
+  threadTitle?: string
   floor: number
   author: Nullable<UserSummary>
   contentHtml: Nullable<string>

@@ -1,25 +1,23 @@
 import { Button, TextArea, Tooltip, cn } from '@heroui/react'
 import { Brush, Camera, Heart, Pencil, Plus } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { AvatarCropDialog } from '@/components/AvatarCropDialog'
+import { Pagination } from '@/components/Pagination'
 import { ProfileCustomizeDialog } from '@/components/ProfileCustomizeDialog'
 import { ThreadCard } from '@/components/ThreadCard'
 import { UserAvatar } from '@/components/UserAvatar'
 import { getAvatarShape, getAvatarShapeClassName } from '@/lib/avatar'
 import { useForum } from '@/lib/forum-context'
 import {
-  flattenPages,
   useSetUserLike,
-  useThreadSummaries,
   useUpdateProfile,
   useUserProfile,
   useUserReplies,
   useUserThreads,
 } from '@/lib/queries'
 import { getDisplayName } from '@/lib/user'
-import { useInfiniteScroll } from '@/lib/use-infinite-scroll'
 import { usePageTitle } from '@/lib/use-page-title'
 import {
   formatDate,
@@ -37,36 +35,49 @@ export function UserPage() {
 
   const { currentUser, openLogin } = useForum()
   const userQuery = useUserProfile(userId)
-  const threadsQuery = useUserThreads(userId)
-  const repliesQuery = useUserReplies(userId)
+
+  // 切换用户时把两个列表的页码一起归零，避免沿用上一个用户的页码。
+  const [pages, setPages] = useState({ userId, threads: 1, replies: 1 })
+  if (pages.userId !== userId) {
+    setPages({ userId, threads: 1, replies: 1 })
+  }
+  const threadsPage = pages.userId === userId ? pages.threads : 1
+  const repliesPage = pages.userId === userId ? pages.replies : 1
+
+  const threadsHeadingRef = useRef<HTMLHeadingElement>(null)
+  const repliesHeadingRef = useRef<HTMLHeadingElement>(null)
+
+  const threadsQuery = useUserThreads(userId, threadsPage)
+  const repliesQuery = useUserReplies(userId, repliesPage)
   const likeUser = useSetUserLike(userId)
   const updateProfile = useUpdateProfile()
 
   const user = userQuery.data
-  const userThreads = flattenPages(threadsQuery.data)
-  const userReplies = flattenPages(repliesQuery.data)
-  const threadIds = [...new Set(userReplies.map((reply) => reply.threadId))]
-  const threadQueries = useThreadSummaries(threadIds)
-  const threadTitleById = new Map(
-    threadIds.map((threadId, index) => [
-      threadId,
-      threadQueries[index]?.data?.title ?? '主题',
-    ]),
-  )
+  const userThreads = threadsQuery.data?.items ?? []
+  const userReplies = repliesQuery.data?.items ?? []
 
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
 
-  const threadsSentinelRef = useInfiniteScroll({
-    hasNextPage: threadsQuery.hasNextPage,
-    isFetchingNextPage: threadsQuery.isFetchingNextPage,
-    fetchNextPage: threadsQuery.fetchNextPage,
-  })
-  const repliesSentinelRef = useInfiniteScroll({
-    hasNextPage: repliesQuery.hasNextPage,
-    isFetchingNextPage: repliesQuery.isFetchingNextPage,
-    fetchNextPage: repliesQuery.fetchNextPage,
-  })
+  function changeThreadsPage(next: number) {
+    if (!currentUser) {
+      openLogin()
+      return
+    }
+
+    setPages((current) => ({ ...current, threads: next }))
+    threadsHeadingRef.current?.scrollIntoView({ block: 'start' })
+  }
+
+  function changeRepliesPage(next: number) {
+    if (!currentUser) {
+      openLogin()
+      return
+    }
+
+    setPages((current) => ({ ...current, replies: next }))
+    repliesHeadingRef.current?.scrollIntoView({ block: 'start' })
+  }
 
   usePageTitle(user ? `${getDisplayName(user)} 的主页` : '用户不存在')
 
@@ -248,23 +259,40 @@ export function UserPage() {
         )}
 
         <section className="mt-8" aria-labelledby="user-threads-heading">
-          <h2 id="user-threads-heading" className="text-base font-medium">
-            主题
-          </h2>
-          <div className="mt-4 space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2
+              ref={threadsHeadingRef}
+              id="user-threads-heading"
+              className="text-base font-medium"
+            >
+              主题
+            </h2>
+            {threadsQuery.data ? (
+              <Pagination
+                page={threadsQuery.data.page}
+                pageSize={threadsQuery.data.pageSize}
+                total={threadsQuery.data.total}
+                label="主题"
+                isDisabled={threadsQuery.isFetching}
+                onChange={changeThreadsPage}
+              />
+            ) : null}
+          </div>
+          <div
+            className={cn(
+              'mt-4 space-y-5 transition-opacity',
+              threadsQuery.isPlaceholderData && 'opacity-60',
+            )}
+            aria-busy={threadsQuery.isFetching}
+          >
             {userThreads.length > 0 ? (
-              <>
-                {userThreads.map((thread) => (
-                  <ThreadCard key={thread.id} thread={thread} showBoard />
-                ))}
-                <div
-                  ref={threadsSentinelRef}
-                  aria-hidden="true"
-                  className="h-px"
-                />
-              </>
+              userThreads.map((thread) => (
+                <ThreadCard key={thread.id} thread={thread} showBoard />
+              ))
             ) : threadsQuery.isPending ? (
               <p className="py-8 text-sm text-muted">正在加载主题…</p>
+            ) : threadsQuery.isError ? (
+              <p className="py-8 text-sm text-muted">主题加载失败，请稍后重试。</p>
             ) : (
               <p className="py-8 text-sm text-muted">还没有发布主题。</p>
             )}
@@ -272,42 +300,59 @@ export function UserPage() {
         </section>
 
         <section className="mt-10" aria-labelledby="user-replies-heading">
-          <h2 id="user-replies-heading" className="text-base font-medium">
-            回复
-          </h2>
-          <div className="mt-2 divide-y divide-border">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2
+              ref={repliesHeadingRef}
+              id="user-replies-heading"
+              className="text-base font-medium"
+            >
+              回复
+            </h2>
+            {repliesQuery.data ? (
+              <Pagination
+                page={repliesQuery.data.page}
+                pageSize={repliesQuery.data.pageSize}
+                total={repliesQuery.data.total}
+                label="回复"
+                isDisabled={repliesQuery.isFetching}
+                onChange={changeRepliesPage}
+              />
+            ) : null}
+          </div>
+          <div
+            className={cn(
+              'mt-2 divide-y divide-border transition-opacity',
+              repliesQuery.isPlaceholderData && 'opacity-60',
+            )}
+            aria-busy={repliesQuery.isFetching}
+          >
             {userReplies.length > 0 ? (
-              <>
-                {userReplies.map((reply) => (
-                  <article key={reply.id} className="py-4">
-                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-muted">
-                      <time
-                        dateTime={reply.createdAt}
-                        title={formatDateTime(reply.createdAt)}
-                      >
-                        {formatRelativeTime(reply.createdAt)}
-                      </time>
-                      <span>回复了</span>
-                      <Link
-                        to={`/thread/${reply.threadId}#reply-${reply.id}`}
-                        className="font-minecraft-sc text-foreground hover:underline"
-                      >
-                        {threadTitleById.get(reply.threadId) ?? '主题'}
-                      </Link>
-                    </div>
-                    <p className="mt-1.5 line-clamp-2 text-sm leading-6 text-foreground">
-                      {makeExcerpt(reply.contentHtml ?? '', 140)}
-                    </p>
-                  </article>
-                ))}
-                <div
-                  ref={repliesSentinelRef}
-                  aria-hidden="true"
-                  className="h-px"
-                />
-              </>
+              userReplies.map((reply) => (
+                <article key={reply.id} className="py-4">
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-muted">
+                    <time
+                      dateTime={reply.createdAt}
+                      title={formatDateTime(reply.createdAt)}
+                    >
+                      {formatRelativeTime(reply.createdAt)}
+                    </time>
+                    <span>回复了</span>
+                    <Link
+                      to={`/thread/${reply.threadId}#reply-${reply.id}`}
+                      className="font-minecraft-sc text-foreground hover:underline"
+                    >
+                      {reply.threadTitle ?? '主题'}
+                    </Link>
+                  </div>
+                  <p className="mt-1.5 line-clamp-2 text-sm leading-6 text-foreground">
+                    {makeExcerpt(reply.contentHtml ?? '', 140)}
+                  </p>
+                </article>
+              ))
             ) : repliesQuery.isPending ? (
               <p className="py-8 text-sm text-muted">正在加载回复…</p>
+            ) : repliesQuery.isError ? (
+              <p className="py-8 text-sm text-muted">回复加载失败，请稍后重试。</p>
             ) : (
               <p className="py-8 text-sm text-muted">还没有回复。</p>
             )}

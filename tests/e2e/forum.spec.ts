@@ -99,11 +99,18 @@ test.describe.serial('Moon 论坛主流程', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: TITLE }),
     ).toBeVisible()
-    await expect(
-      page
-        .locator('article#thread-post .moon-rich-text img[src*="/forum-v1/files/"]')
-        .first(),
-    ).toBeVisible()
+    const postImage = page
+      .locator('article#thread-post .moon-rich-text img[src*="/forum-v1/files/"]')
+      .first()
+    await expect(postImage).toBeVisible()
+
+    // 点击正文图片打开同楼层预览。PhotoSwipe 在开场动画期间会忽略
+    // 关闭操作，所以等动画结束再按 Esc。
+    await postImage.click()
+    await expect(page.locator('.pswp')).toBeVisible()
+    await page.waitForTimeout(500)
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.pswp')).toHaveCount(0, { timeout: 10_000 })
 
     // 另一个板块的主题，用于验证非授权板块不显示管理操作。
     await page.goto(`/topic/${OTHER_BOARD}`)

@@ -166,7 +166,7 @@ export function RichTextEditor({
   const editor = useEditor({
     extensions: createEditorExtensions({
       ...emoji,
-      placeholder: compact ? '写下你的跟帖…输入 @ 提及用户，re# 引用楼层' : undefined,
+      placeholder: '写点什么...',
     }),
     content: value,
     contentType: 'html',

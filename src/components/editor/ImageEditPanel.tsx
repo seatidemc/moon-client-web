@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/core'
-import { Button, Checkbox, Input } from '@heroui/react'
+import { Button, Input, Switch } from '@heroui/react'
 import { RefreshCw } from 'lucide-react'
 import { useEffect, useState, type KeyboardEvent } from 'react'
 
@@ -227,14 +227,6 @@ export function ImageEditPanel({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-2 px-1">
-        <span className="text-xs text-muted">图片设置</span>
-        <Button type="button" size="sm" variant="ghost" onPress={onReplace}>
-          <RefreshCw className="size-3.5" aria-hidden="true" />
-          替换
-        </Button>
-      </div>
-
       <label className="flex flex-col gap-1">
         <span className="px-1 text-xs text-muted">替代文本</span>
         <Input
@@ -248,8 +240,8 @@ export function ImageEditPanel({
         />
       </label>
 
-      <div className="flex flex-col gap-1">
-        <div className="flex items-end gap-2">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-start gap-2">
           <label className="flex min-w-0 flex-1 flex-col gap-1">
             <span className="px-1 text-xs text-muted">宽度（px）</span>
             <Input
@@ -278,23 +270,37 @@ export function ImageEditPanel({
               placeholder="自动"
             />
           </label>
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            onPress={applyCustomSize}
-          >
-            应用
-          </Button>
         </div>
-        <Checkbox isSelected={locked} onChange={changeLock}>
-          <Checkbox.Content>
-            <Checkbox.Control>
-              <Checkbox.Indicator />
-            </Checkbox.Control>
+        <Switch isSelected={locked} onChange={changeLock}>
+          <Switch.Content>
+            <Switch.Control>
+              <Switch.Thumb />
+            </Switch.Control>
             锁定原始比例
-          </Checkbox.Content>
-        </Checkbox>
+          </Switch.Content>
+        </Switch>
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          size="md"
+          variant="secondary"
+          className="flex-1"
+          onPress={onReplace}
+        >
+          <RefreshCw className="size-4" aria-hidden="true" />
+          替换
+        </Button>
+        <Button
+          type="button"
+          size="md"
+          variant="primary"
+          className="flex-1"
+          onPress={applyCustomSize}
+        >
+          应用
+        </Button>
       </div>
     </div>
   )

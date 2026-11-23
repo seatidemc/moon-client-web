@@ -79,3 +79,31 @@ export function scrollToAndEmphasize(id: string) {
     pulseElement(target)
   })
 }
+
+/**
+ * Smoothly brings an element fully into the part of the viewport that the
+ * overlay element (the sticky reply composer) does not cover. A just-posted
+ * reply is scrolled this way so the page glides to it and it settles above the
+ * composer instead of sliding underneath it. Elements that are already fully
+ * visible are left alone, so the page never shifts under the composer.
+ */
+export function scrollIntoViewAbove(
+  element: HTMLElement,
+  overlay: HTMLElement | null,
+) {
+  const coveredHeight = overlay?.offsetHeight ?? 0
+  const usableHeight = Math.max(0, window.innerHeight - coveredHeight)
+  const rect = element.getBoundingClientRect()
+
+  if (rect.top >= 0 && rect.bottom <= usableHeight) return
+
+  window.scrollTo({
+    top:
+      rect.height <= usableHeight
+        ? rect.top + window.scrollY + rect.height / 2 - usableHeight / 2
+        : rect.top + window.scrollY,
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'auto'
+      : 'smooth',
+  })
+}

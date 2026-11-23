@@ -232,12 +232,12 @@ export function ThreadPage() {
       className="flex min-h-[calc(100svh-3.5rem)] flex-col"
       style={themeStyle}
     >
-      <main className="mx-auto w-full max-w-[69.25rem] flex-1 px-4 pt-10 pb-4 sm:pt-12">
+      <main className="mx-auto w-full max-w-[69.25rem] flex-1 px-4 pt-10 sm:pt-12">
         <div className="grid gap-5 lg:grid-cols-[minmax(0,48rem)_18rem]">
           <div className="min-w-0 space-y-5">
             <article
               id="thread-post"
-              className="scroll-mt-6 rounded-2xl bg-surface p-4 sm:p-5"
+              className="moon-reveal scroll-mt-6 rounded-2xl bg-surface p-4 sm:p-5"
             >
               <Link
                 to={`/topic/${board.slug}`}
@@ -268,7 +268,9 @@ export function ThreadPage() {
                 )}
               </div>
 
-              <PostContent className="mt-6">{thread.contentHtml}</PostContent>
+              <PostContent className="mt-6" imageLightbox>
+                {thread.contentHtml}
+              </PostContent>
 
               <div
                 className={cn(
@@ -361,7 +363,7 @@ export function ThreadPage() {
               </div>
             </article>
 
-            <section className="space-y-5" aria-label="跟帖">
+            <section className="relative flex flex-col gap-5" aria-label="跟帖">
               {threadReplies.length > 0 ? (
                 threadReplies.map((reply) => {
                   const replyAuthor = reply.author
@@ -373,7 +375,7 @@ export function ThreadPage() {
                       <article
                         key={reply.id}
                         id={`reply-${reply.id}`}
-                        className="scroll-mt-6 rounded-2xl bg-surface p-4 sm:p-5"
+                        className="moon-reveal scroll-mt-6 rounded-2xl bg-surface p-4 sm:p-5"
                       >
                         <header className="flex flex-wrap items-center justify-between gap-3">
                           <span className="text-sm text-muted">
@@ -395,7 +397,7 @@ export function ThreadPage() {
                     <article
                       key={reply.id}
                       id={`reply-${reply.id}`}
-                      className="scroll-mt-6 rounded-2xl bg-surface p-4 sm:p-5"
+                      className="moon-reveal scroll-mt-6 rounded-2xl bg-surface p-4 sm:p-5"
                     >
                       <header className="flex flex-wrap items-center justify-between gap-3">
                         {replyAuthor ? (
@@ -457,6 +459,7 @@ export function ThreadPage() {
 
                       <PostContent
                         className="mt-5"
+                        imageLightbox
                         replyReferences={{
                           threadId: thread.id,
                           replies: threadReplies,
@@ -478,15 +481,20 @@ export function ThreadPage() {
                   )
                 })
               ) : repliesQuery.isPending ? (
-                <p className="rounded-2xl bg-surface px-4 py-10 text-center text-sm text-muted">
-                  正在加载跟帖…
+                <p className="pt-10 text-center text-sm text-muted">
+                  正在加载回复…
                 </p>
               ) : (
-                <p className="rounded-2xl bg-surface px-4 py-10 text-center text-sm text-muted">
-                  还没有跟帖，来写下第一帖吧。
+                <p className="pt-10 text-center text-sm text-muted">
+                  来写下第一条回复吧~
                 </p>
               )}
-              <div ref={sentinelRef} aria-hidden="true" className="h-px" />
+              {/* 绝对定位，避免 gap 把间距也算到哨兵上，让回复框与最后一条的间距和楼层间距一致。 */}
+              <div
+                ref={sentinelRef}
+                aria-hidden="true"
+                className="absolute inset-x-0 bottom-0 h-px"
+              />
             </section>
           </div>
 
@@ -553,9 +561,14 @@ export function ThreadPage() {
       </main>
 
       {thread.locked ? (
-        <div className="sticky bottom-0 z-20 mt-auto" style={themeStyle}>
-          <div className="mx-auto w-full max-w-[69.25rem] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <p className="max-w-3xl text-sm text-muted">主题已锁定，无法回复。</p>
+        <div
+          className="pointer-events-none sticky bottom-0 z-20 mt-auto"
+          style={themeStyle}
+        >
+          <div className="mx-auto w-full max-w-[69.25rem] px-4 pt-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:grid lg:grid-cols-[minmax(0,48rem)_18rem] lg:gap-5">
+            <p className="pointer-events-auto min-w-0 text-sm text-muted">
+              主题已锁定，无法回复
+            </p>
           </div>
         </div>
       ) : (

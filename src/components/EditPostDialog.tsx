@@ -155,7 +155,7 @@ function EditPostForm({
             <Input
               autoFocus
               maxLength={120}
-              placeholder="用一句话说清楚主题"
+              placeholder="标题"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
             />

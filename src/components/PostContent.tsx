@@ -6,9 +6,11 @@ import {
   type Schema,
 } from 'hast-util-sanitize'
 import { toJsxRuntime } from 'hast-util-to-jsx-runtime'
+import type { ComponentPropsWithoutRef, KeyboardEvent, MouseEvent } from 'react'
 import { Fragment, jsx, jsxs } from 'react/jsx-runtime'
 import { Link } from 'react-router-dom'
 
+import { openImageLightbox } from '@/lib/image-lightbox'
 import type { ReplyReferenceOptions } from '@/lib/reply-references'
 import { applyRichTextFeatures } from '@/lib/rich-text-hast'
 
@@ -16,6 +18,8 @@ interface PostContentProps {
   /** Rich-text HTML authored by the editor. */
   children: string
   className?: string
+  /** 点击图片时打开与图片同一楼层内的图片预览。 */
+  imageLightbox?: boolean
   /** 传入后启用跟帖回复语法 re#楼层号 */
   replyReferences?: ReplyReferenceOptions
 }
@@ -109,9 +113,54 @@ const postSchema: Schema = {
   },
 }
 
+interface ZoomableImageProps extends ComponentPropsWithoutRef<'img'> {
+  /** hast 在 `passNode` 开启时注入，不能透传到 DOM。 */
+  node?: unknown
+}
+
+/**
+ * 正文图片点击后用 PhotoSwipe 放大。每层楼各自渲染一个 PostContent，
+ * 因此最近的 `.moon-rich-text` 容器就是该楼层，预览范围天然按楼层划分。
+ */
+function ZoomableImage({ node: _node, alt, ...props }: ZoomableImageProps) {
+  function open(image: HTMLImageElement) {
+    const post = image.closest('.moon-rich-text')
+    if (!post) return
+
+    void openImageLightbox(
+      Array.from(post.querySelectorAll<HTMLImageElement>('img')),
+      image,
+    )
+  }
+
+  return (
+    <img
+      {...props}
+      alt={alt}
+      data-post-image=""
+      role="button"
+      tabIndex={0}
+      aria-label={alt ? `${alt}（查看大图）` : '查看大图'}
+      onClick={(event: MouseEvent<HTMLImageElement>) => {
+        // 图片可能被链接包裹，放大时不要同时跳转。
+        event.preventDefault()
+        event.stopPropagation()
+        open(event.currentTarget)
+      }}
+      onKeyDown={(event: KeyboardEvent<HTMLImageElement>) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return
+
+        event.preventDefault()
+        open(event.currentTarget)
+      }}
+    />
+  )
+}
+
 export function PostContent({
   children,
   className,
+  imageLightbox = false,
   replyReferences,
 }: PostContentProps) {
   const tree = fromHtml(children, { fragment: true })
@@ -145,6 +194,7 @@ export function PostContent({
           </a>
         )
       },
+      ...(imageLightbox ? { img: ZoomableImage } : {}),
     },
     ignoreInvalidStyle: true,
     jsx,

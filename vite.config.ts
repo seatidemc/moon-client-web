@@ -25,6 +25,11 @@ export default defineConfig({
       '/forum-v1': {
         target: 'http://localhost:45678',
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('origin', 'http://localhost:5174')
+          })
+        },
       },
     },
   },
