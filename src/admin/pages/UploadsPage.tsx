@@ -4,6 +4,7 @@ import { Trash2 } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { mediaUrl } from '@/lib/media'
 import { formatDateTime } from '@/lib/utils'
 
 import { adminApi } from '../api'
@@ -215,13 +216,13 @@ export function UploadsPage() {
                     <tr key={upload.id}>
                       <td className={TD_CLASS}>
                         <a
-                          href={upload.url}
+                          href={mediaUrl(upload.url)}
                           target="_blank"
                           rel="noreferrer"
                           className="block size-12 overflow-hidden rounded-lg border border-border bg-default"
                         >
                           <img
-                            src={upload.url}
+                            src={mediaUrl(upload.url)}
                             alt={upload.originalName || upload.key}
                             loading="lazy"
                             className="size-full object-cover"

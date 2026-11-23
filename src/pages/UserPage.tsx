@@ -10,6 +10,7 @@ import { ThreadCard } from '@/components/ThreadCard'
 import { UserAvatar } from '@/components/UserAvatar'
 import { getAvatarShape, getAvatarShapeClassName } from '@/lib/avatar'
 import { useForum } from '@/lib/forum-context'
+import { mediaUrl } from '@/lib/media'
 import {
   useSetUserLike,
   useUpdateProfile,
@@ -107,6 +108,8 @@ export function UserPage() {
   const liked = user.likedByMe
   const isSelf = user.isSelf
   const background = user.backgroundUrl
+    ? mediaUrl(user.backgroundUrl)
+    : null
   const avatarShape = getAvatarShape(user)
   const onBackgroundClass =
     background &&
@@ -379,7 +382,7 @@ export function UserPage() {
       <ProfileCustomizeDialog
         isOpen={customizeOpen}
         onOpenChange={setCustomizeOpen}
-        backgroundUrl={user.backgroundUrl}
+        backgroundUrl={background}
       />
 
       <AvatarCropDialog

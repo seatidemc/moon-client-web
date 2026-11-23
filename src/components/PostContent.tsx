@@ -1,4 +1,5 @@
 import { cn } from '@heroui/react'
+import type { Nodes } from 'hast'
 import { fromHtml } from 'hast-util-from-html'
 import {
   defaultSchema,
@@ -11,6 +12,7 @@ import { Fragment, jsx, jsxs } from 'react/jsx-runtime'
 import { Link } from 'react-router-dom'
 
 import { openImageLightbox } from '@/lib/image-lightbox'
+import { mediaUrl } from '@/lib/media'
 import type { ReplyReferenceOptions } from '@/lib/reply-references'
 import { applyRichTextFeatures } from '@/lib/rich-text-hast'
 
@@ -157,6 +159,20 @@ function ZoomableImage({ node: _node, alt, ...props }: ZoomableImageProps) {
   )
 }
 
+/** 正文图片以相对路径存储，渲染前补上 API 源（见 `mediaUrl`）。 */
+function resolveImageSources(node: Nodes) {
+  if (node.type === 'element' && node.tagName === 'img') {
+    const src = node.properties?.src
+    if (typeof src === 'string') node.properties.src = mediaUrl(src)
+  }
+
+  if (!('children' in node)) return
+
+  for (const child of node.children) {
+    if (child.type === 'element') resolveImageSources(child)
+  }
+}
+
 export function PostContent({
   children,
   className,
@@ -167,7 +183,10 @@ export function PostContent({
 
   applyRichTextFeatures(tree, replyReferences)
 
-  const rendered = toJsxRuntime(sanitize(tree, postSchema), {
+  const sanitized = sanitize(tree, postSchema)
+  resolveImageSources(sanitized)
+
+  const rendered = toJsxRuntime(sanitized, {
     Fragment,
     components: {
       a({ href, children: linkChildren, className: linkClassName, title }) {

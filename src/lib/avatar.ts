@@ -1,3 +1,4 @@
+import { mediaUrl } from '@/lib/media'
 import type { AvatarShape, UserSummary } from '@/types'
 
 export function isAvatarShape(value: unknown): value is AvatarShape {
@@ -9,7 +10,7 @@ export function isAvatarShape(value: unknown): value is AvatarShape {
  * `avatarUrl` 为空时说明数据尚未加载，返回空字符串让浏览器显示占位。
  */
 export function getAvatarUrl(user: Pick<UserSummary, 'avatarUrl'>): string {
-  return user.avatarUrl || ''
+  return mediaUrl(user.avatarUrl || '')
 }
 
 /** 用户自己的头像形状，未设置时按圆形处理。 */

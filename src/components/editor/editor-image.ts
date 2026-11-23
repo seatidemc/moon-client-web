@@ -2,6 +2,8 @@ import type { NodeViewRenderer } from '@tiptap/core'
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import Image from '@tiptap/extension-image'
 
+import { mediaUrl } from '@/lib/media'
+
 import { IMAGE_RESIZE_MIN_SIZE } from './editor-constants'
 import type { ImageAlignment } from './editor-types'
 
@@ -47,6 +49,20 @@ function syncImageSize(dom: HTMLElement, attrs: Record<string, unknown>) {
 
   image.style.width = dimensionStyle(attrs.width)
   image.style.height = dimensionStyle(attrs.height)
+}
+
+/**
+ * 上传图片以 `/forum-v1/files/...` 相对路径存储，编辑器预览时补上 API 源。
+ * 只改 DOM，不改节点属性，保存出去的 HTML 仍保持相对路径。
+ */
+function syncImageSource(dom: HTMLElement, attrs: Record<string, unknown>) {
+  if (typeof attrs.src !== 'string') return
+
+  const image = imageElementAt(dom)
+  if (!image) return
+
+  const source = mediaUrl(attrs.src)
+  if (image.getAttribute('src') !== source) image.src = source
 }
 
 function isAspectLocked(node: ProseMirrorNode) {
@@ -117,6 +133,7 @@ export const ContextualImage = Image.extend({
 
         internals.preserveAspectRatio = isAspectLocked(current)
         syncImageSize(dom, current.attrs)
+        syncImageSource(dom, current.attrs)
       }
 
       nodeView.update = (node, decorations, innerDecorations) => {
@@ -129,6 +146,7 @@ export const ContextualImage = Image.extend({
           const updated = nodeView as unknown as AspectRatioInternals
           updated.preserveAspectRatio = isAspectLocked(node)
           syncImageSize(nodeView.dom, node.attrs)
+          syncImageSource(nodeView.dom, node.attrs)
         }
         return accepted
       }
