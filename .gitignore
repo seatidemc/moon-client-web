@@ -13,6 +13,9 @@ dist
 dist-ssr
 *.local
 
+# Cloudflare Wrangler
+.wrangler
+
 # Playwright
 test-results
 playwright-report

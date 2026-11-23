@@ -1,0 +1,23 @@
+{
+  // Cloudflare Workers static-assets deployment for the built site.
+  // `dist/` is produced by `npm run build` (two HTML entry points: the forum
+  // at /index.html and the admin console at /admin.html); the deploy job
+  // downloads that artifact and runs `wrangler deploy`.
+  //
+  // `single-page-application` serves /index.html for unmatched navigation
+  // requests, which is what the forum's BrowserRouter routes (/thread/:id,
+  // /user/:id, ...) need. Existing files such as /admin.html and /assets/*
+  // are matched first. The admin console itself uses a HashRouter.
+  //
+  // The custom domain `moon-dev.seatide.net` is attached once in the
+  // dashboard (Workers & Pages -> moon-dev -> Settings -> Domains & Routes
+  // -> Add -> Custom Domain). Keeping it out of this file means the CI token
+  // only needs `Workers Scripts: Edit`; managing it here instead requires the
+  // Zone permission `Workers Routes: Edit`.
+  "name": "moon-dev",
+  "compatibility_date": "2026-11-23",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
