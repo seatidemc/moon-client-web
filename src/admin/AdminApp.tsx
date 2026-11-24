@@ -1,4 +1,12 @@
-import { Button, cn } from '@heroui/react'
+import {
+  Button,
+  Chip,
+  EmptyState,
+  Link,
+  ScrollShadow,
+  Typography,
+  cn,
+} from '@heroui/react'
 import {
   ExternalLink,
   Image,
@@ -27,7 +35,6 @@ import { UserAvatar } from '@/components/UserAvatar'
 import { getDisplayName } from '@/lib/user'
 
 import { AccessDeniedPage, LoginPage, ServiceErrorPage } from './components/LoginPage'
-import { Badge } from './components/ui'
 import { useAdmin, type AdminContextValue } from './store'
 import { AuditPage } from './pages/AuditPage'
 import { BoardsPage } from './pages/BoardsPage'
@@ -111,12 +118,14 @@ function homePathFor(admin: AdminContextValue): string {
 
 function NoPermissionPanel() {
   return (
-    <div className="rounded-xl border border-dashed border-border px-4 py-12 text-center">
-      <h2 className="text-base font-semibold">无权访问此页面</h2>
-      <p className="mt-1 text-sm text-muted">
+    <EmptyState>
+      <Typography.Heading level={2} className="text-base font-semibold">
+        无权访问此页面
+      </Typography.Heading>
+      <Typography.Paragraph size="sm" color="muted" className="mt-1">
         当前管理员没有该功能所需的权限。
-      </p>
-    </div>
+      </Typography.Paragraph>
+    </EmptyState>
   )
 }
 
@@ -176,13 +185,13 @@ function AdminLayout() {
         </nav>
 
         <div className="border-t border-border p-2">
-          <a
+          <Link
             href="/"
             className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-default-soft hover:text-foreground"
           >
             <ExternalLink className="size-4" aria-hidden="true" />
             返回论坛前台
-          </a>
+          </Link>
         </div>
       </aside>
 
@@ -193,17 +202,25 @@ function AdminLayout() {
               <p className="brand-logo text-base tracking-tight lg:hidden">
                 Moon Admin
               </p>
-              <span className="hidden text-sm text-muted lg:inline">
+              <Typography.Paragraph
+                size="sm"
+                color="muted"
+                className="hidden lg:block"
+              >
                 {visibleItems.find((item) => item.to === location.pathname)
                   ?.label ?? '管理后台'}
-              </span>
+              </Typography.Paragraph>
             </div>
 
             <div className="flex items-center gap-3">
               {admin.isSuperuser ? (
-                <Badge tone="accent">超级管理员</Badge>
+                <Chip size="sm" variant="soft" color="accent">
+                  <Chip.Label>超级管理员</Chip.Label>
+                </Chip>
               ) : (
-                <Badge>板块管理员</Badge>
+                <Chip size="sm" variant="soft" color="default">
+                  <Chip.Label>板块管理员</Chip.Label>
+                </Chip>
               )}
               {admin.me.user ? (
                 <span className="hidden items-center gap-2 sm:flex">
@@ -225,28 +242,33 @@ function AdminLayout() {
             </div>
           </div>
 
-          <nav
-            aria-label="管理导航（移动端）"
-            className="flex gap-1 overflow-x-auto px-2 pb-2 lg:hidden"
+          <ScrollShadow
+            orientation="horizontal"
+            className="px-2 pb-2 lg:hidden"
           >
-            {visibleItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  cn(
-                    'flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors',
-                    isActive
-                      ? 'bg-accent-soft text-accent'
-                      : 'text-muted hover:bg-default-soft',
-                  )
-                }
-              >
-                <item.icon className="size-3.5" aria-hidden="true" />
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+            <nav
+              aria-label="管理导航（移动端）"
+              className="flex gap-1"
+            >
+              {visibleItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    cn(
+                      'flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors',
+                      isActive
+                        ? 'bg-accent-soft text-accent'
+                        : 'text-muted hover:bg-default-soft',
+                    )
+                  }
+                >
+                  <item.icon className="size-3.5" aria-hidden="true" />
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+          </ScrollShadow>
         </header>
 
         <main className="mx-auto w-full max-w-[84rem] flex-1 px-4 py-6">
@@ -328,8 +350,10 @@ function AdminLayout() {
           </Routes>
         </main>
 
-        <footer className="border-t border-border px-4 py-3 text-center text-xs text-muted">
-          Moon 管理后台 · 登录态与论坛前台独立
+        <footer className="border-t border-border px-4 py-3 text-center">
+          <Typography.Paragraph size="xs" color="muted">
+            Moon 管理后台 · 登录态与论坛前台独立
+          </Typography.Paragraph>
         </footer>
       </div>
 

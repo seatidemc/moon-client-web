@@ -1,4 +1,14 @@
-import { Button } from '@heroui/react'
+import {
+  Button,
+  Card,
+  Chip,
+  EmptyState,
+  Label,
+  ListBox,
+  Select,
+  Table,
+  Typography,
+} from '@heroui/react'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 
@@ -7,18 +17,10 @@ import { getDisplayName } from '@/lib/user'
 
 import { adminApi } from '../api'
 import {
-  Badge,
-  Card,
-  EmptyState,
   ErrorPanel,
-  Field,
   LoadingPanel,
   PageHeader,
   Pagination,
-  SelectInput,
-  TableWrap,
-  TD_CLASS,
-  TH_CLASS,
 } from '../components/ui'
 import { useAdminPageTitle } from '../components/use-admin-title'
 import { boardScopeLabel } from '../lib'
@@ -125,8 +127,10 @@ export function PermissionsPage() {
           <div className="space-y-4">
             {groups.map(([group, items]) => (
               <Card key={group}>
-                <h2 className="mb-2 text-sm font-medium">{group}</h2>
-                <div className="space-y-1.5">
+                <Card.Header>
+                  <Card.Title>{group}</Card.Title>
+                </Card.Header>
+                <Card.Content className="space-y-1.5">
                   {items.map((item) => (
                     <div
                       key={item.code}
@@ -134,15 +138,25 @@ export function PermissionsPage() {
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <code className="text-xs font-medium">
+                          <Typography.Code className="text-xs font-medium">
                             {item.code}
-                          </code>
-                          <Badge>{SCOPE_LABELS[item.scope]}</Badge>
-                          {item.default ? <Badge tone="accent">默认</Badge> : null}
+                          </Typography.Code>
+                          <Chip size="sm" variant="soft" color="default">
+                            <Chip.Label>{SCOPE_LABELS[item.scope]}</Chip.Label>
+                          </Chip>
+                          {item.default ? (
+                            <Chip size="sm" variant="soft" color="accent">
+                              <Chip.Label>默认</Chip.Label>
+                            </Chip>
+                          ) : null}
                         </div>
-                        <p className="mt-0.5 text-xs text-muted">
+                        <Typography.Paragraph
+                          size="xs"
+                          color="muted"
+                          className="mt-0.5"
+                        >
                           {item.description}
-                        </p>
+                        </Typography.Paragraph>
                       </div>
                       <Button
                         size="sm"
@@ -154,105 +168,148 @@ export function PermissionsPage() {
                       </Button>
                     </div>
                   ))}
-                </div>
+                </Card.Content>
               </Card>
             ))}
           </div>
 
           <div>
             <Card>
-              <h2 className="text-sm font-medium">权限持有者</h2>
-              {!selected ? (
-                <p className="mt-3 text-sm text-muted">
-                  从左侧选择一个权限点查看持有者。
-                </p>
-              ) : (
-                <>
-                  <p className="mt-1 text-xs text-muted">
-                    {selected.code} · {selected.description} ·{' '}
-                    {SCOPE_LABELS[selected.scope]}
-                  </p>
+              <Card.Header>
+                <Card.Title>权限持有者</Card.Title>
+              </Card.Header>
+              <Card.Content>
+                {!selected ? (
+                  <Typography.Paragraph size="sm" color="muted" className="mt-3">
+                    从左侧选择一个权限点查看持有者。
+                  </Typography.Paragraph>
+                ) : (
+                  <>
+                    <Typography.Paragraph
+                      size="xs"
+                      color="muted"
+                      className="mt-1"
+                    >
+                      {selected.code} · {selected.description} ·{' '}
+                      {SCOPE_LABELS[selected.scope]}
+                    </Typography.Paragraph>
 
-                  {selected.scope === 'board' ? (
-                    <div className="mt-3 max-w-56">
-                      <Field label="范围筛选" htmlFor="permission-board">
-                        <SelectInput
-                          id="permission-board"
-                          value={boardFilter}
-                          onChange={(event) => {
-                            setBoardFilter(event.target.value)
+                    {selected.scope === 'board' ? (
+                      <div className="mt-3 max-w-56">
+                        <Select
+                          fullWidth
+                          selectedKey={boardFilter || '__all__'}
+                          onSelectionChange={(key) => {
+                            setBoardFilter(
+                              key === null || key === '__all__'
+                                ? ''
+                                : String(key),
+                            )
                             setPage(1)
                           }}
                         >
-                          <option value="">不限范围</option>
-                          {boards
-                            .filter((board) => !board.deleted)
-                            .map((board) => (
-                              <option key={board.id} value={board.id}>
-                                {board.name}
-                              </option>
-                            ))}
-                        </SelectInput>
-                      </Field>
-                    </div>
-                  ) : null}
+                          <Label>范围筛选</Label>
+                          <Select.Trigger>
+                            <Select.Value />
+                            <Select.Indicator />
+                          </Select.Trigger>
+                          <Select.Popover>
+                            <ListBox>
+                              <ListBox.Item
+                                id="__all__"
+                                textValue="不限范围"
+                              >
+                                不限范围
+                              </ListBox.Item>
+                              {boards
+                                .filter((board) => !board.deleted)
+                                .map((board) => (
+                                  <ListBox.Item
+                                    key={board.id}
+                                    id={String(board.id)}
+                                    textValue={board.name}
+                                  >
+                                    {board.name}
+                                  </ListBox.Item>
+                                ))}
+                            </ListBox>
+                          </Select.Popover>
+                        </Select>
+                      </div>
+                    ) : null}
 
-                  <div className="mt-3">
-                    {usersQuery.isPending ? (
-                      <LoadingPanel />
-                    ) : usersQuery.isError ? (
-                      <ErrorPanel
-                        message={usersQuery.error.message}
-                        onRetry={() => void usersQuery.refetch()}
-                      />
-                    ) : usersQuery.data.items.length === 0 ? (
-                      <EmptyState>没有用户持有该权限点。</EmptyState>
-                    ) : (
-                      <>
-                        <TableWrap>
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr>
-                                <th className={TH_CLASS}>用户</th>
-                                <th className={TH_CLASS}>范围</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {usersQuery.data.items.map((item) => (
-                                <tr key={`${item.id}:${item.boardId ?? 0}`}>
-                                  <td className={TD_CLASS}>
-                                    <span className="flex items-center gap-2">
-                                      <UserAvatar user={item} />
-                                      <span className="min-w-0">
-                                        <span className="block max-w-40 truncate">
-                                          {getDisplayName(item)}
-                                        </span>
-                                        <span className="text-xs text-muted">
-                                          @{item.username}
-                                        </span>
-                                      </span>
-                                    </span>
-                                  </td>
-                                  <td className={TD_CLASS}>
-                                    {boardScopeLabel(item.boardId, boardNames)}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </TableWrap>
-
-                        <Pagination
-                          page={usersQuery.data.page}
-                          pageSize={usersQuery.data.pageSize}
-                          total={usersQuery.data.total}
-                          onChange={setPage}
+                    <div className="mt-3">
+                      {usersQuery.isPending ? (
+                        <LoadingPanel />
+                      ) : usersQuery.isError ? (
+                        <ErrorPanel
+                          message={usersQuery.error.message}
+                          onRetry={() => void usersQuery.refetch()}
                         />
-                      </>
-                    )}
-                  </div>
-                </>
-              )}
+                      ) : (
+                        <>
+                          <Table aria-label="权限持有者">
+                            <Table.ScrollContainer>
+                              <Table.Content aria-label="权限持有者">
+                                <Table.Header>
+                                  <Table.Column id="user" isRowHeader>
+                                    用户
+                                  </Table.Column>
+                                  <Table.Column id="scope">范围</Table.Column>
+                                </Table.Header>
+                                <Table.Body
+                                  renderEmptyState={() => (
+                                    <EmptyState>
+                                      没有用户持有该权限点。
+                                    </EmptyState>
+                                  )}
+                                >
+                                  {usersQuery.data.items.map((item) => (
+                                    <Table.Row
+                                      key={`${item.id}:${item.boardId ?? 0}`}
+                                      id={`${item.id}:${item.boardId ?? 0}`}
+                                    >
+                                      <Table.Cell>
+                                        <span className="flex items-center gap-2">
+                                          <UserAvatar user={item} />
+                                          <span className="min-w-0">
+                                            <span className="block max-w-40 truncate">
+                                              {getDisplayName(item)}
+                                            </span>
+                                            <Typography.Paragraph
+                                              size="xs"
+                                              color="muted"
+                                            >
+                                              @{item.username}
+                                            </Typography.Paragraph>
+                                          </span>
+                                        </span>
+                                      </Table.Cell>
+                                      <Table.Cell>
+                                        {boardScopeLabel(
+                                          item.boardId,
+                                          boardNames,
+                                        )}
+                                      </Table.Cell>
+                                    </Table.Row>
+                                  ))}
+                                </Table.Body>
+                              </Table.Content>
+                            </Table.ScrollContainer>
+                          </Table>
+
+                          <Pagination
+                            page={usersQuery.data.page}
+                            pageSize={usersQuery.data.pageSize}
+                            total={usersQuery.data.total}
+                            onChange={setPage}
+                          />
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+              </Card.Content>
             </Card>
           </div>
         </div>

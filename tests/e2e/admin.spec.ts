@@ -7,6 +7,7 @@ import {
   test,
   type APIRequestContext,
   type BrowserContext,
+  type Locator,
   type Page,
 } from '@playwright/test'
 
@@ -201,6 +202,37 @@ async function expectToast(text: string) {
   await expect(toast.last()).toBeVisible()
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+async function checkRow(row: Locator) {
+  await row.locator('[data-slot="checkbox-control"]').click()
+  await expect(row.getByRole('checkbox')).toBeChecked()
+}
+
+/**
+ * HeroUI Select 没有原生 <select>，无法使用 selectOption。
+ * 触发器是带标签与当前值可访问名的按钮，选项在 portal 中渲染为 option。
+ */
+async function chooseOption(
+  page: Page,
+  label: string,
+  option: string | RegExp,
+  scope: Page | Locator = page,
+) {
+  await scope
+    .getByRole('button', {
+      name: new RegExp(`(^|\\s)${escapeRegExp(label)}(\\s|$)`),
+    })
+    .click()
+  await page
+    .getByRole('option',
+      typeof option === 'string' ? { name: option, exact: true } : { name: option },
+    )
+    .click()
+}
+
 test.beforeAll(async ({ browser }) => {
   // 只登录一次后台：UI 登录后复用浏览器上下文里的 admin cookie 调 API，
   // 避免撞上后台登录限流（默认 5 次/分钟/账号）。
@@ -375,7 +407,7 @@ test.describe.serial('Moon 管理后台', () => {
       adminPage.getByRole('heading', { level: 1, name: '主题管理' }),
     ).toBeVisible()
 
-    await adminPage.getByLabel('关键词').fill(THREAD_TITLE)
+    await adminPage.getByLabel('关键词', { exact: true }).fill(THREAD_TITLE)
     await adminPage.getByRole('button', { name: '查询' }).click()
 
     let row = adminPage.locator('tbody tr').filter({ hasText: THREAD_TITLE })
@@ -409,7 +441,7 @@ test.describe.serial('Moon 管理后台', () => {
     await dialog.getByRole('button', { name: '删除主题' }).click()
     await expectToast('主题已删除')
 
-    await adminPage.getByLabel('状态', { exact: true }).selectOption('deleted')
+    await chooseOption(adminPage, '状态', '已删除')
     await adminPage.getByRole('button', { name: '查询' }).click()
     row = adminPage.locator('tbody tr').filter({ hasText: THREAD_TITLE })
     await expect(row.getByText('已删除')).toBeVisible()
@@ -417,7 +449,7 @@ test.describe.serial('Moon 管理后台', () => {
     await expectToast('主题已恢复')
 
     // 恢复后主题离开“已删除”列表，切回正常状态确认。
-    await adminPage.getByLabel('状态', { exact: true }).selectOption('active')
+    await chooseOption(adminPage, '状态', '正常')
     await adminPage.getByRole('button', { name: '查询' }).click()
     row = adminPage.locator('tbody tr').filter({ hasText: THREAD_TITLE })
     await expect(row).toBeVisible()
@@ -425,7 +457,7 @@ test.describe.serial('Moon 管理后台', () => {
     await expect(row.getByText('置顶', { exact: true })).toBeVisible()
 
     // 移动第二个主题到其他板块，随后在 afterAll 中移回。
-    await adminPage.getByLabel('关键词').fill(SECOND_TITLE)
+    await adminPage.getByLabel('关键词', { exact: true }).fill(SECOND_TITLE)
     await adminPage.getByRole('button', { name: '查询' }).click()
 
     const secondRow = adminPage
@@ -438,9 +470,7 @@ test.describe.serial('Moon 管理后台', () => {
     dialog = adminPage.getByRole('dialog')
     await dialog.getByRole('button', { name: '移动主题' }).click()
     const moveDialog = adminPage.getByRole('dialog').last()
-    await moveDialog
-      .getByLabel('目标板块')
-      .selectOption(String(otherBoardId))
+    await chooseOption(adminPage, '目标板块', 'E2E 其他', moveDialog)
     await moveDialog.getByRole('button', { name: '移动', exact: true }).click()
     await expectToast('主题已移动')
     await adminPage
@@ -449,19 +479,19 @@ test.describe.serial('Moon 管理后台', () => {
     await expect(adminPage.getByRole('dialog')).toHaveCount(0)
 
     // 批量置顶 / 取消置顶。
-    await adminPage.getByLabel('关键词').fill(SECOND_TITLE)
+    await adminPage.getByLabel('关键词', { exact: true }).fill(SECOND_TITLE)
     await adminPage.getByRole('button', { name: '查询' }).click()
     const batchRow = adminPage
       .locator('tbody tr')
       .filter({ hasText: SECOND_TITLE })
     await expect(batchRow).toBeVisible()
-    await batchRow.getByRole('checkbox').check()
-    await adminPage.getByLabel('批量操作', { exact: true }).selectOption('pin')
+    await checkRow(batchRow)
+    await chooseOption(adminPage, '批量操作', '置顶')
     await adminPage.getByRole('button', { name: '执行批量操作' }).click()
     await expectToast('批量操作成功 1 条')
 
-    await batchRow.getByRole('checkbox').check()
-    await adminPage.getByLabel('批量操作', { exact: true }).selectOption('unpin')
+    await checkRow(batchRow)
+    await chooseOption(adminPage, '批量操作', '取消置顶')
     await adminPage.getByRole('button', { name: '执行批量操作' }).click()
     await expectToast('批量操作成功 1 条')
   })
@@ -472,7 +502,7 @@ test.describe.serial('Moon 管理后台', () => {
       adminPage.getByRole('heading', { level: 1, name: '跟帖管理' }),
     ).toBeVisible()
 
-    await adminPage.getByLabel('关键词').fill(REPLY_TEXT)
+    await adminPage.getByLabel('关键词', { exact: true }).fill(REPLY_TEXT)
     await adminPage.getByRole('button', { name: '查询' }).click()
 
     let row = adminPage.locator('tbody tr').filter({ hasText: REPLY_TEXT })
@@ -499,7 +529,7 @@ test.describe.serial('Moon 管理后台', () => {
     await dialog.getByRole('button', { name: '删除跟帖' }).click()
     await expectToast('跟帖已删除')
 
-    await adminPage.getByLabel('状态', { exact: true }).selectOption('deleted')
+    await chooseOption(adminPage, '状态', '已删除')
     await adminPage.getByRole('button', { name: '查询' }).click()
     row = adminPage
       .locator('tbody tr')
@@ -509,7 +539,7 @@ test.describe.serial('Moon 管理后台', () => {
     await expectToast('跟帖已恢复')
 
     // 恢复后跟帖离开“已删除”列表，切回正常状态确认。
-    await adminPage.getByLabel('状态', { exact: true }).selectOption('active')
+    await chooseOption(adminPage, '状态', '正常')
     await adminPage.getByRole('button', { name: '查询' }).click()
     row = adminPage
       .locator('tbody tr')
@@ -534,7 +564,7 @@ test.describe.serial('Moon 管理后台', () => {
       adminPage.getByRole('heading', { level: 1, name: '用户管理' }),
     ).toBeVisible()
 
-    await adminPage.getByLabel('关键词').fill('e2ebob')
+    await adminPage.getByLabel('关键词', { exact: true }).fill('e2ebob')
     await adminPage.getByRole('button', { name: '查询' }).click()
 
     const row = adminPage
@@ -555,8 +585,8 @@ test.describe.serial('Moon 管理后台', () => {
     await expect(dialog.getByText(nickname)).toBeVisible()
 
     // 授予并撤销一个全局权限点。
-    await dialog.getByRole('button', { name: '权限', exact: true }).click()
-    await dialog.getByLabel('权限点').selectOption('stats.view')
+    await dialog.getByRole('tab', { name: '权限', exact: true }).click()
+    await chooseOption(adminPage, '权限点', /stats\.view/, dialog)
     await dialog.getByRole('button', { name: '添加授权' }).click()
     await dialog.getByRole('button', { name: '保存权限' }).click()
     await expectToast('权限已保存')
@@ -569,11 +599,11 @@ test.describe.serial('Moon 管理后台', () => {
     await expectToast('权限已保存')
 
     // 登录记录来自 globalSetup 的登录探测。
-    await dialog.getByRole('button', { name: '登录记录' }).click()
+    await dialog.getByRole('tab', { name: '登录记录' }).click()
     await expect(dialog.getByText('论坛前台').first()).toBeVisible()
 
     // 封禁与解封。
-    await dialog.getByRole('button', { name: '资料' }).click()
+    await dialog.getByRole('tab', { name: '资料' }).click()
     await dialog.getByRole('button', { name: '封禁' }).click()
     const banDialog = adminPage.getByRole('dialog').last()
     await banDialog.getByRole('button', { name: '封禁用户' }).click()
@@ -612,7 +642,7 @@ test.describe.serial('Moon 管理后台', () => {
     await adminPage
       .getByRole('button', { name: '查看权限 content.view_admin 的持有者' })
       .click()
-    await adminPage.getByLabel('范围筛选').selectOption(String(generalBoardId))
+    await chooseOption(adminPage, '范围筛选', 'E2E 综合')
     await expect(adminPage.getByText('e2ecarol').first()).toBeVisible({
       timeout: 15_000,
     })
@@ -645,7 +675,7 @@ test.describe.serial('Moon 管理后台', () => {
     ).toBeVisible()
     await expect(adminPage.getByText('总占用')).toBeVisible()
 
-    await adminPage.getByLabel('用途').selectOption('post')
+    await chooseOption(adminPage, '用途', '主题/跟帖')
     await adminPage.getByRole('button', { name: '查询' }).click()
 
     const row = adminPage

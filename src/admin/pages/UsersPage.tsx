@@ -1,8 +1,21 @@
 import {
   Button,
+  Card,
+  Chip,
+  EmptyState,
+  Form,
   Input,
+  Label,
+  ListBox,
   Modal,
+  SearchField,
+  Select,
+  Table,
+  Tabs,
   TextArea,
+  TextField,
+  Toolbar,
+  Typography,
   toast,
 } from '@heroui/react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -16,18 +29,10 @@ import { formatDateTime } from '@/lib/utils'
 
 import { adminApi } from '../api'
 import {
-  Badge,
   ErrorPanel,
-  Field,
   LoadingPanel,
   PageHeader,
   Pagination,
-  SelectInput,
-  TableWrap,
-  TD_CLASS,
-  TH_CLASS,
-  TextInput,
-  Toolbar,
 } from '../components/ui'
 import { useAdminPageTitle } from '../components/use-admin-title'
 import { boardScopeLabel, formatDateTimeOrDash, labRoleLabel } from '../lib'
@@ -154,7 +159,9 @@ function PermissionEditor({
     <div className="space-y-3">
       <div className="space-y-1.5">
         {grants.length === 0 ? (
-          <p className="text-sm text-muted">该用户没有权限节点。</p>
+          <Typography.Paragraph size="sm" color="muted">
+            该用户没有权限节点。
+          </Typography.Paragraph>
         ) : (
           grants.map((grant) => {
             const definition = catalog.find(
@@ -166,7 +173,9 @@ function PermissionEditor({
                 className="flex items-center justify-between gap-2 rounded-lg border border-border px-2.5 py-1.5 text-sm"
               >
                 <span className="min-w-0">
-                  <span className="font-medium">{grant.permissionCode}</span>
+                  <Typography.Code weight="medium">
+                    {grant.permissionCode}
+                  </Typography.Code>
                   <span className="ml-2 text-xs text-muted">
                     {boardScopeLabel(grant.boardId, boardNames)}
                     {definition ? ` · ${definition.description}` : ''}
@@ -191,41 +200,71 @@ function PermissionEditor({
       {canManage ? (
         <>
           <div className="flex flex-wrap items-end gap-2">
-            <Field label="权限点" htmlFor="grant-code" className="min-w-64">
-              <SelectInput
-                id="grant-code"
-                value={code}
-                onChange={(event) => {
-                  setCode(event.target.value)
+            <div className="min-w-64">
+              <Select
+                selectedKey={code || '__none__'}
+                onSelectionChange={(key) => {
+                  setCode(key === null || key === '__none__' ? '' : String(key))
                   setBoardId('')
                 }}
               >
-                <option value="">选择权限点</option>
-                {catalog.map((item: PermissionItem) => (
-                  <option key={item.code} value={item.code}>
-                    {item.code} · {item.description}（{item.scope}）
-                  </option>
-                ))}
-              </SelectInput>
-            </Field>
+                <Label>权限点</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item id="__none__" textValue="选择权限点">
+                      选择权限点
+                    </ListBox.Item>
+                    {catalog.map((item: PermissionItem) => (
+                      <ListBox.Item
+                        key={item.code}
+                        id={item.code}
+                        textValue={`${item.code} · ${item.description}（${item.scope}）`}
+                      >
+                        {item.code} · {item.description}（{item.scope}）
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+            </div>
 
             {selectedPermission?.scope === 'board' ? (
-              <Field label="范围" htmlFor="grant-board">
-                <SelectInput
-                  id="grant-board"
-                  value={boardId}
-                  onChange={(event) => setBoardId(event.target.value)}
-                >
-                  <option value="">全局</option>
-                  {boards
-                    .filter((board) => !board.deleted)
-                    .map((board) => (
-                      <option key={board.id} value={board.id}>
-                        {board.name}
-                      </option>
-                    ))}
-                </SelectInput>
-              </Field>
+              <Select
+                selectedKey={boardId || '__global__'}
+                onSelectionChange={(key) => {
+                  setBoardId(
+                    key === null || key === '__global__' ? '' : String(key),
+                  )
+                }}
+              >
+                <Label>范围</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item id="__global__" textValue="全局">
+                      全局
+                    </ListBox.Item>
+                    {boards
+                      .filter((board) => !board.deleted)
+                      .map((board) => (
+                        <ListBox.Item
+                          key={board.id}
+                          id={String(board.id)}
+                          textValue={board.name}
+                        >
+                          {board.name}
+                        </ListBox.Item>
+                      ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
             ) : null}
 
             <Button
@@ -270,49 +309,47 @@ function LoginRecords({ userId }: { userId: number }) {
 
   return (
     <div>
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr>
-              <th className={TH_CLASS}>渠道</th>
-              <th className={TH_CLASS}>IP</th>
-              <th className={TH_CLASS}>User-Agent</th>
-              <th className={TH_CLASS}>时间</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recordsQuery.data.items.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={4}
-                  className="px-3 py-8 text-center text-muted"
-                >
-                  暂无登录记录
-                </td>
-              </tr>
-            ) : (
-              recordsQuery.data.items.map((record) => (
-                <tr key={record.id}>
-                  <td className={TD_CLASS}>
+      <Table aria-label="登录记录">
+        <Table.ScrollContainer>
+          <Table.Content aria-label="登录记录">
+            <Table.Header>
+              <Table.Column id="channel" isRowHeader>
+                渠道
+              </Table.Column>
+              <Table.Column id="ip">IP</Table.Column>
+              <Table.Column id="userAgent">User-Agent</Table.Column>
+              <Table.Column id="created">时间</Table.Column>
+            </Table.Header>
+            <Table.Body
+              renderEmptyState={() => <EmptyState>暂无登录记录</EmptyState>}
+            >
+              {recordsQuery.data.items.map((record) => (
+                <Table.Row key={record.id} id={record.id}>
+                  <Table.Cell>
                     {record.channel === 'admin' ? '管理后台' : '论坛前台'}
-                  </td>
-                  <td className={TD_CLASS}>{record.ip}</td>
-                  <td className={TD_CLASS}>
-                    <span className="block max-w-72 truncate text-xs text-muted">
+                  </Table.Cell>
+                  <Table.Cell>{record.ip}</Table.Cell>
+                  <Table.Cell>
+                    <Typography.Paragraph
+                      size="xs"
+                      color="muted"
+                      truncate
+                      className="max-w-72"
+                    >
                       {record.userAgent || '—'}
-                    </span>
-                  </td>
-                  <td className={TD_CLASS}>
-                    <span className="text-xs text-muted">
+                    </Typography.Paragraph>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <Typography.Paragraph size="xs" color="muted">
                       {formatDateTime(record.createdAt)}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                    </Typography.Paragraph>
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table.Content>
+        </Table.ScrollContainer>
+      </Table>
 
       <Pagination
         page={recordsQuery.data.page}
@@ -403,143 +440,167 @@ function UserDetailDialog({
   return (
     <>
       <Modal isOpen onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <Modal.Backdrop>
-        <Modal.Container size="lg" scroll="inside">
-          <Modal.Dialog>
-            <Modal.CloseTrigger aria-label="关闭用户详情" />
-            <Modal.Header>
-              <Modal.Heading>用户详情</Modal.Heading>
-            </Modal.Header>
-            <Modal.Body className="space-y-4">
-              {userQuery.isPending ? (
-                <LoadingPanel />
-              ) : userQuery.isError ? (
-                <ErrorPanel
-                  message={userQuery.error.message}
-                  onRetry={() => void userQuery.refetch()}
-                />
-              ) : !user ? null : (
-                <>
-                  <div className="flex items-start gap-3">
-                    <UserAvatar user={user} size="lg" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-base font-semibold">
-                          {getDisplayName(user)}
-                        </p>
-                        {user.banned ? (
-                          <Badge tone="danger">已封禁</Badge>
-                        ) : null}
-                        <Badge>{labRoleLabel(user.labRole)}</Badge>
-                      </div>
-                      <p className="text-sm text-muted">@{user.username}</p>
-                      <p className="mt-1 text-xs text-muted">
-                        #{user.id} · 注册于 {formatDateTime(user.createdAt)} ·
-                        主题 {user.threadCount} · 跟帖 {user.replyCount} · 获赞{' '}
-                        {user.likeCount}
-                      </p>
-                      <p className="text-xs text-muted">
-                        最近论坛登录 {formatDateTimeOrDash(user.lastForumLoginAt)}
-                        {' · '}
-                        最近后台登录 {formatDateTimeOrDash(user.lastAdminLoginAt)}
-                      </p>
-                    </div>
-
-                    {canBan ? (
-                      <Button
-                        size="sm"
-                        variant="tertiary"
-                        className={user.banned ? '' : 'text-danger'}
-                        isDisabled={banMutation.isPending}
-                        onPress={() => {
-                          if (user.banned) {
-                            banMutation.mutate(false)
-                          } else {
-                            setBanOpen(true)
-                          }
-                        }}
-                      >
-                        {user.banned ? (
-                          <>
-                            <CircleCheck className="size-4" />
-                            解封
-                          </>
-                        ) : (
-                          <>
-                            <Ban className="size-4" />
-                            封禁
-                          </>
-                        )}
-                      </Button>
-                    ) : null}
-                  </div>
-
-                  <div className="flex gap-1 border-b border-border">
-                    {tabs.map((item) => (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onClick={() => setTab(item.key)}
-                        className={`-mb-px border-b-2 px-3 py-2 text-sm transition-colors ${
-                          tab === item.key
-                            ? 'border-accent text-accent'
-                            : 'border-transparent text-muted hover:text-foreground'
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {tab === 'profile' ? (
-                    <div className="space-y-3">
-                      <Field label="昵称" htmlFor="user-nickname">
-                        <TextInput
-                          id="user-nickname"
-                          value={nickname}
-                          maxLength={32}
-                          placeholder="留空表示不设置昵称"
-                          disabled={!canManageProfile}
-                          onChange={(event) => setNickname(event.target.value)}
-                        />
-                      </Field>
-                      <Field label="简介" htmlFor="user-bio">
-                        <TextArea
-                          id="user-bio"
-                          fullWidth
-                          rows={3}
-                          maxLength={200}
-                          value={bio}
-                          disabled={!canManageProfile}
-                          onChange={(event) => setBio(event.target.value)}
-                        />
-                      </Field>
-                      {canManageProfile ? (
-                        <Button
-                          variant="primary"
-                          isDisabled={profileSaving}
-                          onPress={() => void saveProfile()}
+        <Modal.Backdrop>
+          <Modal.Container size="lg" scroll="inside">
+            <Modal.Dialog>
+              <Modal.CloseTrigger aria-label="关闭用户详情" />
+              <Modal.Header>
+                <Modal.Heading>用户详情</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="space-y-4">
+                {userQuery.isPending ? (
+                  <LoadingPanel />
+                ) : userQuery.isError ? (
+                  <ErrorPanel
+                    message={userQuery.error.message}
+                    onRetry={() => void userQuery.refetch()}
+                  />
+                ) : !user ? null : (
+                  <>
+                    <div className="flex items-start gap-3">
+                      <UserAvatar user={user} size="lg" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Typography.Heading
+                            level={3}
+                            className="text-base font-semibold"
+                          >
+                            {getDisplayName(user)}
+                          </Typography.Heading>
+                          {user.banned ? (
+                            <Chip size="sm" variant="soft" color="danger">
+                              <Chip.Label>已封禁</Chip.Label>
+                            </Chip>
+                          ) : null}
+                          <Chip size="sm" variant="soft" color="default">
+                            <Chip.Label>{labRoleLabel(user.labRole)}</Chip.Label>
+                          </Chip>
+                        </div>
+                        <Typography.Paragraph size="sm" color="muted">
+                          @{user.username}
+                        </Typography.Paragraph>
+                        <Typography.Paragraph
+                          size="xs"
+                          color="muted"
+                          className="mt-1"
                         >
-                          保存资料
+                          #{user.id} · 注册于 {formatDateTime(user.createdAt)} ·
+                          主题 {user.threadCount} · 跟帖 {user.replyCount} · 获赞{' '}
+                          {user.likeCount}
+                        </Typography.Paragraph>
+                        <Typography.Paragraph size="xs" color="muted">
+                          最近论坛登录{' '}
+                          {formatDateTimeOrDash(user.lastForumLoginAt)}
+                          {' · '}
+                          最近后台登录{' '}
+                          {formatDateTimeOrDash(user.lastAdminLoginAt)}
+                        </Typography.Paragraph>
+                      </div>
+
+                      {canBan ? (
+                        <Button
+                          size="sm"
+                          variant="tertiary"
+                          className={user.banned ? '' : 'text-danger'}
+                          isDisabled={banMutation.isPending}
+                          onPress={() => {
+                            if (user.banned) {
+                              banMutation.mutate(false)
+                            } else {
+                              setBanOpen(true)
+                            }
+                          }}
+                        >
+                          {user.banned ? (
+                            <>
+                              <CircleCheck className="size-4" />
+                              解封
+                            </>
+                          ) : (
+                            <>
+                              <Ban className="size-4" />
+                              封禁
+                            </>
+                          )}
                         </Button>
                       ) : null}
                     </div>
-                  ) : null}
 
-                  {tab === 'permissions' ? (
-                    <PermissionEditor
-                      userId={userId}
-                      canManage={canManagePermissions}
-                    />
-                  ) : null}
+                    <Tabs
+                      selectedKey={tab}
+                      onSelectionChange={(key) => {
+                        if (
+                          key === 'profile' ||
+                          key === 'permissions' ||
+                          key === 'logins'
+                        ) {
+                          setTab(key)
+                        }
+                      }}
+                    >
+                      <Tabs.ListContainer>
+                        <Tabs.List aria-label="用户详情分区">
+                          {tabs.map((item) => (
+                            <Tabs.Tab key={item.key} id={item.key}>
+                              {item.label}
+                            </Tabs.Tab>
+                          ))}
+                        </Tabs.List>
+                      </Tabs.ListContainer>
 
-                  {tab === 'logins' ? <LoginRecords userId={userId} /> : null}
-                </>
-              )}
-            </Modal.Body>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
+                      <Tabs.Panel id="profile" className="mt-3">
+                        <div className="space-y-3">
+                          <TextField fullWidth isDisabled={!canManageProfile}>
+                            <Label>昵称</Label>
+                            <Input
+                              value={nickname}
+                              maxLength={32}
+                              placeholder="留空表示不设置昵称"
+                              onChange={(event) =>
+                                setNickname(event.target.value)
+                              }
+                            />
+                          </TextField>
+                          <TextField fullWidth isDisabled={!canManageProfile}>
+                            <Label>简介</Label>
+                            <TextArea
+                              rows={3}
+                              maxLength={200}
+                              value={bio}
+                              onChange={(event) => setBio(event.target.value)}
+                            />
+                          </TextField>
+                          {canManageProfile ? (
+                            <Button
+                              variant="primary"
+                              isDisabled={profileSaving}
+                              onPress={() => void saveProfile()}
+                            >
+                              保存资料
+                            </Button>
+                          ) : null}
+                        </div>
+                      </Tabs.Panel>
+
+                      {canViewPermissions ? (
+                        <Tabs.Panel id="permissions" className="mt-3">
+                          <PermissionEditor
+                            userId={userId}
+                            canManage={canManagePermissions}
+                          />
+                        </Tabs.Panel>
+                      ) : null}
+
+                      <Tabs.Panel id="logins" className="mt-3">
+                        <LoginRecords userId={userId} />
+                      </Tabs.Panel>
+                    </Tabs>
+                  </>
+                )}
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
 
       <ConfirmDialog
@@ -610,62 +671,99 @@ export function UsersPage() {
         description="共享账号的论坛资料、封禁状态与权限节点。账号创建仍由 lab 负责。"
       />
 
-      <Toolbar>
-        <form
-          onSubmit={applyFilters}
+      <Card className="mb-4">
+        <Toolbar
+          aria-label="用户筛选"
           className="flex flex-wrap items-end gap-3"
         >
-          <Field label="关键词" htmlFor="user-keyword" className="min-w-52">
-            <Input
-              id="user-keyword"
+          <Form
+            onSubmit={applyFilters}
+            className="flex flex-wrap items-end gap-3"
+          >
+            <SearchField
               fullWidth
-              placeholder="用户名或昵称"
+              className="min-w-52"
               value={keywordDraft}
-              onChange={(event) => setKeywordDraft(event.target.value)}
-            />
-          </Field>
+              onChange={setKeywordDraft}
+            >
+              <Label>关键词</Label>
+              <SearchField.Group>
+                <SearchField.SearchIcon />
+                <SearchField.Input placeholder="用户名或昵称" />
+                <SearchField.ClearButton aria-label="清空关键词" />
+              </SearchField.Group>
+            </SearchField>
 
-          <Field label="封禁状态" htmlFor="user-banned">
-            <SelectInput
-              id="user-banned"
-              value={banned}
-              onChange={(event) => {
-                setBanned(event.target.value)
+            <Select
+              selectedKey={banned || '__all__'}
+              onSelectionChange={(key) => {
+                setBanned(
+                  key === null || key === '__all__' ? '' : String(key),
+                )
                 setPage(1)
               }}
             >
-              <option value="">全部</option>
-              <option value="true">已封禁</option>
-              <option value="false">正常</option>
-            </SelectInput>
-          </Field>
+              <Label>封禁状态</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="__all__" textValue="全部">
+                    全部
+                  </ListBox.Item>
+                  <ListBox.Item id="true" textValue="已封禁">
+                    已封禁
+                  </ListBox.Item>
+                  <ListBox.Item id="false" textValue="正常">
+                    正常
+                  </ListBox.Item>
+                </ListBox>
+              </Select.Popover>
+            </Select>
 
-          <Field label="拥有权限" htmlFor="user-permission" className="min-w-56">
-            <SelectInput
-              id="user-permission"
-              value={permission}
-              onChange={(event) => {
-                setPermission(event.target.value)
+            <Select
+              selectedKey={permission || '__none__'}
+              onSelectionChange={(key) => {
+                setPermission(
+                  key === null || key === '__none__' ? '' : String(key),
+                )
                 setPage(1)
               }}
             >
-              <option value="">不限</option>
-              {(catalogQuery.data?.items ?? []).map((item) => (
-                <option key={item.code} value={item.code}>
-                  {item.code}
-                </option>
-              ))}
-            </SelectInput>
-          </Field>
+              <Label>拥有权限</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="__none__" textValue="不限">
+                    不限
+                  </ListBox.Item>
+                  {(catalogQuery.data?.items ?? []).map((item) => (
+                    <ListBox.Item
+                      key={item.code}
+                      id={item.code}
+                      textValue={item.code}
+                    >
+                      {item.code}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
 
-          <Button type="submit" variant="primary">
-            查询
-          </Button>
-          <Button variant="tertiary" onPress={resetFilters}>
-            重置
-          </Button>
-        </form>
-      </Toolbar>
+            <Button type="submit" variant="primary">
+              查询
+            </Button>
+            <Button variant="tertiary" onPress={resetFilters}>
+              重置
+            </Button>
+          </Form>
+        </Toolbar>
+      </Card>
 
       {usersQuery.isPending ? (
         <LoadingPanel />
@@ -676,67 +774,68 @@ export function UsersPage() {
         />
       ) : (
         <>
-          <TableWrap>
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <th className={TH_CLASS}>ID</th>
-                  <th className={TH_CLASS}>用户</th>
-                  <th className={TH_CLASS}>角色</th>
-                  <th className={TH_CLASS}>状态</th>
-                  <th className={TH_CLASS}>内容</th>
-                  <th className={TH_CLASS}>最近登录</th>
-                  <th className={TH_CLASS}>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {usersQuery.data.items.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="px-3 py-10 text-center text-muted"
-                    >
-                      没有符合条件的用户
-                    </td>
-                  </tr>
-                ) : (
-                  usersQuery.data.items.map((user) => (
-                    <tr key={user.id}>
-                      <td className={TD_CLASS}>{user.id}</td>
-                      <td className={TD_CLASS}>
+          <Table aria-label="用户列表">
+            <Table.ScrollContainer>
+              <Table.Content aria-label="用户列表">
+                <Table.Header>
+                  <Table.Column id="id">ID</Table.Column>
+                  <Table.Column id="user" isRowHeader>
+                    用户
+                  </Table.Column>
+                  <Table.Column id="role">角色</Table.Column>
+                  <Table.Column id="status">状态</Table.Column>
+                  <Table.Column id="content">内容</Table.Column>
+                  <Table.Column id="login">最近登录</Table.Column>
+                  <Table.Column id="actions">操作</Table.Column>
+                </Table.Header>
+                <Table.Body
+                  renderEmptyState={() => (
+                    <EmptyState>没有符合条件的用户</EmptyState>
+                  )}
+                >
+                  {usersQuery.data.items.map((user) => (
+                    <Table.Row key={user.id} id={user.id}>
+                      <Table.Cell>{user.id}</Table.Cell>
+                      <Table.Cell>
                         <div className="flex items-center gap-2">
                           <UserAvatar user={user} />
                           <div className="min-w-0">
-                            <p className="max-w-40 truncate font-medium">
+                            <Typography.Paragraph
+                              weight="medium"
+                              truncate
+                              className="max-w-40"
+                            >
                               {getDisplayName(user)}
-                            </p>
-                            <p className="text-xs text-muted">
+                            </Typography.Paragraph>
+                            <Typography.Paragraph size="xs" color="muted">
                               @{user.username}
-                            </p>
+                            </Typography.Paragraph>
                           </div>
                         </div>
-                      </td>
-                      <td className={TD_CLASS}>
-                        {labRoleLabel(user.labRole)}
-                      </td>
-                      <td className={TD_CLASS}>
+                      </Table.Cell>
+                      <Table.Cell>{labRoleLabel(user.labRole)}</Table.Cell>
+                      <Table.Cell>
                         {user.banned ? (
-                          <Badge tone="danger">已封禁</Badge>
+                          <Chip size="sm" variant="soft" color="danger">
+                            <Chip.Label>已封禁</Chip.Label>
+                          </Chip>
                         ) : (
-                          <Badge tone="success">正常</Badge>
+                          <Chip size="sm" variant="soft" color="success">
+                            <Chip.Label>正常</Chip.Label>
+                          </Chip>
                         )}
-                      </td>
-                      <td className={TD_CLASS}>
-                        <span className="text-xs text-muted">
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Typography.Paragraph size="xs" color="muted">
                           {user.threadCount} 主题 · {user.replyCount} 跟帖
-                        </span>
-                      </td>
-                      <td className={TD_CLASS}>
-                        <span className="text-xs text-muted">
+                        </Typography.Paragraph>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Typography.Paragraph size="xs" color="muted">
                           {formatDateTimeOrDash(user.lastForumLoginAt)}
-                        </span>
-                      </td>
-                      <td className={TD_CLASS}>
+                        </Typography.Paragraph>
+                      </Table.Cell>
+                      <Table.Cell>
                         <Button
                           size="sm"
                           variant="ghost"
@@ -745,13 +844,13 @@ export function UsersPage() {
                         >
                           详情
                         </Button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </TableWrap>
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
+          </Table>
 
           <Pagination
             page={usersQuery.data.page}

@@ -1,4 +1,14 @@
-import { Button, Input, toast } from '@heroui/react'
+import {
+  Alert,
+  Button,
+  Card,
+  Form,
+  Input,
+  Label,
+  TextField,
+  Typography,
+  toast,
+} from '@heroui/react'
 import { useState, type FormEvent } from 'react'
 
 import { useAdmin } from '../store'
@@ -29,53 +39,44 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-background px-4 py-10">
-      <div className="w-full max-w-sm">
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-4 rounded-xl border border-border bg-surface p-5"
-        >
-          <p className="brand-logo text-2xl tracking-tight">Tide</p>
+      <Card className="w-full max-w-sm">
+        <Card.Content>
+          <Form onSubmit={handleSubmit} className="space-y-4">
+            <p className="brand-logo text-2xl tracking-tight">Tide</p>
 
-          <div className="space-y-1.5">
-            <label htmlFor="admin-account" className="text-sm font-medium">
-              管理员账号
-            </label>
-            <Input
-              id="admin-account"
-              fullWidth
-              autoFocus
-              autoComplete="username"
-              placeholder="输入账号"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-            />
-          </div>
+            <TextField fullWidth>
+              <Label>管理员账号</Label>
+              <Input
+                autoFocus
+                autoComplete="username"
+                placeholder="输入账号"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+              />
+            </TextField>
 
-          <div className="space-y-1.5">
-            <label htmlFor="admin-password" className="text-sm font-medium">
-              密码
-            </label>
-            <Input
-              id="admin-password"
-              fullWidth
-              type="password"
-              autoComplete="current-password"
-              placeholder="输入密码"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </div>
+            <TextField fullWidth>
+              <Label>密码</Label>
+              <Input
+                type="password"
+                autoComplete="current-password"
+                placeholder="输入密码"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </TextField>
 
-          <Button
-            type="submit"
-            variant="primary"
-            className="w-full"
-            isDisabled={submitting}
-          >
-            登录管理后台
-          </Button>
-        </form>
-      </div>
+            <Button
+              type="submit"
+              variant="primary"
+              className="w-full"
+              isDisabled={submitting}
+            >
+              登录管理后台
+            </Button>
+          </Form>
+        </Card.Content>
+      </Card>
     </div>
   )
 }
@@ -85,19 +86,23 @@ export function AccessDeniedPage() {
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md rounded-xl border border-border bg-surface p-6 text-center">
-        <h1 className="text-lg font-semibold">无管理权限</h1>
-        <p className="mt-2 text-sm text-muted">
-          {errorMessage || '当前账号没有登录管理后台的权限。'}
-        </p>
-        <Button
-          variant="tertiary"
-          className="mt-4"
-          onPress={() => void logout()}
-        >
-          退出管理后台
-        </Button>
-      </div>
+      <Card className="w-full max-w-md">
+        <Card.Content className="items-center text-center">
+          <Typography.Heading level={1} className="text-lg font-semibold">
+            无管理权限
+          </Typography.Heading>
+          <Typography.Paragraph size="sm" color="muted" className="mt-2">
+            {errorMessage || '当前账号没有登录管理后台的权限。'}
+          </Typography.Paragraph>
+          <Button
+            variant="tertiary"
+            className="mt-4"
+            onPress={() => void logout()}
+          >
+            退出管理后台
+          </Button>
+        </Card.Content>
+      </Card>
     </div>
   )
 }
@@ -107,18 +112,27 @@ export function ServiceErrorPage() {
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md rounded-xl border border-border bg-surface p-6 text-center">
-        <h1 className="text-lg font-semibold">无法读取管理状态</h1>
-        <p className="mt-2 text-sm text-danger">{errorMessage}</p>
-        <div className="mt-4 flex justify-center gap-2">
-          <Button variant="tertiary" onPress={retry}>
-            重试
-          </Button>
-          <Button variant="tertiary" onPress={() => void logout()}>
-            退出管理后台
-          </Button>
-        </div>
-      </div>
+      <Card className="w-full max-w-md">
+        <Card.Content className="items-center text-center">
+          <Typography.Heading level={1} className="text-lg font-semibold">
+            无法读取管理状态
+          </Typography.Heading>
+          <Alert status="danger" className="mt-2 w-full text-left">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>{errorMessage}</Alert.Description>
+            </Alert.Content>
+          </Alert>
+          <div className="mt-2 flex justify-center gap-2">
+            <Button variant="tertiary" onPress={retry}>
+              重试
+            </Button>
+            <Button variant="tertiary" onPress={() => void logout()}>
+              退出管理后台
+            </Button>
+          </div>
+        </Card.Content>
+      </Card>
     </div>
   )
 }

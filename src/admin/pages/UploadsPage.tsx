@@ -1,4 +1,20 @@
-import { Button, toast } from '@heroui/react'
+import {
+  Button,
+  Card,
+  Chip,
+  EmptyState,
+  Form,
+  Input,
+  Label,
+  Link,
+  ListBox,
+  Select,
+  Table,
+  TextField,
+  Toolbar,
+  Typography,
+  toast,
+} from '@heroui/react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Trash2 } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
@@ -9,20 +25,11 @@ import { formatDateTime } from '@/lib/utils'
 
 import { adminApi } from '../api'
 import {
-  Badge,
-  Card,
   ErrorPanel,
-  Field,
   LoadingPanel,
   PageHeader,
   Pagination,
-  SelectInput,
   StatCard,
-  TableWrap,
-  TD_CLASS,
-  TH_CLASS,
-  TextInput,
-  Toolbar,
 } from '../components/ui'
 import { useAdminPageTitle } from '../components/use-admin-title'
 import { formatBytes, formatNumber, uploadKindLabel } from '../lib'
@@ -135,48 +142,67 @@ export function UploadsPage() {
         </div>
       )}
 
-      <Toolbar>
-        <form
-          onSubmit={applyFilters}
+      <Card className="mb-4">
+        <Toolbar
+          aria-label="上传筛选"
           className="flex flex-wrap items-end gap-3"
         >
-          <Field label="用途" htmlFor="upload-kind">
-            <SelectInput
-              id="upload-kind"
-              value={kind}
-              onChange={(event) => {
-                setKind(event.target.value)
+          <Form
+            onSubmit={applyFilters}
+            className="flex flex-wrap items-end gap-3"
+          >
+            <Select
+              selectedKey={kind || '__all__'}
+              onSelectionChange={(key) => {
+                setKind(
+                  key === null || key === '__all__' ? '' : String(key),
+                )
                 setPage(1)
               }}
             >
-              <option value="">全部</option>
-              {KIND_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </SelectInput>
-          </Field>
+              <Label>用途</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="__all__" textValue="全部">
+                    全部
+                  </ListBox.Item>
+                  {KIND_OPTIONS.map((option) => (
+                    <ListBox.Item
+                      key={option.value}
+                      id={option.value}
+                      textValue={option.label}
+                    >
+                      {option.label}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
 
-          <Field label="上传者 ID" htmlFor="upload-owner">
-            <TextInput
-              id="upload-owner"
-              type="number"
-              min={0}
-              value={ownerDraft}
-              placeholder="全部"
-              onChange={(event) => setOwnerDraft(event.target.value)}
-            />
-          </Field>
+            <TextField>
+              <Label>上传者 ID</Label>
+              <Input
+                type="number"
+                min={0}
+                value={ownerDraft}
+                placeholder="全部"
+                onChange={(event) => setOwnerDraft(event.target.value)}
+              />
+            </TextField>
 
-          <Button type="submit" variant="primary">
-            查询
-          </Button>
-          <Button variant="tertiary" onPress={resetFilters}>
-            重置
-          </Button>
-        </form>
-      </Toolbar>
+            <Button type="submit" variant="primary">
+              查询
+            </Button>
+            <Button variant="tertiary" onPress={resetFilters}>
+              重置
+            </Button>
+          </Form>
+        </Toolbar>
+      </Card>
 
       {uploadsQuery.isPending ? (
         <LoadingPanel />
@@ -187,35 +213,35 @@ export function UploadsPage() {
         />
       ) : (
         <>
-          <TableWrap>
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <th className={TH_CLASS}>预览</th>
-                  <th className={TH_CLASS}>文件</th>
-                  <th className={TH_CLASS}>上传者</th>
-                  <th className={TH_CLASS}>用途</th>
-                  <th className={TH_CLASS}>大小</th>
-                  <th className={TH_CLASS}>尺寸</th>
-                  <th className={`${TH_CLASS} hidden 2xl:table-cell`}>上传时间</th>
-                  <th className={TH_CLASS}>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {uploadsQuery.data.items.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={8}
-                      className="px-3 py-10 text-center text-muted"
-                    >
-                      没有符合条件的上传文件
-                    </td>
-                  </tr>
-                ) : (
-                  uploadsQuery.data.items.map((upload) => (
-                    <tr key={upload.id}>
-                      <td className={TD_CLASS}>
-                        <a
+          <Table aria-label="上传文件">
+            <Table.ScrollContainer>
+              <Table.Content aria-label="上传文件">
+                <Table.Header>
+                  <Table.Column id="preview" isRowHeader>
+                    预览
+                  </Table.Column>
+                  <Table.Column id="file">文件</Table.Column>
+                  <Table.Column id="owner">上传者</Table.Column>
+                  <Table.Column id="kind">用途</Table.Column>
+                  <Table.Column id="size">大小</Table.Column>
+                  <Table.Column id="dimensions">尺寸</Table.Column>
+                  <Table.Column
+                    id="created"
+                    className="hidden 2xl:table-cell"
+                  >
+                    上传时间
+                  </Table.Column>
+                  <Table.Column id="actions">操作</Table.Column>
+                </Table.Header>
+                <Table.Body
+                  renderEmptyState={() => (
+                    <EmptyState>没有符合条件的上传文件</EmptyState>
+                  )}
+                >
+                  {uploadsQuery.data.items.map((upload) => (
+                    <Table.Row key={upload.id} id={upload.id}>
+                      <Table.Cell>
+                        <Link
                           href={mediaUrl(upload.url)}
                           target="_blank"
                           rel="noreferrer"
@@ -227,37 +253,50 @@ export function UploadsPage() {
                             loading="lazy"
                             className="size-full object-cover"
                           />
-                        </a>
-                      </td>
-                      <td className={TD_CLASS}>
-                        <p className="max-w-64 truncate text-xs">
+                        </Link>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Typography.Paragraph
+                          size="xs"
+                          className="max-w-64 truncate"
+                        >
                           {upload.originalName || '—'}
-                        </p>
-                        <p className="max-w-64 truncate text-xs text-muted">
+                        </Typography.Paragraph>
+                        <Typography.Paragraph
+                          size="xs"
+                          color="muted"
+                          className="max-w-64 truncate"
+                        >
                           {upload.key}
-                        </p>
-                      </td>
-                      <td className={TD_CLASS}>
-                        <p className="max-w-32 truncate">
+                        </Typography.Paragraph>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Typography.Paragraph className="max-w-32 truncate">
                           {upload.ownerName || '—'}
-                        </p>
-                        <p className="text-xs text-muted">#{upload.ownerId}</p>
-                      </td>
-                      <td className={TD_CLASS}>
-                        <Badge>{uploadKindLabel(upload.kind)}</Badge>
-                      </td>
-                      <td className={TD_CLASS}>
+                        </Typography.Paragraph>
+                        <Typography.Paragraph size="xs" color="muted">
+                          #{upload.ownerId}
+                        </Typography.Paragraph>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Chip size="sm" variant="soft" color="default">
+                          <Chip.Label>
+                            {uploadKindLabel(upload.kind)}
+                          </Chip.Label>
+                        </Chip>
+                      </Table.Cell>
+                      <Table.Cell>
                         {formatBytes(upload.sizeBytes)}
-                      </td>
-                      <td className={TD_CLASS}>
+                      </Table.Cell>
+                      <Table.Cell>
                         {upload.width}×{upload.height}
-                      </td>
-                      <td className={`${TD_CLASS} hidden 2xl:table-cell`}>
-                        <span className="text-xs text-muted">
+                      </Table.Cell>
+                      <Table.Cell className="hidden 2xl:table-cell">
+                        <Typography.Paragraph size="xs" color="muted">
                           {formatDateTime(upload.createdAt)}
-                        </span>
-                      </td>
-                      <td className={TD_CLASS}>
+                        </Typography.Paragraph>
+                      </Table.Cell>
+                      <Table.Cell>
                         <Button
                           size="sm"
                           variant="ghost"
@@ -268,13 +307,13 @@ export function UploadsPage() {
                           <Trash2 className="size-3.5" />
                           删除
                         </Button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </TableWrap>
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
+          </Table>
 
           <Pagination
             page={uploadsQuery.data.page}
@@ -303,8 +342,12 @@ export function UploadsPage() {
         }}
       />
 
-      <Card className="mt-4 text-xs text-muted">
-        上传占用按用途分类统计；删除只移除未被引用的文件。
+      <Card className="mt-4">
+        <Card.Content>
+          <Typography.Paragraph size="xs" color="muted">
+            上传占用按用途分类统计；删除只移除未被引用的文件。
+          </Typography.Paragraph>
+        </Card.Content>
       </Card>
     </div>
   )

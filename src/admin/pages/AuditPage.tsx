@@ -1,4 +1,16 @@
-import { Button, Input } from '@heroui/react'
+import {
+  Button,
+  Card,
+  Disclosure,
+  EmptyState,
+  Form,
+  Input,
+  Label,
+  Table,
+  TextField,
+  Toolbar,
+  Typography,
+} from '@heroui/react'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState, type FormEvent } from 'react'
 
@@ -7,15 +19,9 @@ import { formatDateTime } from '@/lib/utils'
 import { adminApi } from '../api'
 import {
   ErrorPanel,
-  Field,
   LoadingPanel,
   PageHeader,
   Pagination,
-  TableWrap,
-  TD_CLASS,
-  TH_CLASS,
-  TextInput,
-  Toolbar,
 } from '../components/ui'
 import { useAdminPageTitle } from '../components/use-admin-title'
 import { formatJsonDetail, toRfc3339 } from '../lib'
@@ -98,77 +104,82 @@ export function AuditPage() {
         description="管理员写操作的留痕：操作人、目标、原因与来源地址。"
       />
 
-      <Toolbar>
-        <form
-          onSubmit={applyFilters}
+      <Card className="mb-4">
+        <Toolbar
+          aria-label="审计筛选"
           className="flex flex-wrap items-end gap-3"
         >
-          <Field label="操作人 ID" htmlFor="audit-actor">
-            <TextInput
-              id="audit-actor"
-              type="number"
-              min={0}
-              value={actorDraft}
-              placeholder="全部"
-              onChange={(event) => setActorDraft(event.target.value)}
-            />
-          </Field>
+          <Form
+            onSubmit={applyFilters}
+            className="flex flex-wrap items-end gap-3"
+          >
+            <TextField>
+              <Label>操作人 ID</Label>
+              <Input
+                type="number"
+                min={0}
+                value={actorDraft}
+                placeholder="全部"
+                onChange={(event) => setActorDraft(event.target.value)}
+              />
+            </TextField>
 
-          <Field label="动作" htmlFor="audit-action">
-            <TextInput
-              id="audit-action"
-              value={action}
-              placeholder="如 thread.update"
-              onChange={(event) => setAction(event.target.value)}
-            />
-          </Field>
+            <TextField>
+              <Label>动作</Label>
+              <Input
+                value={action}
+                placeholder="如 thread.update"
+                onChange={(event) => setAction(event.target.value)}
+              />
+            </TextField>
 
-          <Field label="目标类型" htmlFor="audit-target-type">
-            <TextInput
-              id="audit-target-type"
-              value={targetType}
-              placeholder="如 thread / user / board"
-              onChange={(event) => setTargetType(event.target.value)}
-            />
-          </Field>
+            <TextField>
+              <Label>目标类型</Label>
+              <Input
+                value={targetType}
+                placeholder="如 thread / user / board"
+                onChange={(event) => setTargetType(event.target.value)}
+              />
+            </TextField>
 
-          <Field label="目标 ID" htmlFor="audit-target">
-            <TextInput
-              id="audit-target"
-              type="number"
-              min={0}
-              value={targetDraft}
-              placeholder="全部"
-              onChange={(event) => setTargetDraft(event.target.value)}
-            />
-          </Field>
+            <TextField>
+              <Label>目标 ID</Label>
+              <Input
+                type="number"
+                min={0}
+                value={targetDraft}
+                placeholder="全部"
+                onChange={(event) => setTargetDraft(event.target.value)}
+              />
+            </TextField>
 
-          <Field label="起始时间" htmlFor="audit-from">
-            <Input
-              id="audit-from"
-              type="datetime-local"
-              value={fromDraft}
-              onChange={(event) => setFromDraft(event.target.value)}
-            />
-          </Field>
+            <TextField>
+              <Label>起始时间</Label>
+              <Input
+                type="datetime-local"
+                value={fromDraft}
+                onChange={(event) => setFromDraft(event.target.value)}
+              />
+            </TextField>
 
-          <Field label="结束时间" htmlFor="audit-to">
-            <Input
-              id="audit-to"
-              type="datetime-local"
-              value={toDraft}
-              onChange={(event) => setToDraft(event.target.value)}
-            />
-          </Field>
+            <TextField>
+              <Label>结束时间</Label>
+              <Input
+                type="datetime-local"
+                value={toDraft}
+                onChange={(event) => setToDraft(event.target.value)}
+              />
+            </TextField>
 
-          <Button type="submit" variant="primary">
-            查询
-          </Button>
-          <Button variant="tertiary" onPress={resetFilters}>
-            重置
-          </Button>
-        </form>
-      </Toolbar>
+            <Button type="submit" variant="primary">
+              查询
+            </Button>
+            <Button variant="tertiary" onPress={resetFilters}>
+              重置
+            </Button>
+          </Form>
+        </Toolbar>
+      </Card>
 
       {auditQuery.isPending ? (
         <LoadingPanel />
@@ -179,67 +190,81 @@ export function AuditPage() {
         />
       ) : (
         <>
-          <TableWrap>
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <th className={TH_CLASS}>时间</th>
-                  <th className={TH_CLASS}>操作人</th>
-                  <th className={TH_CLASS}>动作</th>
-                  <th className={TH_CLASS}>目标</th>
-                  <th className={TH_CLASS}>详情</th>
-                  <th className={TH_CLASS}>来源</th>
-                </tr>
-              </thead>
-              <tbody>
-                {auditQuery.data.items.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="px-3 py-10 text-center text-muted"
-                    >
-                      没有符合条件的审计记录
-                    </td>
-                  </tr>
-                ) : (
-                  auditQuery.data.items.map((log) => (
-                    <tr key={log.id}>
-                      <td className={TD_CLASS}>
-                        <span className="text-xs text-muted">
+          <Table aria-label="审计日志">
+            <Table.ScrollContainer>
+              <Table.Content aria-label="审计日志">
+                <Table.Header>
+                  <Table.Column id="time" isRowHeader>
+                    时间
+                  </Table.Column>
+                  <Table.Column id="actor">操作人</Table.Column>
+                  <Table.Column id="action">动作</Table.Column>
+                  <Table.Column id="target">目标</Table.Column>
+                  <Table.Column id="detail">详情</Table.Column>
+                  <Table.Column id="source">来源</Table.Column>
+                </Table.Header>
+                <Table.Body
+                  renderEmptyState={() => (
+                    <EmptyState>没有符合条件的审计记录</EmptyState>
+                  )}
+                >
+                  {auditQuery.data.items.map((log) => (
+                    <Table.Row key={log.id} id={log.id}>
+                      <Table.Cell>
+                        <Typography.Paragraph size="xs" color="muted">
                           {formatDateTime(log.createdAt)}
-                        </span>
-                      </td>
-                      <td className={TD_CLASS}>#{log.actorId}</td>
-                      <td className={TD_CLASS}>
-                        <code className="text-xs">{log.action}</code>
-                      </td>
-                      <td className={TD_CLASS}>
-                        <span className="text-xs">
+                        </Typography.Paragraph>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Typography.Paragraph size="sm">
+                          #{log.actorId}
+                        </Typography.Paragraph>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Typography.Code className="text-xs">
+                          {log.action}
+                        </Typography.Code>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Typography.Paragraph size="xs">
                           {log.targetType} #{log.targetId || '—'}
-                        </span>
-                      </td>
-                      <td className={TD_CLASS}>
-                        <details>
-                          <summary className="cursor-pointer text-xs text-accent">
-                            查看
-                          </summary>
-                          <pre className="mt-1 max-w-md overflow-x-auto rounded bg-default-soft p-2 text-[11px] whitespace-pre-wrap">
-                            {formatJsonDetail(log.detail)}
-                          </pre>
-                        </details>
-                      </td>
-                      <td className={TD_CLASS}>
-                        <p className="text-xs text-muted">{log.ip || '—'}</p>
-                        <p className="max-w-48 truncate text-[11px] text-muted">
+                        </Typography.Paragraph>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Disclosure>
+                          <Disclosure.Heading>
+                            <Disclosure.Trigger className="text-xs text-accent">
+                              查看
+                              <Disclosure.Indicator />
+                            </Disclosure.Trigger>
+                          </Disclosure.Heading>
+                          <Disclosure.Content>
+                            <Disclosure.Body>
+                              <pre className="mt-1 max-w-md overflow-x-auto rounded bg-default-soft p-2 text-[11px] whitespace-pre-wrap">
+                                {formatJsonDetail(log.detail)}
+                              </pre>
+                            </Disclosure.Body>
+                          </Disclosure.Content>
+                        </Disclosure>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Typography.Paragraph size="xs" color="muted">
+                          {log.ip || '—'}
+                        </Typography.Paragraph>
+                        <Typography.Paragraph
+                          size="xs"
+                          color="muted"
+                          className="max-w-48 truncate"
+                        >
                           {log.userAgent || '—'}
-                        </p>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </TableWrap>
+                        </Typography.Paragraph>
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
+          </Table>
 
           <Pagination
             page={auditQuery.data.page}

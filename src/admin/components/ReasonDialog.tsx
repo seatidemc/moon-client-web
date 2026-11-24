@@ -1,4 +1,11 @@
-import { Button, Modal, TextArea } from '@heroui/react'
+import {
+  Button,
+  Label,
+  Modal,
+  TextArea,
+  TextField,
+  Typography,
+} from '@heroui/react'
 import { useEffect, useState } from 'react'
 
 interface ReasonDialogProps {
@@ -41,17 +48,20 @@ export function ReasonDialog({
               <Modal.Heading>{title}</Modal.Heading>
             </Modal.Header>
             <Modal.Body className="space-y-3">
-              <p className="text-sm text-muted">{description}</p>
-              <TextArea
-                fullWidth
-                rows={3}
-                aria-label="操作原因"
-                placeholder={
-                  reasonOptional ? '操作原因（可选）' : '请输入操作原因'
-                }
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-              />
+              <Typography.Paragraph size="sm" color="muted">
+                {description}
+              </Typography.Paragraph>
+              <TextField fullWidth>
+                <Label>操作原因</Label>
+                <TextArea
+                  rows={3}
+                  placeholder={
+                    reasonOptional ? '操作原因（可选）' : '请输入操作原因'
+                  }
+                  value={reason}
+                  onChange={(event) => setReason(event.target.value)}
+                />
+              </TextField>
             </Modal.Body>
             <Modal.Footer>
               <Button variant="tertiary" onPress={() => onOpenChange(false)}>

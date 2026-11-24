@@ -1,6 +1,22 @@
 import {
   Button,
+  Card,
+  Checkbox,
+  Chip,
+  ColorSwatch,
+  Description,
+  EmptyState,
+  Form,
+  Input,
+  Label,
+  ListBox,
   Modal,
+  Select,
+  Table,
+  TextField,
+  Toolbar,
+  Typography,
+  parseColor,
   toast,
 } from '@heroui/react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -14,19 +30,10 @@ import { BOARD_ICON_OPTIONS } from '../lib'
 import { adminKeys, useAdmin } from '../store'
 import { useAdminPageTitle } from '../components/use-admin-title'
 import {
-  Badge,
-  CheckboxInput,
   ErrorPanel,
-  Field,
   LoadingPanel,
   PageHeader,
   Pagination,
-  SelectInput,
-  TableWrap,
-  TD_CLASS,
-  TH_CLASS,
-  TextInput,
-  Toolbar,
 } from '../components/ui'
 import type { AdminBoard } from '../types'
 
@@ -141,7 +148,7 @@ function BoardFormDialog({
         <Modal.Container size="md">
           <Modal.Dialog>
             <Modal.CloseTrigger aria-label="关闭板块表单" />
-            <form onSubmit={handleSubmit}>
+            <Form onSubmit={handleSubmit}>
               <Modal.Header>
                 <Modal.Heading>
                   {board ? `编辑板块 · ${board.name}` : '新建板块'}
@@ -149,90 +156,104 @@ function BoardFormDialog({
               </Modal.Header>
 
               <Modal.Body className="space-y-4">
-                <Field
-                  label="slug"
-                  htmlFor="board-slug"
-                  hint={
-                    board
-                      ? 'slug 创建后不可修改。'
-                      : '小写字母、数字和连字符，1~64 个字符。'
-                  }
+                <TextField
+                  fullWidth
+                  isDisabled={Boolean(board)}
                 >
-                  <TextInput
-                    id="board-slug"
+                  <Label>slug</Label>
+                  <Input
                     value={form.slug}
-                    disabled={Boolean(board)}
                     placeholder="general"
                     onChange={(event) => update('slug', event.target.value)}
                   />
-                </Field>
+                  <Description>
+                    {board
+                      ? 'slug 创建后不可修改。'
+                      : '小写字母、数字和连字符，1~64 个字符。'}
+                  </Description>
+                </TextField>
 
-                <Field label="名称" htmlFor="board-name">
-                  <TextInput
-                    id="board-name"
+                <TextField fullWidth>
+                  <Label>名称</Label>
+                  <Input
                     value={form.name}
                     placeholder="综合讨论"
                     onChange={(event) => update('name', event.target.value)}
                   />
-                </Field>
+                </TextField>
 
-                <Field label="描述" htmlFor="board-description">
-                  <TextInput
-                    id="board-description"
+                <TextField fullWidth>
+                  <Label>描述</Label>
+                  <Input
                     value={form.description}
                     placeholder="板块的简短介绍"
                     onChange={(event) =>
                       update('description', event.target.value)
                     }
                   />
-                </Field>
+                </TextField>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="图标" htmlFor="board-icon">
-                    <SelectInput
-                      id="board-icon"
-                      value={form.icon}
-                      onChange={(event) => update('icon', event.target.value)}
-                    >
-                      {BOARD_ICON_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </SelectInput>
-                  </Field>
+                  <Select
+                    selectedKey={form.icon}
+                    onSelectionChange={(key) => {
+                      if (key !== null) update('icon', String(key))
+                    }}
+                  >
+                    <Label>图标</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {BOARD_ICON_OPTIONS.map((option) => (
+                          <ListBox.Item
+                            key={option.value}
+                            id={option.value}
+                            textValue={option.label}
+                          >
+                            {option.label}
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
 
-                  <Field label="颜色" htmlFor="board-color">
-                    <TextInput
-                      id="board-color"
+                  <TextField fullWidth>
+                    <Label>颜色</Label>
+                    <Input
                       value={form.color}
                       placeholder="#6366f1"
                       onChange={(event) => update('color', event.target.value)}
                     />
-                  </Field>
+                  </TextField>
                 </div>
 
                 <div className="grid grid-cols-2 items-end gap-3">
-                  <Field label="排序" htmlFor="board-sort">
-                    <TextInput
-                      id="board-sort"
+                  <TextField fullWidth>
+                    <Label>排序</Label>
+                    <Input
                       type="number"
                       value={form.sortOrder}
                       onChange={(event) =>
                         update('sortOrder', event.target.value)
                       }
                     />
-                  </Field>
-                  <CheckboxInput
-                    label="启用板块"
-                    checked={form.enabled}
-                    onChange={(event) =>
-                      update('enabled', event.target.checked)
-                    }
-                  />
+                  </TextField>
+                  <Checkbox
+                    isSelected={form.enabled}
+                    onChange={(isSelected) => update('enabled', isSelected)}
+                  >
+                    <Checkbox.Content>
+                      <Checkbox.Control>
+                        <Checkbox.Indicator />
+                      </Checkbox.Control>
+                      <Label>启用板块</Label>
+                    </Checkbox.Content>
+                  </Checkbox>
                 </div>
-
-                </Modal.Body>
+              </Modal.Body>
 
               <Modal.Footer>
                 <Button variant="tertiary" onPress={onClose}>
@@ -246,7 +267,7 @@ function BoardFormDialog({
                   {board ? '保存修改' : '创建板块'}
                 </Button>
               </Modal.Footer>
-            </form>
+            </Form>
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>
@@ -371,21 +392,32 @@ export function BoardsPage() {
         }
       />
 
-      <Toolbar>
-        <CheckboxInput
-          label="显示已停用"
-          checked={showDisabled}
-          onChange={(event) => setShowDisabled(event.target.checked)}
-        />
-        <CheckboxInput
-          label="显示已删除"
-          checked={showDeleted}
-          onChange={(event) => setShowDeleted(event.target.checked)}
-        />
-        <p className="ml-auto text-xs text-muted">
-          共 {boardsQuery.data?.total ?? 0} 个可见板块
-        </p>
-      </Toolbar>
+      <Card className="mb-4">
+        <Toolbar
+          aria-label="板块筛选"
+          className="flex flex-wrap items-center gap-3"
+        >
+          <Checkbox isSelected={showDisabled} onChange={setShowDisabled}>
+            <Checkbox.Content>
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              <Label>显示已停用</Label>
+            </Checkbox.Content>
+          </Checkbox>
+          <Checkbox isSelected={showDeleted} onChange={setShowDeleted}>
+            <Checkbox.Content>
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              <Label>显示已删除</Label>
+            </Checkbox.Content>
+          </Checkbox>
+          <Typography.Paragraph size="xs" color="muted" className="ml-auto">
+            共 {boardsQuery.data?.total ?? 0} 个可见板块
+          </Typography.Paragraph>
+        </Toolbar>
+      </Card>
 
       {boardsQuery.isPending ? (
         <LoadingPanel />
@@ -396,158 +428,179 @@ export function BoardsPage() {
         />
       ) : (
         <>
-          <TableWrap>
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <th className={TH_CLASS}>排序</th>
-                  <th className={TH_CLASS}>板块</th>
-                  <th className={TH_CLASS}>状态</th>
-                  <th className={TH_CLASS}>主题数</th>
-                  <th className={TH_CLASS}>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleBoards.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-10 text-center text-muted">
-                      暂无板块
-                    </td>
-                  </tr>
-                ) : (
-                  visibleBoards.map((board) => {
+          <Table aria-label="板块列表">
+            <Table.ScrollContainer>
+              <Table.Content aria-label="板块列表">
+                <Table.Header>
+                  <Table.Column id="sort">排序</Table.Column>
+                  <Table.Column id="board" isRowHeader>
+                    板块
+                  </Table.Column>
+                  <Table.Column id="status">状态</Table.Column>
+                  <Table.Column id="threads">主题数</Table.Column>
+                  <Table.Column id="actions">操作</Table.Column>
+                </Table.Header>
+                <Table.Body
+                  renderEmptyState={() => <EmptyState>暂无板块</EmptyState>}
+                >
+                  {visibleBoards.map((board) => {
                     const reorderIndex = reorderableBoards.findIndex(
                       (item) => item.id === board.id,
                     )
                     return (
-                    <tr key={board.id}>
-                      <td className={TD_CLASS}>
-                        <div className="flex items-center gap-1">
-                          <span className="w-6 text-xs text-muted">
-                            {board.sortOrder}
-                          </span>
-                          {canReorder ? (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                aria-label={`上移板块 ${board.name}`}
-                                isDisabled={reorderIndex <= 0}
-                                onPress={() => moveBoard(board.id, -1)}
-                              >
-                                <ArrowUp className="size-3.5" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                aria-label={`下移板块 ${board.name}`}
-                                isDisabled={
-                                  reorderIndex < 0 ||
-                                  reorderIndex >= reorderableBoards.length - 1
-                                }
-                                onPress={() => moveBoard(board.id, 1)}
-                              >
-                                <ArrowDown className="size-3.5" />
-                              </Button>
-                            </>
-                          ) : null}
-                        </div>
-                      </td>
-                      <td className={TD_CLASS}>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="size-2.5 shrink-0 rounded-full"
-                            style={{ backgroundColor: board.color }}
-                            aria-hidden="true"
-                          />
-                          <div className="min-w-0">
-                            <p className="truncate font-medium">{board.name}</p>
-                            <p className="text-xs text-muted">
-                              {board.slug} · {board.icon}
-                            </p>
-                            {board.description ? (
-                              <p className="mt-0.5 max-w-md truncate text-xs text-muted">
-                                {board.description}
-                              </p>
+                      <Table.Row key={board.id} id={board.id}>
+                        <Table.Cell>
+                          <div className="flex items-center gap-1">
+                            <Typography.Paragraph
+                              size="xs"
+                              color="muted"
+                              className="w-6"
+                            >
+                              {board.sortOrder}
+                            </Typography.Paragraph>
+                            {canReorder ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  aria-label={`上移板块 ${board.name}`}
+                                  isDisabled={reorderIndex <= 0}
+                                  onPress={() => moveBoard(board.id, -1)}
+                                >
+                                  <ArrowUp className="size-3.5" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  aria-label={`下移板块 ${board.name}`}
+                                  isDisabled={
+                                    reorderIndex < 0 ||
+                                    reorderIndex >=
+                                      reorderableBoards.length - 1
+                                  }
+                                  onPress={() => moveBoard(board.id, 1)}
+                                >
+                                  <ArrowDown className="size-3.5" />
+                                </Button>
+                              </>
                             ) : null}
                           </div>
-                        </div>
-                      </td>
-                      <td className={TD_CLASS}>
-                        <div className="flex flex-wrap gap-1">
-                          {board.deleted ? (
-                            <Badge tone="danger">已删除</Badge>
-                          ) : board.enabled ? (
-                            <Badge tone="success">启用</Badge>
-                          ) : (
-                            <Badge tone="warning">已停用</Badge>
-                          )}
-                        </div>
-                      </td>
-                      <td className={TD_CLASS}>{board.threadCount}</td>
-                      <td className={TD_CLASS}>
-                        <div className="flex flex-wrap gap-1">
-                          {!board.deleted &&
-                          admin.can('board.update', board.id) ? (
-                            <>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <div className="flex items-center gap-2">
+                            <ColorSwatch
+                              color={parseColor(board.color)}
+                              shape="circle"
+                              size="sm"
+                              aria-hidden="true"
+                            />
+                            <div className="min-w-0">
+                              <Typography.Paragraph
+                                weight="medium"
+                                truncate
+                              >
+                                {board.name}
+                              </Typography.Paragraph>
+                              <Typography.Paragraph
+                                size="xs"
+                                color="muted"
+                              >
+                                {board.slug} · {board.icon}
+                              </Typography.Paragraph>
+                              {board.description ? (
+                                <Typography.Paragraph
+                                  size="xs"
+                                  color="muted"
+                                  truncate
+                                  className="max-w-md"
+                                >
+                                  {board.description}
+                                </Typography.Paragraph>
+                              ) : null}
+                            </div>
+                          </div>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <div className="flex flex-wrap gap-1">
+                            {board.deleted ? (
+                              <Chip size="sm" variant="soft" color="danger">
+                                <Chip.Label>已删除</Chip.Label>
+                              </Chip>
+                            ) : board.enabled ? (
+                              <Chip size="sm" variant="soft" color="success">
+                                <Chip.Label>启用</Chip.Label>
+                              </Chip>
+                            ) : (
+                              <Chip size="sm" variant="soft" color="warning">
+                                <Chip.Label>已停用</Chip.Label>
+                              </Chip>
+                            )}
+                          </div>
+                        </Table.Cell>
+                        <Table.Cell>{board.threadCount}</Table.Cell>
+                        <Table.Cell>
+                          <div className="flex flex-wrap gap-1">
+                            {!board.deleted &&
+                            admin.can('board.update', board.id) ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  aria-label={`编辑板块 ${board.name}`}
+                                  onPress={() => {
+                                    setEditing(board)
+                                    setDialogOpen(true)
+                                  }}
+                                >
+                                  <Pencil className="size-3.5" />
+                                  编辑
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  aria-label={`${board.enabled ? '停用' : '启用'}板块 ${board.name}`}
+                                  isDisabled={toggleMutation.isPending}
+                                  onPress={() => toggleMutation.mutate(board)}
+                                >
+                                  {board.enabled ? '停用' : '启用'}
+                                </Button>
+                              </>
+                            ) : null}
+
+                            {!board.deleted && canDelete ? (
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                aria-label={`编辑板块 ${board.name}`}
-                                onPress={() => {
-                                  setEditing(board)
-                                  setDialogOpen(true)
-                                }}
+                                className="text-danger"
+                                aria-label={`删除板块 ${board.name}`}
+                                onPress={() => setDeleting(board)}
                               >
-                                <Pencil className="size-3.5" />
-                                编辑
+                                <Trash2 className="size-3.5" />
+                                删除
                               </Button>
+                            ) : null}
+
+                            {board.deleted && canDelete ? (
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                aria-label={`${board.enabled ? '停用' : '启用'}板块 ${board.name}`}
-                                isDisabled={toggleMutation.isPending}
-                                onPress={() => toggleMutation.mutate(board)}
+                                aria-label={`恢复板块 ${board.name}`}
+                                isDisabled={restoreMutation.isPending}
+                                onPress={() => restoreMutation.mutate(board)}
                               >
-                                {board.enabled ? '停用' : '启用'}
+                                <RotateCcw className="size-3.5" />
+                                恢复
                               </Button>
-                            </>
-                          ) : null}
-
-                          {!board.deleted && canDelete ? (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-danger"
-                              aria-label={`删除板块 ${board.name}`}
-                              onPress={() => setDeleting(board)}
-                            >
-                              <Trash2 className="size-3.5" />
-                              删除
-                            </Button>
-                          ) : null}
-
-                          {board.deleted && canDelete ? (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              aria-label={`恢复板块 ${board.name}`}
-                              isDisabled={restoreMutation.isPending}
-                              onPress={() => restoreMutation.mutate(board)}
-                            >
-                              <RotateCcw className="size-3.5" />
-                              恢复
-                            </Button>
-                          ) : null}
-                        </div>
-                      </td>
-                    </tr>
+                            ) : null}
+                          </div>
+                        </Table.Cell>
+                      </Table.Row>
                     )
-                  })
-                )}
-              </tbody>
-            </table>
-          </TableWrap>
+                  })}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
+          </Table>
 
           <Pagination
             page={boardsQuery.data.page}

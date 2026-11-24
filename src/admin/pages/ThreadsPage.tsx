@@ -1,4 +1,24 @@
-import { Button, Input, Modal, toast } from '@heroui/react'
+import {
+  Alert,
+  Button,
+  Card,
+  Checkbox,
+  Chip,
+  EmptyState,
+  Form,
+  Input,
+  Label,
+  ListBox,
+  Modal,
+  SearchField,
+  Select,
+  Surface,
+  Table,
+  TextField,
+  Toolbar,
+  Typography,
+  toast,
+} from '@heroui/react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Eye,
@@ -20,18 +40,10 @@ import { getDisplayName } from '@/lib/user'
 import { adminApi } from '../api'
 import { ReasonDialog } from '../components/ReasonDialog'
 import {
-  Badge,
   ErrorPanel,
-  Field,
   LoadingPanel,
   PageHeader,
   Pagination,
-  SelectInput,
-  TableWrap,
-  TD_CLASS,
-  TH_CLASS,
-  TextInput,
-  Toolbar,
 } from '../components/ui'
 import { useAdminPageTitle } from '../components/use-admin-title'
 import { formatDateTimeOrDash } from '../lib'
@@ -145,36 +157,61 @@ function ThreadDetailDialog({
                 <>
                   <div>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge tone="accent">{thread.board.name}</Badge>
-                      {thread.pinned ? <Badge tone="warning">置顶</Badge> : null}
-                      {thread.locked ? <Badge>锁定</Badge> : null}
+                      <Chip size="sm" variant="soft" color="accent">
+                        <Chip.Label>{thread.board.name}</Chip.Label>
+                      </Chip>
+                      {thread.pinned ? (
+                        <Chip size="sm" variant="soft" color="warning">
+                          <Chip.Label>置顶</Chip.Label>
+                        </Chip>
+                      ) : null}
+                      {thread.locked ? (
+                        <Chip size="sm" variant="soft" color="default">
+                          <Chip.Label>锁定</Chip.Label>
+                        </Chip>
+                      ) : null}
                       {thread.deleted ? (
-                        <Badge tone="danger">已删除</Badge>
+                        <Chip size="sm" variant="soft" color="danger">
+                          <Chip.Label>已删除</Chip.Label>
+                        </Chip>
                       ) : null}
                     </div>
-                    <h2 className="mt-2 text-lg font-semibold">
+                    <Typography.Heading
+                      level={2}
+                      className="mt-2 text-lg font-semibold"
+                    >
                       {thread.title}
-                    </h2>
-                    <p className="mt-1 text-xs text-muted">
+                    </Typography.Heading>
+                    <Typography.Paragraph
+                      size="xs"
+                      color="muted"
+                      className="mt-1"
+                    >
                       #{thread.id} · 作者{' '}
                       {thread.author
                         ? getDisplayName(thread.author)
                         : '已注销用户'}{' '}
                       · 创建于 {formatDateTime(thread.createdAt)} · 最后回复{' '}
                       {formatDateTimeOrDash(thread.lastReplyAt)}
-                    </p>
-                    <p className="mt-1 text-xs text-muted">
+                    </Typography.Paragraph>
+                    <Typography.Paragraph
+                      size="xs"
+                      color="muted"
+                      className="mt-1"
+                    >
                       回复 {thread.replyCount} · 获赞 {thread.likeCount}
-                    </p>
+                    </Typography.Paragraph>
                   </div>
 
-                  <div className="rounded-xl border border-border bg-surface-secondary px-4 py-3">
+                  <Surface variant="secondary" className="px-4 py-3">
                     {thread.contentHtml ? (
                       <PostContent>{thread.contentHtml}</PostContent>
                     ) : (
-                      <p className="text-sm text-muted">正文不可用。</p>
+                      <Typography.Paragraph size="sm" color="muted">
+                        正文不可用。
+                      </Typography.Paragraph>
                     )}
-                  </div>
+                  </Surface>
 
                   <div className="flex flex-wrap gap-2">
                     {!thread.deleted && admin.can('thread.pin', thread.boardId) ? (
@@ -263,12 +300,12 @@ function ThreadDetailDialog({
                   </div>
 
                   {thread.deleted ? (
-                    <p className="text-xs text-muted">
+                    <Typography.Paragraph size="xs" color="muted">
                       删除于 {formatDateTimeOrDash(thread.deletedAt)}
                       {thread.deletedBy
                         ? ` · 操作人 #${thread.deletedBy}`
                         : ''}
-                    </p>
+                    </Typography.Paragraph>
                   ) : null}
                 </>
               )}
@@ -403,22 +440,6 @@ export function ThreadsPage() {
     onError: (error) => toast.danger(errorText(error)),
   })
 
-  function toggleSelected(id: number) {
-    setSelected((current) =>
-      current.includes(id)
-        ? current.filter((value) => value !== id)
-        : [...current, id],
-    )
-  }
-
-  function toggleAll() {
-    setSelected((current) =>
-      current.length === threads.length
-        ? []
-        : threads.map((thread) => thread.id),
-    )
-  }
-
   function applyFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setKeyword(keywordDraft.trim())
@@ -443,150 +464,262 @@ export function ThreadsPage() {
         description="筛选、审核、移动与恢复论坛主题。删除操作写入审计日志。"
       />
 
-      <Toolbar>
-        <form
-          onSubmit={applyFilters}
+      <Card className="mb-4">
+        <Toolbar
+          aria-label="主题筛选"
           className="flex flex-wrap items-end gap-3"
         >
-          <Field label="板块" htmlFor="thread-board">
-            <SelectInput
-              id="thread-board"
-              value={boardId}
-              onChange={(event) => {
-                setBoardId(event.target.value)
+          <Form
+            onSubmit={applyFilters}
+            className="flex flex-wrap items-end gap-3"
+          >
+            <Select
+              selectedKey={boardId || '__all__'}
+              onSelectionChange={(key) => {
+                setBoardId(
+                  key === null || key === '__all__' ? '' : String(key),
+                )
                 setPage(1)
               }}
             >
-              <option value="">全部板块</option>
-              {boards.map((board) => (
-                <option key={board.id} value={board.id}>
-                  {board.name}
-                </option>
-              ))}
-            </SelectInput>
-          </Field>
+              <Label>板块</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="__all__" textValue="全部板块">
+                    全部板块
+                  </ListBox.Item>
+                  {boards.map((board) => (
+                    <ListBox.Item
+                      key={board.id}
+                      id={String(board.id)}
+                      textValue={board.name}
+                    >
+                      {board.name}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
 
-          <Field label="状态" htmlFor="thread-status">
-            <SelectInput
-              id="thread-status"
-              value={status}
-              onChange={(event) => {
-                setStatus(event.target.value)
+            <Select
+              selectedKey={status}
+              onSelectionChange={(key) => {
+                if (key !== null) {
+                  setStatus(String(key))
+                  setPage(1)
+                }
+              }}
+            >
+              <Label>状态</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="active" textValue="正常">
+                    正常
+                  </ListBox.Item>
+                  <ListBox.Item id="deleted" textValue="已删除">
+                    已删除
+                  </ListBox.Item>
+                  <ListBox.Item id="all" textValue="全部">
+                    全部
+                  </ListBox.Item>
+                </ListBox>
+              </Select.Popover>
+            </Select>
+
+            <Select
+              selectedKey={pinned || '__all__'}
+              onSelectionChange={(key) => {
+                setPinned(
+                  key === null || key === '__all__' ? '' : String(key),
+                )
                 setPage(1)
               }}
             >
-              <option value="active">正常</option>
-              <option value="deleted">已删除</option>
-              <option value="all">全部</option>
-            </SelectInput>
-          </Field>
+              <Label>置顶</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="__all__" textValue="不限">
+                    不限
+                  </ListBox.Item>
+                  <ListBox.Item id="true" textValue="已置顶">
+                    已置顶
+                  </ListBox.Item>
+                  <ListBox.Item id="false" textValue="未置顶">
+                    未置顶
+                  </ListBox.Item>
+                </ListBox>
+              </Select.Popover>
+            </Select>
 
-          <Field label="置顶" htmlFor="thread-pinned">
-            <SelectInput
-              id="thread-pinned"
-              value={pinned}
-              onChange={(event) => {
-                setPinned(event.target.value)
+            <Select
+              selectedKey={locked || '__all__'}
+              onSelectionChange={(key) => {
+                setLocked(
+                  key === null || key === '__all__' ? '' : String(key),
+                )
                 setPage(1)
               }}
             >
-              <option value="">不限</option>
-              <option value="true">已置顶</option>
-              <option value="false">未置顶</option>
-            </SelectInput>
-          </Field>
+              <Label>锁定</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="__all__" textValue="不限">
+                    不限
+                  </ListBox.Item>
+                  <ListBox.Item id="true" textValue="已锁定">
+                    已锁定
+                  </ListBox.Item>
+                  <ListBox.Item id="false" textValue="未锁定">
+                    未锁定
+                  </ListBox.Item>
+                </ListBox>
+              </Select.Popover>
+            </Select>
 
-          <Field label="锁定" htmlFor="thread-locked">
-            <SelectInput
-              id="thread-locked"
-              value={locked}
-              onChange={(event) => {
-                setLocked(event.target.value)
-                setPage(1)
+            <Select
+              selectedKey={sort}
+              onSelectionChange={(key) => {
+                if (key !== null) setSort(String(key))
               }}
             >
-              <option value="">不限</option>
-              <option value="true">已锁定</option>
-              <option value="false">未锁定</option>
-            </SelectInput>
-          </Field>
+              <Label>排序</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="created" textValue="创建时间">
+                    创建时间
+                  </ListBox.Item>
+                  <ListBox.Item id="pinned" textValue="置顶时间">
+                    置顶时间
+                  </ListBox.Item>
+                  <ListBox.Item id="last_reply" textValue="最后回复">
+                    最后回复
+                  </ListBox.Item>
+                </ListBox>
+              </Select.Popover>
+            </Select>
 
-          <Field label="排序" htmlFor="thread-sort">
-            <SelectInput
-              id="thread-sort"
-              value={sort}
-              onChange={(event) => setSort(event.target.value)}
-            >
-              <option value="created">创建时间</option>
-              <option value="pinned">置顶时间</option>
-              <option value="last_reply">最后回复</option>
-            </SelectInput>
-          </Field>
-
-          <Field label="关键词" htmlFor="thread-keyword" className="min-w-52">
-            <Input
-              id="thread-keyword"
+            <SearchField
               fullWidth
-              placeholder="标题或正文"
+              className="min-w-52"
               value={keywordDraft}
-              onChange={(event) => setKeywordDraft(event.target.value)}
-            />
-          </Field>
-
-          <Button type="submit" variant="primary">
-            查询
-          </Button>
-          <Button variant="tertiary" onPress={resetFilters}>
-            重置
-          </Button>
-        </form>
-      </Toolbar>
-
-      <div className="mb-4 rounded-xl border border-border bg-surface p-3">
-        <div className="flex flex-wrap items-end gap-3">
-          <p className="text-sm text-muted">已选 {selected.length} 条</p>
-
-          <Field label="批量操作" htmlFor="batch-action">
-            <SelectInput
-              id="batch-action"
-              value={batchAction}
-              onChange={(event) =>
-                setBatchAction(event.target.value as ThreadAction)
-              }
+              onChange={setKeywordDraft}
             >
-              {(Object.keys(ACTION_LABELS) as ThreadAction[]).map((action) => (
-                <option key={action} value={action}>
-                  {ACTION_LABELS[action]}
-                </option>
-              ))}
-            </SelectInput>
-          </Field>
+              <Label>关键词</Label>
+              <SearchField.Group>
+                <SearchField.SearchIcon />
+                <SearchField.Input placeholder="标题或正文" />
+                <SearchField.ClearButton aria-label="清空关键词" />
+              </SearchField.Group>
+            </SearchField>
+
+            <Button type="submit" variant="primary">
+              查询
+            </Button>
+            <Button variant="tertiary" onPress={resetFilters}>
+              重置
+            </Button>
+          </Form>
+        </Toolbar>
+      </Card>
+
+      <Card className="mb-4">
+        <Toolbar
+          aria-label="主题批量操作"
+          className="flex flex-wrap items-end gap-3"
+        >
+          <Typography.Paragraph size="sm" color="muted">
+            已选 {selected.length} 条
+          </Typography.Paragraph>
+
+          <Select
+            selectedKey={batchAction}
+            onSelectionChange={(key) => {
+              if (key !== null) setBatchAction(key as ThreadAction)
+            }}
+          >
+            <Label>批量操作</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                {(Object.keys(ACTION_LABELS) as ThreadAction[]).map(
+                  (action) => (
+                    <ListBox.Item
+                      key={action}
+                      id={action}
+                      textValue={ACTION_LABELS[action]}
+                    >
+                      {ACTION_LABELS[action]}
+                    </ListBox.Item>
+                  ),
+                )}
+              </ListBox>
+            </Select.Popover>
+          </Select>
 
           {batchAction === 'move' ? (
-            <Field label="目标板块" htmlFor="batch-board">
-              <SelectInput
-                id="batch-board"
-                value={batchBoardId}
-                onChange={(event) => setBatchBoardId(event.target.value)}
-              >
-                <option value="">选择目标板块</option>
-                {moveBoards.map((board) => (
-                  <option key={board.id} value={board.id}>
-                    {board.name}
-                  </option>
-                ))}
-              </SelectInput>
-            </Field>
+            <Select
+              selectedKey={batchBoardId || '__none__'}
+              onSelectionChange={(key) => {
+                setBatchBoardId(
+                  key === null || key === '__none__' ? '' : String(key),
+                )
+              }}
+            >
+              <Label>目标板块</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="__none__" textValue="选择目标板块">
+                    选择目标板块
+                  </ListBox.Item>
+                  {moveBoards.map((board) => (
+                    <ListBox.Item
+                      key={board.id}
+                      id={String(board.id)}
+                      textValue={board.name}
+                    >
+                      {board.name}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
           ) : null}
 
-          <Field label="原因（可选）" htmlFor="batch-reason">
-            <TextInput
-              id="batch-reason"
+          <TextField>
+            <Label>原因（可选）</Label>
+            <Input
               value={batchReason}
               placeholder="写入审计日志"
               onChange={(event) => setBatchReason(event.target.value)}
             />
-          </Field>
+          </TextField>
 
           <Button
             variant="primary"
@@ -606,21 +739,24 @@ export function ThreadsPage() {
           >
             清空选择
           </Button>
-        </div>
+        </Toolbar>
 
         {batchFailures.length > 0 ? (
-          <div className="mt-3 rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">
-            <p className="font-medium">以下条目操作失败：</p>
-            <ul className="mt-1 list-disc pl-4">
-              {batchFailures.map((failure) => (
-                <li key={failure.id}>
-                  #{failure.id}：{failure.reason}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <Alert status="danger" className="mt-3">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Title>以下条目操作失败：</Alert.Title>
+              <ul className="mt-1 list-disc pl-4 text-xs">
+                {batchFailures.map((failure) => (
+                  <li key={failure.id}>
+                    #{failure.id}：{failure.reason}
+                  </li>
+                ))}
+              </ul>
+            </Alert.Content>
+          </Alert>
         ) : null}
-      </div>
+      </Card>
 
       {threadsQuery.isPending ? (
         <LoadingPanel />
@@ -631,65 +767,88 @@ export function ThreadsPage() {
         />
       ) : (
         <>
-          <TableWrap>
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <th className={TH_CLASS}>
-                    <input
-                      type="checkbox"
+          <Table aria-label="主题列表">
+            <Table.ScrollContainer>
+              <Table.Content
+                aria-label="主题列表"
+                selectionMode="multiple"
+                selectedKeys={new Set(selected)}
+                onSelectionChange={(keys) =>
+                  setSelected(
+                    keys === 'all'
+                      ? threads.map((thread) => thread.id)
+                      : [...keys].map(Number),
+                  )
+                }
+              >
+                <Table.Header>
+                  <Table.Column id="select">
+                    <Checkbox
+                      slot="selection"
                       aria-label="选择本页全部主题"
-                      className="size-4"
-                      checked={
-                        threads.length > 0 &&
-                        selected.length === threads.length
-                      }
-                      onChange={toggleAll}
-                    />
-                  </th>
-                  <th className={TH_CLASS}>ID</th>
-                  <th className={TH_CLASS}>标题</th>
-                  <th className={TH_CLASS}>板块</th>
-                  <th className={TH_CLASS}>作者</th>
-                  <th className={TH_CLASS}>互动</th>
-                  <th className={TH_CLASS}>状态</th>
-                  <th className={`${TH_CLASS} hidden 2xl:table-cell`}>创建时间</th>
-                  <th className={TH_CLASS}>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {threads.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={9}
-                      className="px-3 py-10 text-center text-muted"
                     >
-                      没有符合条件的主题
-                    </td>
-                  </tr>
-                ) : (
-                  threads.map((thread) => (
-                    <tr key={thread.id}>
-                      <td className={TD_CLASS}>
-                        <input
-                          type="checkbox"
+                      <Checkbox.Content>
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                      </Checkbox.Content>
+                    </Checkbox>
+                  </Table.Column>
+                  <Table.Column id="id">ID</Table.Column>
+                  <Table.Column id="title" isRowHeader>
+                    标题
+                  </Table.Column>
+                  <Table.Column id="board">板块</Table.Column>
+                  <Table.Column id="author">作者</Table.Column>
+                  <Table.Column id="interaction">互动</Table.Column>
+                  <Table.Column id="status">状态</Table.Column>
+                  <Table.Column
+                    id="created"
+                    className="hidden 2xl:table-cell"
+                  >
+                    创建时间
+                  </Table.Column>
+                  <Table.Column id="actions">操作</Table.Column>
+                </Table.Header>
+                <Table.Body
+                  renderEmptyState={() => (
+                    <EmptyState>没有符合条件的主题</EmptyState>
+                  )}
+                >
+                  {threads.map((thread) => (
+                    <Table.Row key={thread.id} id={thread.id}>
+                      <Table.Cell>
+                        <Checkbox
+                          slot="selection"
                           aria-label={`选择主题 ${thread.id}`}
-                          className="size-4"
-                          checked={selected.includes(thread.id)}
-                          onChange={() => toggleSelected(thread.id)}
-                        />
-                      </td>
-                      <td className={TD_CLASS}>{thread.id}</td>
-                      <td className={TD_CLASS}>
-                        <p className="max-w-xs truncate font-medium">
+                        >
+                          <Checkbox.Content>
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                          </Checkbox.Content>
+                        </Checkbox>
+                      </Table.Cell>
+                      <Table.Cell>{thread.id}</Table.Cell>
+                      <Table.Cell>
+                        <Typography.Paragraph
+                          weight="medium"
+                          truncate
+                          className="max-w-xs"
+                        >
                           {thread.title}
-                        </p>
-                        <p className="max-w-xs truncate text-xs text-muted">
+                        </Typography.Paragraph>
+                        <Typography.Paragraph
+                          size="xs"
+                          color="muted"
+                          truncate
+                          className="max-w-xs"
+                        >
                           {thread.excerpt}
-                        </p>
-                      </td>
-                      <td className={TD_CLASS}>{thread.board.name}</td>
-                      <td className={TD_CLASS}>
+                        </Typography.Paragraph>
+                      </Table.Cell>
+                      <Table.Cell>{thread.board.name}</Table.Cell>
+                      <Table.Cell>
                         {thread.author ? (
                           <span className="flex items-center gap-1.5">
                             <UserAvatar user={thread.author} />
@@ -698,36 +857,48 @@ export function ThreadsPage() {
                             </span>
                           </span>
                         ) : (
-                          <span className="text-muted">已注销</span>
+                          <Typography.Paragraph size="sm" color="muted">
+                            已注销
+                          </Typography.Paragraph>
                         )}
-                      </td>
-                      <td className={TD_CLASS}>
-                        <span className="text-xs text-muted">
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Typography.Paragraph size="xs" color="muted">
                           {thread.replyCount} 回复 · {thread.likeCount} 赞
-                        </span>
-                      </td>
-                      <td className={TD_CLASS}>
+                        </Typography.Paragraph>
+                      </Table.Cell>
+                      <Table.Cell>
                         <div className="flex flex-wrap gap-1">
                           {thread.deleted ? (
-                            <Badge tone="danger">已删除</Badge>
+                            <Chip size="sm" variant="soft" color="danger">
+                              <Chip.Label>已删除</Chip.Label>
+                            </Chip>
                           ) : null}
                           {thread.pinned ? (
-                            <Badge tone="warning">置顶</Badge>
+                            <Chip size="sm" variant="soft" color="warning">
+                              <Chip.Label>置顶</Chip.Label>
+                            </Chip>
                           ) : null}
-                          {thread.locked ? <Badge>锁定</Badge> : null}
+                          {thread.locked ? (
+                            <Chip size="sm" variant="soft" color="default">
+                              <Chip.Label>锁定</Chip.Label>
+                            </Chip>
+                          ) : null}
                           {!thread.deleted &&
                           !thread.pinned &&
                           !thread.locked ? (
-                            <Badge tone="success">正常</Badge>
+                            <Chip size="sm" variant="soft" color="success">
+                              <Chip.Label>正常</Chip.Label>
+                            </Chip>
                           ) : null}
                         </div>
-                      </td>
-                      <td className={`${TD_CLASS} hidden 2xl:table-cell`}>
-                        <span className="text-xs text-muted">
+                      </Table.Cell>
+                      <Table.Cell className="hidden 2xl:table-cell">
+                        <Typography.Paragraph size="xs" color="muted">
                           {formatDateTime(thread.createdAt)}
-                        </span>
-                      </td>
-                      <td className={TD_CLASS}>
+                        </Typography.Paragraph>
+                      </Table.Cell>
+                      <Table.Cell>
                         <div className="flex flex-wrap gap-1">
                           <Button
                             size="sm"
@@ -796,13 +967,13 @@ export function ThreadsPage() {
                             </Button>
                           ) : null}
                         </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </TableWrap>
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
+          </Table>
 
           <Pagination
             page={threadsQuery.data.page}
@@ -854,25 +1025,38 @@ export function ThreadsPage() {
                 <Modal.Heading>移动主题</Modal.Heading>
               </Modal.Header>
               <Modal.Body className="space-y-3">
-                <p className="text-sm text-muted">
+                <Typography.Paragraph size="sm" color="muted">
                   {moveTarget?.title}（当前：{moveTarget?.board.name}）
-                </p>
-                <Field label="目标板块" htmlFor="move-board">
-                  <SelectInput
-                    id="move-board"
-                    value={moveBoardId}
-                    onChange={(event) => setMoveBoardId(event.target.value)}
-                  >
-                    <option value="">选择目标板块</option>
-                    {moveBoards
-                      .filter((board) => board.id !== moveTarget?.boardId)
-                      .map((board) => (
-                        <option key={board.id} value={board.id}>
-                          {board.name}
-                        </option>
-                      ))}
-                  </SelectInput>
-                </Field>
+                </Typography.Paragraph>
+                <Select
+                  fullWidth
+                  placeholder="选择目标板块"
+                  selectedKey={moveBoardId || null}
+                  onSelectionChange={(key) => {
+                    setMoveBoardId(key === null ? '' : String(key))
+                  }}
+                >
+                  <Label>目标板块</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {moveBoards
+                        .filter((board) => board.id !== moveTarget?.boardId)
+                        .map((board) => (
+                          <ListBox.Item
+                            key={board.id}
+                            id={String(board.id)}
+                            textValue={board.name}
+                          >
+                            {board.name}
+                          </ListBox.Item>
+                        ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
               </Modal.Body>
               <Modal.Footer>
                 <Button variant="tertiary" onPress={() => setMoveTarget(null)}>

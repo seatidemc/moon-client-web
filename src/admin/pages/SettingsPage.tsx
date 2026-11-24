@@ -1,16 +1,24 @@
-import { Button, TextArea, toast } from '@heroui/react'
+import {
+  Button,
+  Card,
+  Checkbox,
+  Description,
+  Form,
+  Input,
+  Label,
+  TextArea,
+  TextField,
+  Typography,
+  toast,
+} from '@heroui/react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState, type FormEvent } from 'react'
 
 import { adminApi } from '../api'
 import {
-  Card,
-  CheckboxInput,
   ErrorPanel,
-  Field,
   LoadingPanel,
   PageHeader,
-  TextInput,
 } from '../components/ui'
 import { useAdminPageTitle } from '../components/use-admin-title'
 import { adminKeys } from '../store'
@@ -126,101 +134,115 @@ export function SettingsPage() {
           <LoadingPanel />
         )
       ) : (
-        <form onSubmit={handleSubmit} className="max-w-3xl">
-          <Card className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="站点名称" htmlFor="setting-site-name">
-                <TextInput
-                  id="setting-site-name"
-                  value={form.siteName}
-                  onChange={(event) => update('siteName', event.target.value)}
-                />
-              </Field>
+        <Form onSubmit={handleSubmit} className="max-w-3xl">
+          <Card>
+            <Card.Content className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextField fullWidth>
+                  <Label>站点名称</Label>
+                  <Input
+                    value={form.siteName}
+                    onChange={(event) => update('siteName', event.target.value)}
+                  />
+                </TextField>
 
-              <Field label="站点描述" htmlFor="setting-description">
-                <TextInput
-                  id="setting-description"
-                  value={form.siteDescription}
+                <TextField fullWidth>
+                  <Label>站点描述</Label>
+                  <Input
+                    value={form.siteDescription}
+                    onChange={(event) =>
+                      update('siteDescription', event.target.value)
+                    }
+                  />
+                </TextField>
+              </div>
+
+              <TextField fullWidth>
+                <Label>公告</Label>
+                <TextArea
+                  rows={2}
+                  value={form.announcement}
+                  placeholder="留空则不显示公告"
                   onChange={(event) =>
-                    update('siteDescription', event.target.value)
+                    update('announcement', event.target.value)
                   }
                 />
-              </Field>
-            </div>
+              </TextField>
 
-            <Field label="公告" htmlFor="setting-announcement">
-              <TextArea
-                id="setting-announcement"
-                fullWidth
-                rows={2}
-                value={form.announcement}
-                placeholder="留空则不显示公告"
-                onChange={(event) =>
-                  update('announcement', event.target.value)
-                }
-              />
-            </Field>
+              <TextField fullWidth>
+                <Label>页脚文字</Label>
+                <Input
+                  value={form.footerText}
+                  onChange={(event) => update('footerText', event.target.value)}
+                />
+              </TextField>
 
-            <Field label="页脚文字" htmlFor="setting-footer">
-              <TextInput
-                id="setting-footer"
-                value={form.footerText}
-                onChange={(event) => update('footerText', event.target.value)}
-              />
-            </Field>
-
-            <Field
-              label="默认头像模板"
-              htmlFor="setting-avatar"
-              hint="支持 {username} 占位符；用户上传头像后优先使用上传头像。"
-            >
-              <TextInput
-                id="setting-avatar"
-                value={form.defaultAvatarUrlTemplate}
-                onChange={(event) =>
-                  update('defaultAvatarUrlTemplate', event.target.value)
-                }
-              />
-            </Field>
-
-            <div className="space-y-2 border-t border-border pt-3">
-              <CheckboxInput
-                label="允许游客阅读（关闭后公开读接口要求登录）"
-                checked={form.allowGuestRead}
-                onChange={(event) =>
-                  update('allowGuestRead', event.target.checked)
-                }
-              />
-              <CheckboxInput
-                label="开放注册（预留项，当前版本不生效）"
-                checked={form.registrationEnabled}
-                onChange={(event) =>
-                  update('registrationEnabled', event.target.checked)
-                }
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <Button type="submit" variant="primary" isDisabled={saving}>
-                保存设置
-              </Button>
-              <Button
-                variant="tertiary"
-                onPress={() => {
-                  if (settingsQuery.data) {
-                    setForm(formFromSettings(settingsQuery.data))
+              <TextField fullWidth>
+                <Label>默认头像模板</Label>
+                <Input
+                  value={form.defaultAvatarUrlTemplate}
+                  onChange={(event) =>
+                    update('defaultAvatarUrlTemplate', event.target.value)
                   }
-                }}
-              >
-                还原
-              </Button>
-            </div>
+                />
+                <Description>
+                  支持 {'{username}'} 占位符；用户上传头像后优先使用上传头像。
+                </Description>
+              </TextField>
+
+              <div className="space-y-2 border-t border-border pt-3">
+                <Checkbox
+                  isSelected={form.allowGuestRead}
+                  onChange={(isSelected) =>
+                    update('allowGuestRead', isSelected)
+                  }
+                >
+                  <Checkbox.Content>
+                    <Checkbox.Control>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                    <Label>
+                      允许游客阅读（关闭后公开读接口要求登录）
+                    </Label>
+                  </Checkbox.Content>
+                </Checkbox>
+                <Checkbox
+                  isSelected={form.registrationEnabled}
+                  onChange={(isSelected) =>
+                    update('registrationEnabled', isSelected)
+                  }
+                >
+                  <Checkbox.Content>
+                    <Checkbox.Control>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                    <Label>开放注册（预留项，当前版本不生效）</Label>
+                  </Checkbox.Content>
+                </Checkbox>
+              </div>
+
+              <div className="flex gap-2">
+                <Button type="submit" variant="primary" isDisabled={saving}>
+                  保存设置
+                </Button>
+                <Button
+                  variant="tertiary"
+                  onPress={() => {
+                    if (settingsQuery.data) {
+                      setForm(formFromSettings(settingsQuery.data))
+                    }
+                  }}
+                >
+                  还原
+                </Button>
+              </div>
+            </Card.Content>
           </Card>
 
-          <p className="mt-3 text-xs text-muted">
+          <Typography.Paragraph size="xs" color="muted" className="mt-3">
             未知设置键会被后端拒绝；设置更新写入审计日志。
-          </p>
-        </form>
+          </Typography.Paragraph>
+        </Form>
       )}
     </div>
   )

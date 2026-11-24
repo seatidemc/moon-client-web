@@ -1,4 +1,11 @@
-import { Button } from '@heroui/react'
+import {
+  Card,
+  Table,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip,
+  Typography,
+} from '@heroui/react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 
@@ -7,7 +14,6 @@ import { adminKeys } from '../store'
 import { useAdminPageTitle } from '../components/use-admin-title'
 import { adminApi } from '../api'
 import {
-  Card,
   ErrorPanel,
   LoadingPanel,
   PageHeader,
@@ -52,29 +58,30 @@ function TrendChart({ trend }: { trend: DashboardTrend[] }) {
         aria-label="按天新增趋势"
       >
         {trend.map((day) => (
-          <div
-            key={day.date}
-            className="flex min-w-8 flex-1 flex-col items-center gap-1"
-            title={`${day.date}：主题 ${day.threads}，跟帖 ${day.replies}，新用户 ${day.users}`}
-          >
-            <div className="flex h-36 items-end gap-0.5">
-              <span
-                className="w-1.5 rounded-t bg-accent"
-                style={{ height: `${(day.threads / max) * 100}%` }}
-              />
-              <span
-                className="w-1.5 rounded-t bg-foreground/40"
-                style={{ height: `${(day.replies / max) * 100}%` }}
-              />
-              <span
-                className="w-1.5 rounded-t bg-foreground/15"
-                style={{ height: `${(day.users / max) * 100}%` }}
-              />
-            </div>
-            <span className="text-[10px] whitespace-nowrap text-muted">
-              {day.date.slice(5)}
-            </span>
-          </div>
+          <Tooltip key={day.date} delay={0} closeDelay={0}>
+            <Tooltip.Trigger className="flex min-w-8 flex-1 flex-col items-center gap-1">
+              <div className="flex h-36 items-end gap-0.5">
+                <span
+                  className="w-1.5 rounded-t bg-accent"
+                  style={{ height: `${(day.threads / max) * 100}%` }}
+                />
+                <span
+                  className="w-1.5 rounded-t bg-foreground/40"
+                  style={{ height: `${(day.replies / max) * 100}%` }}
+                />
+                <span
+                  className="w-1.5 rounded-t bg-foreground/15"
+                  style={{ height: `${(day.users / max) * 100}%` }}
+                />
+              </div>
+              <span className="text-[10px] whitespace-nowrap text-muted">
+                {day.date.slice(5)}
+              </span>
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              {`${day.date}：主题 ${day.threads}，跟帖 ${day.replies}，新用户 ${day.users}`}
+            </Tooltip.Content>
+          </Tooltip>
         ))}
       </div>
     </div>
@@ -95,17 +102,24 @@ export function DashboardPage() {
       <PageHeader
         title="数据看板"
         description="论坛内容、用户与板块的实时概览。"
-        actions={DAY_OPTIONS.map((option) => (
-          <Button
-            key={option}
+        actions={
+          <ToggleButtonGroup
+            aria-label="统计范围"
             size="sm"
-            variant={option === days ? 'primary' : 'tertiary'}
-            aria-pressed={option === days}
-            onPress={() => setDays(option)}
+            selectionMode="single"
+            selectedKeys={[String(days)]}
+            onSelectionChange={(keys) => {
+              const [key] = keys
+              if (key !== undefined) setDays(Number(key))
+            }}
           >
-            近 {option} 天
-          </Button>
-        ))}
+            {DAY_OPTIONS.map((option) => (
+              <ToggleButton key={option} id={String(option)}>
+                近 {option} 天
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        }
       />
 
       {dashboardQuery.isPending ? (
@@ -118,7 +132,12 @@ export function DashboardPage() {
       ) : (
         <div className="space-y-5">
           <section aria-label="总量">
-            <h2 className="mb-2 text-sm font-medium text-muted">总量</h2>
+            <Typography.Heading
+              level={2}
+              className="mb-2 text-sm font-medium text-muted"
+            >
+              总量
+            </Typography.Heading>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <StatCard
                 label="主题"
@@ -144,55 +163,62 @@ export function DashboardPage() {
           </section>
 
           <Card>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-medium">新增趋势</h2>
-              <p className="text-xs text-muted">
+            <Card.Header className="flex flex-row items-center justify-between gap-2">
+              <Card.Title>新增趋势</Card.Title>
+              <Typography.Paragraph size="xs" color="muted">
                 截至 {dashboardQuery.data.trend.at(-1)?.date ?? '—'}
-              </p>
-            </div>
-            <TrendChart trend={dashboardQuery.data.trend} />
+              </Typography.Paragraph>
+            </Card.Header>
+            <Card.Content>
+              <TrendChart trend={dashboardQuery.data.trend} />
+            </Card.Content>
           </Card>
 
           <section aria-label="每日明细">
-            <h2 className="mb-2 text-sm font-medium text-muted">每日明细</h2>
-            <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr>
-                    <th className="border-b border-border px-3 py-2 text-left text-xs font-medium text-muted">
+            <Typography.Heading
+              level={2}
+              className="mb-2 text-sm font-medium text-muted"
+            >
+              每日明细
+            </Typography.Heading>
+            <Table aria-label="每日明细">
+              <Table.ScrollContainer>
+                <Table.Content aria-label="每日明细">
+                  <Table.Header>
+                    <Table.Column id="date" isRowHeader>
                       日期
-                    </th>
-                    <th className="border-b border-border px-3 py-2 text-right text-xs font-medium text-muted">
+                    </Table.Column>
+                    <Table.Column id="threads" className="text-right">
                       主题
-                    </th>
-                    <th className="border-b border-border px-3 py-2 text-right text-xs font-medium text-muted">
+                    </Table.Column>
+                    <Table.Column id="replies" className="text-right">
                       跟帖
-                    </th>
-                    <th className="border-b border-border px-3 py-2 text-right text-xs font-medium text-muted">
+                    </Table.Column>
+                    <Table.Column id="users" className="text-right">
                       新用户
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...dashboardQuery.data.trend].reverse().map((day) => (
-                    <tr key={day.date}>
-                      <td className="border-b border-separator px-3 py-2">
-                        {day.date}
-                      </td>
-                      <td className="border-b border-separator px-3 py-2 text-right">
-                        {formatNumber(day.threads)}
-                      </td>
-                      <td className="border-b border-separator px-3 py-2 text-right">
-                        {formatNumber(day.replies)}
-                      </td>
-                      <td className="border-b border-separator px-3 py-2 text-right">
-                        {formatNumber(day.users)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    </Table.Column>
+                  </Table.Header>
+                  <Table.Body>
+                    {[...dashboardQuery.data.trend]
+                      .reverse()
+                      .map((day) => (
+                        <Table.Row key={day.date} id={day.date}>
+                          <Table.Cell>{day.date}</Table.Cell>
+                          <Table.Cell className="text-right">
+                            {formatNumber(day.threads)}
+                          </Table.Cell>
+                          <Table.Cell className="text-right">
+                            {formatNumber(day.replies)}
+                          </Table.Cell>
+                          <Table.Cell className="text-right">
+                            {formatNumber(day.users)}
+                          </Table.Cell>
+                        </Table.Row>
+                      ))}
+                  </Table.Body>
+                </Table.Content>
+              </Table.ScrollContainer>
+            </Table>
           </section>
         </div>
       )}

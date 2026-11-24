@@ -1,4 +1,23 @@
-import { Button, Input, Modal, toast } from '@heroui/react'
+import {
+  Alert,
+  Button,
+  Card,
+  Checkbox,
+  Chip,
+  EmptyState,
+  Form,
+  Input,
+  Label,
+  ListBox,
+  Modal,
+  SearchField,
+  Select,
+  Table,
+  TextField,
+  Toolbar,
+  Typography,
+  toast,
+} from '@heroui/react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, RotateCcw, Trash2 } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
@@ -11,18 +30,10 @@ import { formatDateTime } from '@/lib/utils'
 import { adminApi } from '../api'
 import { ReasonDialog } from '../components/ReasonDialog'
 import {
-  Badge,
   ErrorPanel,
-  Field,
   LoadingPanel,
   PageHeader,
   Pagination,
-  SelectInput,
-  TableWrap,
-  TD_CLASS,
-  TH_CLASS,
-  TextInput,
-  Toolbar,
 } from '../components/ui'
 import { useAdminPageTitle } from '../components/use-admin-title'
 import { adminKeys, useAdmin } from '../store'
@@ -109,7 +120,7 @@ function EditReplyDialog({
                   advanced={false}
                 />
               )}
-              </Modal.Body>
+            </Modal.Body>
             <Modal.Footer>
               <Button variant="tertiary" onPress={onClose}>
                 取消
@@ -219,22 +230,6 @@ export function RepliesPage() {
     onError: (error) => toast.danger(errorText(error)),
   })
 
-  function toggleSelected(id: number) {
-    setSelected((current) =>
-      current.includes(id)
-        ? current.filter((value) => value !== id)
-        : [...current, id],
-    )
-  }
-
-  function toggleAll() {
-    setSelected((current) =>
-      current.length === replies.length
-        ? []
-        : replies.map((reply) => reply.id),
-    )
-  }
-
   function applyFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setKeyword(keywordDraft.trim())
@@ -261,98 +256,136 @@ export function RepliesPage() {
         description="按主题、作者与关键词筛选跟帖，编辑正文或删除/恢复。"
       />
 
-      <Toolbar>
-        <form
-          onSubmit={applyFilters}
+      <Card className="mb-4">
+        <Toolbar
+          aria-label="跟帖筛选"
           className="flex flex-wrap items-end gap-3"
         >
-          <Field label="主题 ID" htmlFor="reply-thread">
-            <TextInput
-              id="reply-thread"
-              type="number"
-              min={0}
-              value={threadId}
-              placeholder="全部"
-              onChange={(event) => {
-                setThreadId(event.target.value)
-                setPage(1)
-              }}
-            />
-          </Field>
+          <Form
+            onSubmit={applyFilters}
+            className="flex flex-wrap items-end gap-3"
+          >
+            <TextField>
+              <Label>主题 ID</Label>
+              <Input
+                type="number"
+                min={0}
+                value={threadId}
+                placeholder="全部"
+                onChange={(event) => {
+                  setThreadId(event.target.value)
+                  setPage(1)
+                }}
+              />
+            </TextField>
 
-          <Field label="作者 ID" htmlFor="reply-author">
-            <TextInput
-              id="reply-author"
-              type="number"
-              min={0}
-              value={authorId}
-              placeholder="全部"
-              onChange={(event) => {
-                setAuthorId(event.target.value)
-                setPage(1)
-              }}
-            />
-          </Field>
+            <TextField>
+              <Label>作者 ID</Label>
+              <Input
+                type="number"
+                min={0}
+                value={authorId}
+                placeholder="全部"
+                onChange={(event) => {
+                  setAuthorId(event.target.value)
+                  setPage(1)
+                }}
+              />
+            </TextField>
 
-          <Field label="状态" htmlFor="reply-status">
-            <SelectInput
-              id="reply-status"
-              value={status}
-              onChange={(event) => {
-                setStatus(event.target.value)
-                setPage(1)
+            <Select
+              selectedKey={status}
+              onSelectionChange={(key) => {
+                if (key !== null) {
+                  setStatus(String(key))
+                  setPage(1)
+                }
               }}
             >
-              <option value="active">正常</option>
-              <option value="deleted">已删除</option>
-              <option value="all">全部</option>
-            </SelectInput>
-          </Field>
+              <Label>状态</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="active" textValue="正常">
+                    正常
+                  </ListBox.Item>
+                  <ListBox.Item id="deleted" textValue="已删除">
+                    已删除
+                  </ListBox.Item>
+                  <ListBox.Item id="all" textValue="全部">
+                    全部
+                  </ListBox.Item>
+                </ListBox>
+              </Select.Popover>
+            </Select>
 
-          <Field label="关键词" htmlFor="reply-keyword" className="min-w-52">
-            <Input
-              id="reply-keyword"
+            <SearchField
               fullWidth
-              placeholder="正文关键词"
+              className="min-w-52"
               value={keywordDraft}
-              onChange={(event) => setKeywordDraft(event.target.value)}
-            />
-          </Field>
-
-          <Button type="submit" variant="primary">
-            查询
-          </Button>
-          <Button variant="tertiary" onPress={resetFilters}>
-            重置
-          </Button>
-        </form>
-      </Toolbar>
-
-      <div className="mb-4 rounded-xl border border-border bg-surface p-3">
-        <div className="flex flex-wrap items-end gap-3">
-          <p className="text-sm text-muted">已选 {selected.length} 条</p>
-
-          <Field label="批量操作" htmlFor="reply-batch-action">
-            <SelectInput
-              id="reply-batch-action"
-              value={batchAction}
-              onChange={(event) =>
-                setBatchAction(event.target.value as ReplyAction)
-              }
+              onChange={setKeywordDraft}
             >
-              <option value="delete">删除</option>
-              <option value="restore">恢复</option>
-            </SelectInput>
-          </Field>
+              <Label>关键词</Label>
+              <SearchField.Group>
+                <SearchField.SearchIcon />
+                <SearchField.Input placeholder="正文关键词" />
+                <SearchField.ClearButton aria-label="清空关键词" />
+              </SearchField.Group>
+            </SearchField>
 
-          <Field label="原因（可选）" htmlFor="reply-batch-reason">
-            <TextInput
-              id="reply-batch-reason"
+            <Button type="submit" variant="primary">
+              查询
+            </Button>
+            <Button variant="tertiary" onPress={resetFilters}>
+              重置
+            </Button>
+          </Form>
+        </Toolbar>
+      </Card>
+
+      <Card className="mb-4">
+        <Toolbar
+          aria-label="跟帖批量操作"
+          className="flex flex-wrap items-end gap-3"
+        >
+          <Typography.Paragraph size="sm" color="muted">
+            已选 {selected.length} 条
+          </Typography.Paragraph>
+
+          <Select
+            selectedKey={batchAction}
+            onSelectionChange={(key) => {
+              if (key !== null) setBatchAction(key as ReplyAction)
+            }}
+          >
+            <Label>批量操作</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                <ListBox.Item id="delete" textValue="删除">
+                  删除
+                </ListBox.Item>
+                <ListBox.Item id="restore" textValue="恢复">
+                  恢复
+                </ListBox.Item>
+              </ListBox>
+            </Select.Popover>
+          </Select>
+
+          <TextField>
+            <Label>原因（可选）</Label>
+            <Input
               value={batchReason}
               placeholder="写入审计日志"
               onChange={(event) => setBatchReason(event.target.value)}
             />
-          </Field>
+          </TextField>
 
           <Button
             variant="primary"
@@ -368,21 +401,24 @@ export function RepliesPage() {
           >
             清空选择
           </Button>
-        </div>
+        </Toolbar>
 
         {batchFailures.length > 0 ? (
-          <div className="mt-3 rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">
-            <p className="font-medium">以下条目操作失败：</p>
-            <ul className="mt-1 list-disc pl-4">
-              {batchFailures.map((failure) => (
-                <li key={failure.id}>
-                  #{failure.id}：{failure.reason}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <Alert status="danger" className="mt-3">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Title>以下条目操作失败：</Alert.Title>
+              <ul className="mt-1 list-disc pl-4 text-xs">
+                {batchFailures.map((failure) => (
+                  <li key={failure.id}>
+                    #{failure.id}：{failure.reason}
+                  </li>
+                ))}
+              </ul>
+            </Alert.Content>
+          </Alert>
         ) : null}
-      </div>
+      </Card>
 
       {repliesQuery.isPending ? (
         <LoadingPanel />
@@ -393,65 +429,82 @@ export function RepliesPage() {
         />
       ) : (
         <>
-          <TableWrap>
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <th className={TH_CLASS}>
-                    <input
-                      type="checkbox"
+          <Table aria-label="跟帖列表">
+            <Table.ScrollContainer>
+              <Table.Content
+                aria-label="跟帖列表"
+                selectionMode="multiple"
+                selectedKeys={new Set(selected)}
+                onSelectionChange={(keys) =>
+                  setSelected(
+                    keys === 'all'
+                      ? replies.map((reply) => reply.id)
+                      : [...keys].map(Number),
+                  )
+                }
+              >
+                <Table.Header>
+                  <Table.Column id="select">
+                    <Checkbox
+                      slot="selection"
                       aria-label="选择本页全部跟帖"
-                      className="size-4"
-                      checked={
-                        replies.length > 0 &&
-                        selected.length === replies.length
-                      }
-                      onChange={toggleAll}
-                    />
-                  </th>
-                  <th className={TH_CLASS}>ID</th>
-                  <th className={TH_CLASS}>楼层</th>
-                  <th className={TH_CLASS}>主题</th>
-                  <th className={TH_CLASS}>作者</th>
-                  <th className={TH_CLASS}>内容</th>
-                  <th className={TH_CLASS}>状态</th>
-                  <th className={`${TH_CLASS} hidden 2xl:table-cell`}>时间</th>
-                  <th className={TH_CLASS}>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {replies.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={9}
-                      className="px-3 py-10 text-center text-muted"
                     >
-                      没有符合条件的跟帖
-                    </td>
-                  </tr>
-                ) : (
-                  replies.map((reply) => (
-                    <tr key={reply.id}>
-                      <td className={TD_CLASS}>
-                        <input
-                          type="checkbox"
+                      <Checkbox.Content>
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                      </Checkbox.Content>
+                    </Checkbox>
+                  </Table.Column>
+                  <Table.Column id="id">ID</Table.Column>
+                  <Table.Column id="floor">楼层</Table.Column>
+                  <Table.Column id="thread" isRowHeader>
+                    主题
+                  </Table.Column>
+                  <Table.Column id="author">作者</Table.Column>
+                  <Table.Column id="content">内容</Table.Column>
+                  <Table.Column id="status">状态</Table.Column>
+                  <Table.Column
+                    id="created"
+                    className="hidden 2xl:table-cell"
+                  >
+                    时间
+                  </Table.Column>
+                  <Table.Column id="actions">操作</Table.Column>
+                </Table.Header>
+                <Table.Body
+                  renderEmptyState={() => (
+                    <EmptyState>没有符合条件的跟帖</EmptyState>
+                  )}
+                >
+                  {replies.map((reply) => (
+                    <Table.Row key={reply.id} id={reply.id}>
+                      <Table.Cell>
+                        <Checkbox
+                          slot="selection"
                           aria-label={`选择跟帖 ${reply.id}`}
-                          className="size-4"
-                          checked={selected.includes(reply.id)}
-                          onChange={() => toggleSelected(reply.id)}
-                        />
-                      </td>
-                      <td className={TD_CLASS}>{reply.id}</td>
-                      <td className={TD_CLASS}>#{reply.floor}</td>
-                      <td className={TD_CLASS}>
-                        <p className="max-w-40 truncate">
+                        >
+                          <Checkbox.Content>
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                          </Checkbox.Content>
+                        </Checkbox>
+                      </Table.Cell>
+                      <Table.Cell>{reply.id}</Table.Cell>
+                      <Table.Cell>#{reply.floor}</Table.Cell>
+                      <Table.Cell>
+                        <Typography.Paragraph
+                          truncate
+                          className="max-w-40"
+                        >
                           {reply.threadTitle}
-                        </p>
-                        <p className="text-xs text-muted">
+                        </Typography.Paragraph>
+                        <Typography.Paragraph size="xs" color="muted">
                           主题 #{reply.threadId}
-                        </p>
-                      </td>
-                      <td className={TD_CLASS}>
+                        </Typography.Paragraph>
+                      </Table.Cell>
+                      <Table.Cell>
                         {reply.author ? (
                           <span className="flex items-center gap-1.5">
                             <UserAvatar user={reply.author} />
@@ -460,27 +513,38 @@ export function RepliesPage() {
                             </span>
                           </span>
                         ) : (
-                          <span className="text-muted">已注销</span>
+                          <Typography.Paragraph size="sm" color="muted">
+                            已注销
+                          </Typography.Paragraph>
                         )}
-                      </td>
-                      <td className={TD_CLASS}>
-                        <p className="max-w-xs truncate text-xs text-muted">
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Typography.Paragraph
+                          size="xs"
+                          color="muted"
+                          truncate
+                          className="max-w-xs"
+                        >
                           {reply.excerpt}
-                        </p>
-                      </td>
-                      <td className={TD_CLASS}>
+                        </Typography.Paragraph>
+                      </Table.Cell>
+                      <Table.Cell>
                         {reply.deleted ? (
-                          <Badge tone="danger">已删除</Badge>
+                          <Chip size="sm" variant="soft" color="danger">
+                            <Chip.Label>已删除</Chip.Label>
+                          </Chip>
                         ) : (
-                          <Badge tone="success">正常</Badge>
+                          <Chip size="sm" variant="soft" color="success">
+                            <Chip.Label>正常</Chip.Label>
+                          </Chip>
                         )}
-                      </td>
-                      <td className={`${TD_CLASS} hidden 2xl:table-cell`}>
-                        <span className="text-xs text-muted">
+                      </Table.Cell>
+                      <Table.Cell className="hidden 2xl:table-cell">
+                        <Typography.Paragraph size="xs" color="muted">
                           {formatDateTime(reply.createdAt)}
-                        </span>
-                      </td>
-                      <td className={TD_CLASS}>
+                        </Typography.Paragraph>
+                      </Table.Cell>
+                      <Table.Cell>
                         <div className="flex flex-wrap gap-1">
                           {!reply.deleted && canEdit ? (
                             <Button
@@ -525,13 +589,13 @@ export function RepliesPage() {
                             </Button>
                           ) : null}
                         </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </TableWrap>
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
+          </Table>
 
           <Pagination
             page={repliesQuery.data.page}
