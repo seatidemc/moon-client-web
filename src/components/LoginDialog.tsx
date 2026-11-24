@@ -1,6 +1,7 @@
 import { Button, Input, Modal, toast } from '@heroui/react'
 import { useState, type FormEvent } from 'react'
 
+import { PendingButton } from '@/components/PendingButton'
 import { getBoardThemeStyle } from '@/lib/board-theme'
 import { useForum } from '@/lib/forum-context'
 import { useCurrentBoardColor } from '@/lib/use-current-board-color'
@@ -97,14 +98,14 @@ function LoginForm({ onClose }: { onClose: () => void }) {
         <Button variant="tertiary" onPress={onClose}>
           取消
         </Button>
-        <Button
+        <PendingButton
           type="submit"
           variant="primary"
-          isDisabled={submitting}
+          isPending={submitting}
           style={getBoardThemeStyle(boardColor)}
         >
           登录
-        </Button>
+        </PendingButton>
       </Modal.Footer>
     </form>
   )

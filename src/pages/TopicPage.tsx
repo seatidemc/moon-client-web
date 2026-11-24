@@ -8,6 +8,7 @@ import {
   type BoardDecorationVariant,
 } from '@/components/BoardDecoration'
 import { FeedLayout } from '@/components/FeedLayout'
+import { LoadingState } from '@/components/LoadingState'
 import { NewThreadDialog } from '@/components/NewThreadDialog'
 import { ThreadCard } from '@/components/ThreadCard'
 import { getBoardThemeStyle } from '@/lib/board-theme'
@@ -47,7 +48,7 @@ export function TopicPage() {
   if (!board) {
     return (
       <main className="mx-auto w-full max-w-[69.25rem] px-4 py-16">
-        <p className="text-center text-sm text-muted">正在加载板块…</p>
+        <LoadingState label="正在加载板块…" />
       </main>
     )
   }
@@ -140,9 +141,7 @@ export function TopicPage() {
                 <div ref={sentinelRef} aria-hidden="true" className="h-px" />
               </>
             ) : threadsQuery.isPending ? (
-              <div className="py-16 text-center">
-                <p className="text-sm text-muted">正在加载主题…</p>
-              </div>
+              <LoadingState label="正在加载主题…" className="py-16" />
             ) : (
               <div className="py-16 text-center">
                 <p className="text-sm text-muted">这个板块还没有主题</p>

@@ -14,6 +14,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { BoardIcon } from '@/components/BoardIcon'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { EditPostDialog } from '@/components/EditPostDialog'
+import { LoadingState } from '@/components/LoadingState'
 import { PostContent } from '@/components/PostContent'
 import {
   ReplyComposer,
@@ -142,7 +143,7 @@ export function ThreadPage() {
   if (!thread) {
     return (
       <main className="mx-auto w-full max-w-[69.25rem] px-4 py-16">
-        <p className="text-center text-sm text-muted">正在加载主题…</p>
+        <LoadingState label="正在加载主题…" />
       </main>
     )
   }
@@ -481,11 +482,9 @@ export function ThreadPage() {
                   )
                 })
               ) : repliesQuery.isPending ? (
-                <p className="pt-10 text-center text-sm text-muted">
-                  正在加载回复…
-                </p>
+                <LoadingState label="正在加载回复…" className="py-5" />
               ) : (
-                <p className="pt-10 text-center text-sm text-muted">
+                <p className="py-5 text-center text-sm text-muted">
                   来写下第一条回复吧~
                 </p>
               )}
@@ -601,6 +600,7 @@ export function ThreadPage() {
         title="删除这个主题？"
         description="主题和它下面的所有跟帖都会被删除，此操作无法撤销。"
         confirmLabel="删除主题"
+        isPending={deleteThread.isPending}
         onConfirm={() => void handleDeleteThread()}
       />
       <ConfirmDialog
@@ -610,6 +610,7 @@ export function ThreadPage() {
         }}
         title="删除这条跟帖？"
         description="删除后无法恢复。"
+        isPending={deleteReply.isPending}
         onConfirm={() => void handleDeleteReply()}
       />
     </div>

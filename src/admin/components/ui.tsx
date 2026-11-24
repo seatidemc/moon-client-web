@@ -3,11 +3,12 @@ import {
   Button,
   Card,
   Pagination as HeroPagination,
-  Spinner,
   Surface,
   Typography,
 } from '@heroui/react'
 import type { ReactNode } from 'react'
+
+import { LoadingState } from '@/components/LoadingState'
 
 export function PageHeader({
   title,
@@ -85,11 +86,8 @@ export function Pagination({
 
 export function LoadingPanel({ label = '加载中…' }: { label?: string }) {
   return (
-    <Surface className="flex items-center justify-center gap-2 px-4 py-10">
-      <Spinner size="sm" color="accent" />
-      <Typography.Paragraph size="sm" color="muted">
-        {label}
-      </Typography.Paragraph>
+<Surface className="px-4 py-10">
+      <LoadingState label={label} />
     </Surface>
   )
 }

@@ -23,6 +23,7 @@ import { Ban, CircleCheck, Plus, X } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { PendingButton } from '@/components/PendingButton'
 import { UserAvatar } from '@/components/UserAvatar'
 import { getDisplayName } from '@/lib/user'
 import { formatDateTime } from '@/lib/utils'
@@ -277,13 +278,13 @@ function PermissionEditor({
             </Button>
           </div>
 
-          <Button
+          <PendingButton
             variant="primary"
-            isDisabled={saveMutation.isPending}
+            isPending={saveMutation.isPending}
             onPress={() => saveMutation.mutate()}
           >
             保存权限
-          </Button>
+          </PendingButton>
         </>
       ) : null}
     </div>
@@ -498,11 +499,11 @@ function UserDetailDialog({
                       </div>
 
                       {canBan ? (
-                        <Button
+                        <PendingButton
                           size="sm"
                           variant="tertiary"
                           className={user.banned ? '' : 'text-danger'}
-                          isDisabled={banMutation.isPending}
+                          isPending={banMutation.isPending}
                           onPress={() => {
                             if (user.banned) {
                               banMutation.mutate(false)
@@ -522,7 +523,7 @@ function UserDetailDialog({
                               封禁
                             </>
                           )}
-                        </Button>
+                        </PendingButton>
                       ) : null}
                     </div>
 
@@ -571,13 +572,13 @@ function UserDetailDialog({
                             />
                           </TextField>
                           {canManageProfile ? (
-                            <Button
+                            <PendingButton
                               variant="primary"
-                              isDisabled={profileSaving}
+                              isPending={profileSaving}
                               onPress={() => void saveProfile()}
                             >
                               保存资料
-                            </Button>
+                            </PendingButton>
                           ) : null}
                         </div>
                       </Tabs.Panel>

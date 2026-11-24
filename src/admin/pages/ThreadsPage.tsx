@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 
+import { PendingButton } from '@/components/PendingButton'
 import { PostContent } from '@/components/PostContent'
 import { UserAvatar } from '@/components/UserAvatar'
 import { formatDateTime } from '@/lib/utils'
@@ -721,17 +722,17 @@ export function ThreadsPage() {
             />
           </TextField>
 
-          <Button
+          <PendingButton
             variant="primary"
+            isPending={batchMutation.isPending}
             isDisabled={
               selected.length === 0 ||
-              batchMutation.isPending ||
               (batchAction === 'move' && !batchBoardId)
             }
             onPress={() => batchMutation.mutate()}
           >
             执行批量操作
-          </Button>
+          </PendingButton>
           <Button
             variant="tertiary"
             isDisabled={selected.length === 0}
@@ -1062,9 +1063,10 @@ export function ThreadsPage() {
                 <Button variant="tertiary" onPress={() => setMoveTarget(null)}>
                   取消
                 </Button>
-                <Button
+                <PendingButton
                   variant="primary"
-                  isDisabled={!moveBoardId || moveMutation.isPending}
+                  isPending={moveMutation.isPending}
+                  isDisabled={!moveBoardId}
                   onPress={() => {
                     if (moveTarget) {
                       moveMutation.mutate({
@@ -1075,7 +1077,7 @@ export function ThreadsPage() {
                   }}
                 >
                   移动
-                </Button>
+                </PendingButton>
               </Modal.Footer>
             </Modal.Dialog>
           </Modal.Container>

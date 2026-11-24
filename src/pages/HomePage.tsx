@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 
 import { FeedLayout } from '@/components/FeedLayout'
+import { LoadingState } from '@/components/LoadingState'
 import { ThreadCard } from '@/components/ThreadCard'
 import { flattenPages, useBoards, useThreads } from '@/lib/queries'
 import { useInfiniteScroll } from '@/lib/use-infinite-scroll'
@@ -28,9 +29,7 @@ export function HomePage() {
             <div ref={sentinelRef} aria-hidden="true" className="h-px" />
           </>
         ) : threadsQuery.isPending ? (
-          <div className="py-16 text-center">
-            <p className="text-sm text-muted">正在加载主题…</p>
-          </div>
+          <LoadingState label="正在加载主题…" className="py-16" />
         ) : (
           <div className="py-16 text-center">
             <p className="text-sm text-muted">还没有主题。</p>

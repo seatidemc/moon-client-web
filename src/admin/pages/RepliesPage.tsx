@@ -22,6 +22,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, RotateCcw, Trash2 } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 
+import { PendingButton } from '@/components/PendingButton'
 import { RichTextEditor } from '@/components/editor'
 import { UserAvatar } from '@/components/UserAvatar'
 import { getDisplayName } from '@/lib/user'
@@ -125,13 +126,14 @@ function EditReplyDialog({
               <Button variant="tertiary" onPress={onClose}>
                 取消
               </Button>
-              <Button
+              <PendingButton
                 variant="primary"
-                isDisabled={saving || !contentQuery.isSuccess}
+                isPending={saving}
+                isDisabled={!contentQuery.isSuccess}
                 onPress={() => void handleSave()}
               >
                 保存跟帖
-              </Button>
+              </PendingButton>
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
@@ -387,13 +389,14 @@ export function RepliesPage() {
             />
           </TextField>
 
-          <Button
+          <PendingButton
             variant="primary"
-            isDisabled={selected.length === 0 || batchMutation.isPending}
+            isPending={batchMutation.isPending}
+            isDisabled={selected.length === 0}
             onPress={() => batchMutation.mutate()}
           >
             执行批量操作
-          </Button>
+          </PendingButton>
           <Button
             variant="tertiary"
             isDisabled={selected.length === 0}

@@ -149,6 +149,79 @@ export function patchThreadCaches(
 
 const REPLY_LIST_KEYS = new Set(['replies', 'user-replies'])
 
+/**
+ * 把刚发布的回复直接并入回复列表缓存，发布成功后新楼层立刻可见，
+ * 不用再等一次列表请求。
+ *
+ * 新楼层只会落在最后一页，或紧随其后的新一页；如果它所在的页和已加载
+ * 页之间还有缺口（用户没滑到那里），直接追加会让分页断档，此时不做处理，
+ * 由发布流程照常补拉分页。
+ */
+function appendReplyToCache(
+  queryClient: QueryClient,
+  threadId: number,
+  reply: Reply,
+) {
+  const key = queryKeys.replies(threadId)
+  const data = queryClient.getQueryData<InfinitePage<Reply>>(key)
+  const lastPage = data?.pages[data.pages.length - 1]
+  if (!data || !lastPage) return
+
+  const targetPage = Math.ceil(reply.floor / PAGE_SIZE)
+  if (targetPage < lastPage.page || targetPage > lastPage.page + 1) return
+
+  if (
+    data.pages.some((page) => page.items.some((item) => item.id === reply.id))
+  ) {
+    return
+  }
+
+  if (targetPage > lastPage.page) {
+    queryClient.setQueryData<InfinitePage<Reply>>(key, {
+      pages: [
+        ...data.pages,
+        {
+          items: [reply],
+          total: lastPage.total + 1,
+          page: targetPage,
+          pageSize: PAGE_SIZE,
+        },
+      ],
+      pageParams: [...data.pageParams, targetPage],
+    })
+    return
+  }
+
+  queryClient.setQueryData<InfinitePage<Reply>>(key, {
+    pages: data.pages.map((page, index) =>
+      index === data.pages.length - 1
+        ? {
+            ...page,
+            items: [...page.items, reply].sort((a, b) => a.floor - b.floor),
+            total: page.total + 1,
+          }
+        : page,
+    ),
+    pageParams: data.pageParams,
+  })
+}
+
+/** 回复是否已经并入了列表缓存（判断发布后是否还需要补拉分页）。 */
+export function isReplyInCache(
+  queryClient: QueryClient,
+  threadId: number,
+  replyId: number,
+): boolean {
+  const data = queryClient.getQueryData<InfinitePage<Reply>>(
+    queryKeys.replies(threadId),
+  )
+  return (
+    data?.pages.some((page) =>
+      page.items.some((item) => item.id === replyId),
+    ) ?? false
+  )
+}
+
 export function patchReplyCaches(
   queryClient: QueryClient,
   replyId: number,
@@ -456,7 +529,11 @@ export function useCreateReply(threadId: number) {
         body: { contentHtml },
       }),
     onError: (error) => toastMutationError(error),
-    onSuccess: () => {
+    onSuccess: (reply) => {
+      // 接口返回的就是这条回复的完整数据，先并入列表让新楼层立刻出现。
+      // 列表仍照常重新拉取：拉回的内容一致时结构共享会保留现有对象、
+      // 界面不会变化，只有确实不同（如服务端规范化了正文）时才替换。
+      appendReplyToCache(queryClient, threadId, reply)
       void queryClient.invalidateQueries({
         queryKey: queryKeys.replies(threadId),
       })

@@ -3,6 +3,7 @@ import { Search } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
+import { LoadingState } from '@/components/LoadingState'
 import { TagList } from '@/components/TagList'
 import { ThreadCard } from '@/components/ThreadCard'
 import {
@@ -99,9 +100,7 @@ export function SearchPage() {
               <div ref={sentinelRef} aria-hidden="true" className="h-px" />
             </div>
           ) : searchQuery.isPending ? (
-            <div className="py-14 text-center">
-              <p className="text-sm text-muted">正在搜索…</p>
-            </div>
+            <LoadingState label="正在搜索…" className="py-14" />
           ) : (
             <div className="py-14 text-center">
               <p className="text-sm text-muted">没有找到相关主题。</p>

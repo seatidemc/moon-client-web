@@ -4,7 +4,10 @@ import { useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { AvatarCropDialog } from '@/components/AvatarCropDialog'
+import { LoadingState } from '@/components/LoadingState'
+import { NicknameEditDialog } from '@/components/NicknameEditDialog'
 import { Pagination } from '@/components/Pagination'
+import { PendingButton } from '@/components/PendingButton'
 import { ProfileCustomizeDialog } from '@/components/ProfileCustomizeDialog'
 import { ThreadCard } from '@/components/ThreadCard'
 import { UserAvatar } from '@/components/UserAvatar'
@@ -64,6 +67,7 @@ export function UserPage() {
 
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
+  const [nicknameOpen, setNicknameOpen] = useState(false)
 
   function changeThreadsPage(next: number) {
     if (!currentUser) {
@@ -99,7 +103,7 @@ export function UserPage() {
   if (!user) {
     return (
       <main className="mx-auto w-full max-w-[69.25rem] px-4 py-16">
-        <p className="text-center text-sm text-muted">正在加载用户…</p>
+        <LoadingState label="正在加载用户…" />
       </main>
     )
   }
@@ -244,9 +248,24 @@ export function UserPage() {
             ) : null}
           </div>
           <div className={cn('min-w-48 flex-1', background && '-mt-2.5')}>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {displayName}
-            </h1>
+            <div className="flex items-center gap-1">
+              <h1 className="text-2xl font-semibold tracking-tight">
+                {displayName}
+              </h1>
+              {isSelf ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  isIconOnly
+                  variant="ghost"
+                  className="text-muted hover:text-foreground"
+                  aria-label="编辑昵称"
+                  onPress={() => setNicknameOpen(true)}
+                >
+                  <Pencil className="size-4" aria-hidden="true" />
+                </Button>
+              ) : null}
+            </div>
             <p className="mt-0.5 text-sm text-muted">@{user.username}</p>
             {background ? null : profileBio ? (
               <div className="mt-3">{profileBio}</div>
@@ -309,7 +328,7 @@ export function UserPage() {
                 <ThreadCard key={thread.id} thread={thread} showBoard />
               ))
             ) : threadsQuery.isPending ? (
-              <p className="py-8 text-sm text-muted">正在加载主题…</p>
+              <LoadingState label="正在加载主题…" className="py-8" />
             ) : threadsQuery.isError ? (
               <p className="py-8 text-sm text-muted">主题加载失败，请稍后重试</p>
             ) : (
@@ -369,7 +388,7 @@ export function UserPage() {
                 </article>
               ))
             ) : repliesQuery.isPending ? (
-              <p className="py-8 text-sm text-muted">正在加载回复…</p>
+              <LoadingState label="正在加载回复…" className="py-8" />
             ) : repliesQuery.isError ? (
               <p className="py-8 text-sm text-muted">回复加载失败，请稍后重试。</p>
             ) : (
@@ -383,6 +402,12 @@ export function UserPage() {
         isOpen={customizeOpen}
         onOpenChange={setCustomizeOpen}
         backgroundUrl={background}
+      />
+
+      <NicknameEditDialog
+        isOpen={nicknameOpen}
+        onOpenChange={setNicknameOpen}
+        user={user}
       />
 
       <AvatarCropDialog
@@ -464,14 +489,14 @@ function ProfileBio({
           >
             取消
           </Button>
-          <Button
+          <PendingButton
             type="submit"
             size="sm"
             variant="primary"
-            isDisabled={saving}
+            isPending={saving}
           >
             保存
-          </Button>
+          </PendingButton>
         </div>
       </form>
     )

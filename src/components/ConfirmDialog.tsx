@@ -1,5 +1,7 @@
 import { Button, Modal } from '@heroui/react'
 
+import { PendingButton } from '@/components/PendingButton'
+
 interface ConfirmDialogProps {
   isOpen: boolean
   onOpenChange: (isOpen: boolean) => void
@@ -7,6 +9,7 @@ interface ConfirmDialogProps {
   description: string
   confirmLabel?: string
   confirmVariant?: 'danger' | 'primary'
+  isPending?: boolean
   onConfirm: () => void
 }
 
@@ -17,6 +20,7 @@ export function ConfirmDialog({
   description,
   confirmLabel = '删除',
   confirmVariant = 'danger',
+  isPending = false,
   onConfirm,
 }: ConfirmDialogProps) {
   return (
@@ -34,9 +38,13 @@ export function ConfirmDialog({
               <Button variant="tertiary" onPress={() => onOpenChange(false)}>
                 取消
               </Button>
-              <Button variant={confirmVariant} onPress={onConfirm}>
+              <PendingButton
+                variant={confirmVariant}
+                isPending={isPending}
+                onPress={onConfirm}
+              >
                 {confirmLabel}
-              </Button>
+              </PendingButton>
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>

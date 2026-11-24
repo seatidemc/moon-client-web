@@ -24,6 +24,7 @@ import { ArrowDown, ArrowUp, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-reac
 import { useState, type FormEvent } from 'react'
 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { PendingButton } from '@/components/PendingButton'
 
 import { adminApi, type BoardInput } from '../api'
 import { BOARD_ICON_OPTIONS } from '../lib'
@@ -259,13 +260,13 @@ function BoardFormDialog({
                 <Button variant="tertiary" onPress={onClose}>
                   取消
                 </Button>
-                <Button
+                <PendingButton
                   type="submit"
                   variant="primary"
-                  isDisabled={submitting}
+                  isPending={submitting}
                 >
                   {board ? '保存修改' : '创建板块'}
-                </Button>
+                </PendingButton>
               </Modal.Footer>
             </Form>
           </Modal.Dialog>

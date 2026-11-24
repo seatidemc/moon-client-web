@@ -9,6 +9,7 @@ import {
 import { useState, type FormEvent } from 'react'
 
 import { EditorExpandToggle } from '@/components/EditorExpandToggle'
+import { PendingButton } from '@/components/PendingButton'
 import { RichTextEditor } from '@/components/editor'
 import { getBoardThemeStyle } from '@/lib/board-theme'
 import { hasRichTextContent } from '@/lib/html-content'
@@ -177,9 +178,13 @@ function EditPostForm({
         <Button variant="tertiary" onPress={onCancel} isDisabled={saving}>
           取消
         </Button>
-        <Button type="submit" variant="primary" isDisabled={saving}>
+        <PendingButton
+          type="submit"
+          variant="primary"
+          isPending={saving}
+        >
           保存
-        </Button>
+        </PendingButton>
       </Modal.Footer>
     </form>
   )
