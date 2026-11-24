@@ -2,6 +2,7 @@ import { Button, Modal, cn, toast } from '@heroui/react'
 import { ImagePlus, Trash2 } from 'lucide-react'
 import { useRef, useState, type DragEvent } from 'react'
 
+import { PendingButton } from '@/components/PendingButton'
 import { uploadImage } from '@/lib/api'
 import { imageFileToBackgroundBlob } from '@/lib/image'
 import { useBindBackground } from '@/lib/queries'
@@ -46,6 +47,7 @@ function CustomizePanel({
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const [processing, setProcessing] = useState(false)
+  const [removing, setRemoving] = useState(false)
 
   async function applyFile(file: File | undefined) {
     if (!file) return
@@ -85,11 +87,14 @@ function CustomizePanel({
   }
 
   async function handleRemove() {
+    setRemoving(true)
     try {
       await bindBackground.mutateAsync(null)
       toast.success('主页背景已移除。')
     } catch {
       // 错误提示由 API 层展示。
+    } finally {
+      setRemoving(false)
     }
   }
 
@@ -103,16 +108,17 @@ function CustomizePanel({
         <div className="flex h-9 items-center justify-between gap-3">
           <h3 className="text-sm font-medium text-foreground">主页背景</h3>
           {background ? (
-            <Button
+            <PendingButton
               size="sm"
               variant="ghost"
               className="text-danger"
-              isDisabled={processing}
+              isPending={removing}
+              isDisabled={processing && !removing}
               onPress={() => void handleRemove()}
             >
               <Trash2 aria-hidden="true" />
               移除背景
-            </Button>
+            </PendingButton>
           ) : null}
         </div>
 

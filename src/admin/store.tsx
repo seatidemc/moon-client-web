@@ -17,6 +17,7 @@ import {
   type ReactNode,
 } from 'react'
 
+import { LoadingState } from '@/components/LoadingState'
 import { isApiError } from '@/lib/api'
 
 import { adminApi } from './api'
@@ -241,8 +242,8 @@ function AdminAuthState({ children }: { children: ReactNode }) {
 
   if (meQuery.isPending) {
     return (
-      <div className="flex min-h-svh items-center justify-center text-sm text-muted">
-        正在读取登录状态…
+      <div className="flex min-h-svh items-center justify-center">
+        <LoadingState label="正在读取登录状态…" />
       </div>
     )
   }

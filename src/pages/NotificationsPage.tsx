@@ -2,6 +2,7 @@ import { Button, Tabs } from '@heroui/react'
 import { Bell, BellOff } from 'lucide-react'
 import { useState } from 'react'
 
+import { LoadingState } from '@/components/LoadingState'
 import { NotificationItem } from '@/components/NotificationItem'
 import { useForum } from '@/lib/forum-context'
 import {
@@ -113,9 +114,7 @@ export function NotificationsPage() {
             <div ref={sentinelRef} aria-hidden="true" className="h-px" />
           </div>
         ) : active.isPending ? (
-          <div className="px-6 py-16 text-center">
-            <p className="text-sm text-muted">正在加载通知…</p>
-          </div>
+          <LoadingState label="正在加载通知…" className="px-6 py-16" />
         ) : (
           <div className="px-6 py-16 text-center">
             <BellOff

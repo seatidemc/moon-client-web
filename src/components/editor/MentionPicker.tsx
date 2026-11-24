@@ -1,6 +1,7 @@
 import { ListBox, Surface } from '@heroui/react'
 import { useRef, type RefObject } from 'react'
 
+import { LoadingState } from '@/components/LoadingState'
 import { UserAvatar } from '@/components/UserAvatar'
 import { getDisplayName } from '@/lib/user'
 import type { UserSummary } from '@/types'
@@ -53,15 +54,17 @@ export function MentionPicker({
           selectedKeys={
             options[activeIndex] ? [String(options[activeIndex].id)] : []
           }
-          renderEmptyState={() => (
-            <p className="px-2 py-2 text-sm text-muted">
-              {trigger.query.trim() === ''
-                ? '输入用户名或昵称搜索。'
-                : loading
-                  ? '搜索中…'
+          renderEmptyState={() =>
+            trigger.query.trim() !== '' && loading ? (
+              <LoadingState label="搜索中…" className="px-2 py-2" />
+            ) : (
+              <p className="px-2 py-2 text-sm text-muted">
+                {trigger.query.trim() === ''
+                  ? '输入用户名或昵称搜索。'
                   : '没有匹配的用户。'}
-            </p>
-          )}
+              </p>
+            )
+          }
           className="pb-1"
         >
           {options.map((user, index) => (

@@ -2,6 +2,8 @@ import { Button, TextArea, toast } from '@heroui/react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState, type FormEvent } from 'react'
 
+import { PendingButton } from '@/components/PendingButton'
+
 import { adminApi } from '../api'
 import {
   Card,
@@ -201,9 +203,13 @@ export function SettingsPage() {
             </div>
 
             <div className="flex gap-2">
-              <Button type="submit" variant="primary" isDisabled={saving}>
+              <PendingButton
+                type="submit"
+                variant="primary"
+                isPending={saving}
+              >
                 保存设置
-              </Button>
+              </PendingButton>
               <Button
                 variant="tertiary"
                 onPress={() => {

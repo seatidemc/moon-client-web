@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { BoardIcon } from '@/components/BoardIcon'
 import { EditorExpandToggle } from '@/components/EditorExpandToggle'
+import { PendingButton } from '@/components/PendingButton'
 import { RichTextEditor } from '@/components/editor'
 import { isApiError } from '@/lib/api'
 import { getBoardThemeStyle } from '@/lib/board-theme'
@@ -220,13 +221,13 @@ function NewThreadForm({
         <Button variant="tertiary" onPress={onClose}>
           取消
         </Button>
-        <Button
+        <PendingButton
           type="submit"
           variant="primary"
-          isDisabled={createThread.isPending}
+          isPending={createThread.isPending}
         >
           发布帖子
-        </Button>
+        </PendingButton>
       </Modal.Footer>
     </form>
   )

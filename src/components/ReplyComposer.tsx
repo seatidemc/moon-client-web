@@ -1,4 +1,5 @@
 import { Button, Kbd, Modal } from '@heroui/react'
+import { useQueryClient } from '@tanstack/react-query'
 import { CornerDownLeft, Maximize2, Pin } from 'lucide-react'
 import {
   useEffect,
@@ -11,6 +12,7 @@ import {
 } from 'react'
 
 import { EditorExpandToggle } from '@/components/EditorExpandToggle'
+import { PendingButton } from '@/components/PendingButton'
 import { COMPACT_EDITOR_LINE_HEIGHT } from '@/components/editor/editor-constants'
 import {
   RichTextEditor,
@@ -23,6 +25,7 @@ import { hasRichTextContent } from '@/lib/html-content'
 import { pulseElement } from '@/lib/pulse'
 import {
   flattenPages,
+  isReplyInCache,
   useCreateReply,
   useThread,
   useThreadReplies,
@@ -43,6 +46,7 @@ interface ReplyComposerProps {
 
 export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
   const { currentUser, openLogin } = useForum()
+  const queryClient = useQueryClient()
   const threadQuery = useThread(threadId)
   const repliesQuery = useThreadReplies(threadId)
   const createReply = useCreateReply(threadId)
@@ -129,8 +133,12 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
       const reply = await createReply.mutateAsync(content)
       setContent('')
       setExpanded(false)
-      await loadReplyPage(reply)
-      // 等新楼层随列表刷新渲染出来再滚动，落点按最新布局计算。
+      // 接口成功后回复已直接并入列表，新楼层马上就能渲染；只有它所在的
+      // 分页还没加载（用户没滑到那里）时，才需要补拉分页。
+      if (!isReplyInCache(queryClient, threadId, reply.id)) {
+        await loadReplyPage(reply)
+      }
+      // 等新楼层渲染出来再滚动，落点按最新布局计算。
       setPendingReplyId(reply.id)
     } catch {
       // 错误信息已由全局处理展示；保留输入内容方便重试。
@@ -255,14 +263,13 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
                       </Button>
                     </div>
                   </div>
-                  <Button
+                  <PendingButton
                     type="submit"
                     size="sm"
                     variant="primary"
                     className="pointer-events-auto shrink-0"
-                    isDisabled={
-                      createReply.isPending || !hasRichTextContent(content)
-                    }
+                    isPending={createReply.isPending}
+                    isDisabled={!hasRichTextContent(content)}
                   >
                     发布
                     {quickSend ? (
@@ -273,7 +280,7 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
                         <CornerDownLeft className="size-3" />
                       </Kbd>
                     ) : null}
-                  </Button>
+                  </PendingButton>
                 </div>
               </div>
             </form>
@@ -332,15 +339,14 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
                 </Modal.Body>
 
                 <Modal.Footer>
-                  <Button
+                  <PendingButton
                     type="submit"
                     variant="primary"
-                    isDisabled={
-                      createReply.isPending || !hasRichTextContent(content)
-                    }
+                    isPending={createReply.isPending}
+                    isDisabled={!hasRichTextContent(content)}
                   >
                     发布
-                  </Button>
+                  </PendingButton>
                 </Modal.Footer>
               </form>
             </Modal.Dialog>

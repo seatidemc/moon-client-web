@@ -1,6 +1,8 @@
 import { Button, Input, toast } from '@heroui/react'
 import { useState, type FormEvent } from 'react'
 
+import { PendingButton } from '@/components/PendingButton'
+
 import { useAdmin } from '../store'
 
 export function LoginPage() {
@@ -66,14 +68,14 @@ export function LoginPage() {
             />
           </div>
 
-          <Button
+          <PendingButton
             type="submit"
             variant="primary"
             className="w-full"
-            isDisabled={submitting}
+            isPending={submitting}
           >
             登录管理后台
-          </Button>
+          </PendingButton>
         </form>
       </div>
     </div>

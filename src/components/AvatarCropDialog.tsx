@@ -9,6 +9,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 
+import { PendingButton } from '@/components/PendingButton'
 import { uploadImage } from '@/lib/api'
 import { getAvatarShape, getAvatarUrl, hasCustomAvatar } from '@/lib/avatar'
 import { useBindAvatar, useSetAvatarShape } from '@/lib/queries'
@@ -211,7 +212,10 @@ function AvatarCropPanel({
   })
   const [dragging, setDragging] = useState(false)
   const [dropActive, setDropActive] = useState(false)
-  const [processing, setProcessing] = useState(false)
+  const [pendingAction, setPendingAction] = useState<
+    'file' | 'save' | 'delete' | null
+  >(null)
+  const processing = pendingAction !== null
 
   useEffect(() => {
     disposedRef.current = false
@@ -289,7 +293,7 @@ function AvatarCropPanel({
   async function applyFile(file: File | undefined) {
     if (!file || processing) return
 
-    setProcessing(true)
+    setPendingAction('file')
 
     try {
       const next = await loadAvatarImage(file)
@@ -305,7 +309,7 @@ function AvatarCropPanel({
         cause instanceof Error ? cause.message : '无法读取这张图片。',
       )
     } finally {
-      setProcessing(false)
+      setPendingAction(null)
     }
   }
 
@@ -403,7 +407,7 @@ function AvatarCropPanel({
     if (!hasSource && !shapeChanged) return
     if (processing) return
 
-    setProcessing(true)
+    setPendingAction('save')
 
     try {
       if (source && viewport > 0) {
@@ -430,12 +434,12 @@ function AvatarCropPanel({
           : '无法保存头像，请换一张图片试试。',
       )
     } finally {
-      setProcessing(false)
+      setPendingAction(null)
     }
   }
 
   async function handleReset() {
-    setProcessing(true)
+    setPendingAction('delete')
     try {
       await bindAvatar.mutateAsync(null)
       toast.success('头像已删除。')
@@ -445,7 +449,7 @@ function AvatarCropPanel({
         cause instanceof Error ? cause.message : '无法删除头像。',
       )
     } finally {
-      setProcessing(false)
+      setPendingAction(null)
     }
   }
 
@@ -662,30 +666,33 @@ function AvatarCropPanel({
             </Tabs.ListContainer>
           </Tabs>
           {hasCustomAvatar(user) ? (
-            <Button
+            <PendingButton
               variant="ghost"
               className="text-danger"
-              isDisabled={processing}
+              isPending={pendingAction === 'delete'}
+              isDisabled={processing && pendingAction !== 'delete'}
               onPress={() => void handleReset()}
             >
               <Trash2 aria-hidden="true" />
               删除头像
-            </Button>
+            </PendingButton>
           ) : null}
         </div>
         <div className="flex items-center gap-2">
           <Button variant="tertiary" onPress={onClose}>
             取消
           </Button>
-          <Button
+          <PendingButton
             variant="primary"
+            isPending={pendingAction === 'save'}
             isDisabled={
-              processing || (source ? viewport <= 0 : shape === currentShape)
+              (processing && pendingAction !== 'save') ||
+              (source ? viewport <= 0 : shape === currentShape)
             }
             onPress={() => void handleSave()}
           >
             保存
-          </Button>
+          </PendingButton>
         </div>
       </Modal.Footer>
     </>

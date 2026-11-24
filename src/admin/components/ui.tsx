@@ -8,6 +8,8 @@ import type {
 
 import { cn } from '@heroui/react'
 
+import { LoadingState } from '@/components/LoadingState'
+
 export function PageHeader({
   title,
   description,
@@ -196,8 +198,8 @@ export function Pagination({
 
 export function LoadingPanel({ label = '加载中…' }: { label?: string }) {
   return (
-    <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted">
-      {label}
+    <div className="rounded-xl border border-dashed border-border px-4 py-10">
+      <LoadingState label={label} />
     </div>
   )
 }
