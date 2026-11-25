@@ -625,29 +625,6 @@ test.describe.serial('Moon 管理后台', () => {
     await expect(dialog).toHaveCount(0)
   })
 
-  test('权限目录：查看权限点与持有者', async () => {
-    await gotoAdmin(adminPage, '/permissions')
-    await expect(
-      adminPage.getByRole('heading', { level: 1, name: '权限目录' }),
-    ).toBeVisible()
-    await expect(adminPage.getByText('thread.create', { exact: true }).first()).toBeVisible()
-
-    await adminPage
-      .getByRole('button', { name: '查看权限 thread.create 的持有者' })
-      .click()
-    await expect(
-      adminPage.getByText('e2ealice').first(),
-    ).toBeVisible({ timeout: 15_000 })
-
-    await adminPage
-      .getByRole('button', { name: '查看权限 content.view_admin 的持有者' })
-      .click()
-    await chooseOption(adminPage, '范围筛选', 'E2E 综合')
-    await expect(adminPage.getByText('e2ecarol').first()).toBeVisible({
-      timeout: 15_000,
-    })
-  })
-
   test('站点设置：保存并持久化', async () => {
     await gotoAdmin(adminPage, '/settings')
     await expect(
@@ -668,12 +645,12 @@ test.describe.serial('Moon 管理后台', () => {
     await expectToast('站点设置已保存')
   })
 
-  test('上传文件：统计、筛选与删除', async () => {
+  test('文件管理：统计、筛选与删除', async () => {
     await gotoAdmin(adminPage, '/uploads')
     await expect(
-      adminPage.getByRole('heading', { level: 1, name: '上传文件' }),
+      adminPage.getByRole('heading', { level: 1, name: '文件管理' }),
     ).toBeVisible()
-    await expect(adminPage.getByText('总占用')).toBeVisible()
+    await expect(adminPage.getByText('已用空间')).toBeVisible()
 
     await chooseOption(adminPage, '用途', '主题/跟帖')
     await adminPage.getByRole('button', { name: '查询' }).click()

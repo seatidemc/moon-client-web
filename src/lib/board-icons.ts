@@ -1,35 +1,21 @@
-import { Code } from 'pixelarticons/react/Code.js'
-import { Coffee } from 'pixelarticons/react/Coffee.js'
-import { Lightbulb } from 'pixelarticons/react/Lightbulb.js'
-import { MessageText } from 'pixelarticons/react/MessageText.js'
-import type { ComponentType, SVGProps } from 'react'
+import { BOARD_ICON_NAMES, type BoardIconName } from './board-icon-names'
 
-import type { BoardIconName } from '@/types'
+export { BOARD_ICON_NAMES, type BoardIconName }
 
-type BoardIconComponent = ComponentType<SVGProps<SVGSVGElement>>
-
-const BOARD_ICONS: Record<BoardIconName, BoardIconComponent> = {
-  discussion: MessageText,
-  code: Code,
-  life: Coffee,
-  feedback: Lightbulb,
-}
-
-const FALLBACK_ICON = MessageText
-
-export const DEFAULT_BOARD_ICON: BoardIconName = 'discussion'
+export const DEFAULT_BOARD_ICON: BoardIconName = 'message-text'
 export const DEFAULT_BOARD_COLOR = '#6366f1'
 
+const BOARD_ICON_NAME_SET: ReadonlySet<string> = new Set(BOARD_ICON_NAMES)
+
 export function isBoardIconName(value: unknown): value is BoardIconName {
-  return typeof value === 'string' && value in BOARD_ICONS
+  return typeof value === 'string' && BOARD_ICON_NAME_SET.has(value)
 }
 
 export function normalizeBoardIcon(icon: string | undefined): BoardIconName {
   return isBoardIconName(icon) ? icon : DEFAULT_BOARD_ICON
 }
 
-export function getBoardIcon(
-  icon: BoardIconName | string | undefined,
-): BoardIconComponent {
-  return isBoardIconName(icon) ? BOARD_ICONS[icon] : FALLBACK_ICON
+/** 板块图标使用 pixelarticons 字体，类名即图标名。 */
+export function boardIconClassName(icon: string): string {
+  return `pixelart-icons-font-${normalizeBoardIcon(icon)}`
 }

@@ -205,7 +205,7 @@ function NewThreadForm({
                       <BoardIcon
                         icon={board.icon}
                         color={board.color}
-                        className="size-3.5 shrink-0"
+                        size="14px"
                       />
                       {board.name}
                     </span>

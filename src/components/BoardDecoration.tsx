@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 
-import { getBoardIcon } from '@/lib/board-icons'
+import { BoardIcon } from '@/components/BoardIcon'
 
 export type BoardDecorationVariant = 'radial' | 'tiled'
 
@@ -181,7 +181,6 @@ export function BoardDecoration({
   color,
   variant = 'radial',
 }: BoardDecorationProps) {
-  const BoardIcon = getBoardIcon(icon)
   const layout = LAYOUTS[variant]
   const bleed = layout.bleed ?? 0
 
@@ -207,12 +206,12 @@ export function BoardDecoration({
             {layout.icons.map((decoration, index) => (
               <BoardIcon
                 key={index}
+                icon={icon}
                 className="absolute"
                 style={{
                   left: `${decoration.left}rem`,
                   top: `${decoration.top}rem`,
-                  width: `${decoration.size}rem`,
-                  height: `${decoration.size}rem`,
+                  fontSize: `${decoration.size}rem`,
                   opacity: decoration.opacity,
                   transform: `rotate(${layout.iconRotate}deg)`,
                 }}

@@ -442,7 +442,7 @@ function UserDetailDialog({
     <>
       <Modal isOpen onOpenChange={(isOpen) => !isOpen && onClose()}>
         <Modal.Backdrop>
-          <Modal.Container size="lg" scroll="inside">
+          <Modal.Container size="lg" scroll="inside" placement="top">
             <Modal.Dialog>
               <Modal.CloseTrigger aria-label="关闭用户详情" />
               <Modal.Header>
@@ -544,6 +544,7 @@ function UserDetailDialog({
                           {tabs.map((item) => (
                             <Tabs.Tab key={item.key} id={item.key}>
                               {item.label}
+                              <Tabs.Indicator />
                             </Tabs.Tab>
                           ))}
                         </Tabs.List>
@@ -624,7 +625,7 @@ export function UsersPage() {
   const [keywordDraft, setKeywordDraft] = useState('')
   const [keyword, setKeyword] = useState('')
   const [banned, setBanned] = useState('')
-  const [permission, setPermission] = useState('')
+  const [permissions, setPermissions] = useState<string[]>([])
   const [page, setPage] = useState(1)
   const [detailId, setDetailId] = useState<number | null>(null)
 
@@ -639,11 +640,11 @@ export function UsersPage() {
     () => ({
       keyword: keyword || undefined,
       banned: banned === '' ? undefined : banned === 'true',
-      permission: permission || undefined,
+      permission: permissions.length ? permissions : undefined,
       page,
       pageSize: PAGE_SIZE,
     }),
-    [banned, keyword, page, permission],
+    [banned, keyword, page, permissions],
   )
 
   const usersQuery = useQuery({
@@ -661,7 +662,7 @@ export function UsersPage() {
     setKeywordDraft('')
     setKeyword('')
     setBanned('')
-    setPermission('')
+    setPermissions([])
     setPage(1)
   }
 
@@ -669,7 +670,7 @@ export function UsersPage() {
     <div>
       <PageHeader
         title="用户管理"
-        description="共享账号的论坛资料、封禁状态与权限节点。账号创建仍由 lab 负责。"
+        description="共享账号的论坛资料、封禁状态与权限节点；仅显示至少登录过一次论坛的账号。账号创建仍由 lab 负责。"
       />
 
       <Card className="mb-4">
@@ -725,31 +726,43 @@ export function UsersPage() {
             </Select>
 
             <Select
-              selectedKey={permission || '__none__'}
-              onSelectionChange={(key) => {
-                setPermission(
-                  key === null || key === '__none__' ? '' : String(key),
-                )
+              selectionMode="multiple"
+              value={permissions}
+              onChange={(keys) => {
+                setPermissions(keys.map(String))
                 setPage(1)
               }}
+              placeholder="不限"
             >
               <Label>拥有权限</Label>
               <Select.Trigger>
-                <Select.Value />
+                <Select.Value>
+                  <span
+                    title={
+                      permissions.length ? permissions.join('、') : undefined
+                    }
+                  >
+                    {permissions.length === 0
+                      ? '不限'
+                      : permissions.length === 1
+                        ? permissions[0]
+                        : `已选 ${permissions.length} 项`}
+                  </span>
+                </Select.Value>
                 <Select.Indicator />
               </Select.Trigger>
               <Select.Popover>
                 <ListBox>
-                  <ListBox.Item id="__none__" textValue="不限">
-                    不限
-                  </ListBox.Item>
                   {(catalogQuery.data?.items ?? []).map((item) => (
                     <ListBox.Item
                       key={item.code}
                       id={item.code}
                       textValue={item.code}
                     >
-                      {item.code}
+                      <span className="min-w-0 flex-1 truncate">
+                        {item.code}
+                      </span>
+                      <ListBox.ItemIndicator />
                     </ListBox.Item>
                   ))}
                 </ListBox>

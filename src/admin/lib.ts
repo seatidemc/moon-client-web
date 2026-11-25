@@ -47,13 +47,6 @@ export function labRoleLabel(role: string): string {
   return LAB_ROLE_LABELS[role] ?? role
 }
 
-export const BOARD_ICON_OPTIONS = [
-  { value: 'discussion', label: '讨论' },
-  { value: 'code', label: '代码' },
-  { value: 'life', label: '生活' },
-  { value: 'feedback', label: '反馈' },
-]
-
 export const UPLOAD_KIND_LABELS: Record<string, string> = {
   post: '主题/跟帖',
   avatar: '头像',

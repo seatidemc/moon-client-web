@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@heroui/styles";
+@import "pixelarticons/fonts/pixelart-icons-font.css";
 @import "./fonts.css";
 
 :root {
@@ -13,6 +14,17 @@
   --field-border-focus: transparent;
   /* 全站链接默认使用品牌蓝；少量混合前景色，保证浅色背景上的可读性 */
   --link: color-mix(in oklab, var(--accent) 85%, var(--foreground) 15%);
+  /* 图表分类色：三个固定槽位，浅色与深色各自取样 */
+  --chart-series-1: #2a78d6;
+  --chart-series-2: #eb6834;
+  --chart-series-3: #1baf7a;
+}
+
+.dark,
+[data-theme="dark"] {
+  --chart-series-1: #3987e5;
+  --chart-series-2: #d95926;
+  --chart-series-3: #199e70;
 }
 
 /*
@@ -496,4 +508,17 @@ body {
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
+}
+
+/*
+ * 板块图标改用 pixelarticons 字体渲染：字号决定图标尺寸（由组件内联设置），
+ * 这里只固定 1em 的方块几何，保证各处布局与原来的 SVG 尺寸一致。
+ */
+.board-icon {
+  display: inline-block;
+  flex: none;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  vertical-align: middle;
 }

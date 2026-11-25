@@ -247,7 +247,7 @@ export function ThreadPage() {
                 <BoardIcon
                   icon={board.icon}
                   color={board.color}
-                  className="size-4"
+                  size="16px"
                 />
                 {board.name}
               </Link>

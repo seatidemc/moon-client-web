@@ -34,10 +34,6 @@ export interface PermissionItem {
   default: boolean
 }
 
-export interface PermissionUser extends UserSummary {
-  boardId: number | null
-}
-
 export interface AdminUser {
   id: number
   username: string
@@ -133,6 +129,12 @@ export interface UploadStats {
   kind: string
   count: number
   sizeBytes: number
+}
+
+export interface UploadStatsSummary {
+  items: UploadStats[]
+  quotaBytes: number
+  userQuotaBytes: number
 }
 
 export interface DashboardTotals {

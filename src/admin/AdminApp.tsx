@@ -17,7 +17,6 @@ import {
   MessagesSquare,
   ScrollText,
   Settings,
-  ShieldCheck,
   Users,
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
@@ -26,7 +25,6 @@ import {
   NavLink,
   Routes,
   Route,
-  useLocation,
 } from 'react-router-dom'
 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -39,7 +37,6 @@ import { useAdmin, type AdminContextValue } from './store'
 import { AuditPage } from './pages/AuditPage'
 import { BoardsPage } from './pages/BoardsPage'
 import { DashboardPage } from './pages/DashboardPage'
-import { PermissionsPage } from './pages/PermissionsPage'
 import { RepliesPage } from './pages/RepliesPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ThreadsPage } from './pages/ThreadsPage'
@@ -85,14 +82,8 @@ const NAV_ITEMS: NavItem[] = [
     visible: (admin) => admin.canGlobal('user.list'),
   },
   {
-    to: '/permissions',
-    label: '权限目录',
-    icon: ShieldCheck,
-    visible: (admin) => admin.canGlobal('permission.view'),
-  },
-  {
     to: '/uploads',
-    label: '上传文件',
+    label: '文件管理',
     icon: Image,
     visible: (admin) => admin.canGlobal('upload.manage'),
   },
@@ -151,7 +142,6 @@ function RouteGuard({
 
 function AdminLayout() {
   const admin = useAdmin()
-  const location = useLocation()
   const [logoutOpen, setLogoutOpen] = useState(false)
 
   const visibleItems = NAV_ITEMS.filter((item) => item.visible(admin))
@@ -202,14 +192,6 @@ function AdminLayout() {
               <p className="brand-logo text-base tracking-tight lg:hidden">
                 Moon Admin
               </p>
-              <Typography.Paragraph
-                size="sm"
-                color="muted"
-                className="hidden lg:block"
-              >
-                {visibleItems.find((item) => item.to === location.pathname)
-                  ?.label ?? '管理后台'}
-              </Typography.Paragraph>
             </div>
 
             <div className="flex items-center gap-3">
@@ -311,14 +293,6 @@ function AdminLayout() {
               element={
                 <RouteGuard permission="user.list">
                   <UsersPage />
-                </RouteGuard>
-              }
-            />
-            <Route
-              path="permissions"
-              element={
-                <RouteGuard permission="permission.view">
-                  <PermissionsPage />
                 </RouteGuard>
               }
             />

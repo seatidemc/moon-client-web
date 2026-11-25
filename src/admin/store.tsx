@@ -37,8 +37,6 @@ export const adminKeys = {
   loginRecords: (id: number, page: number) =>
     ['admin', 'login-records', id, page] as const,
   permissionCatalog: ['admin', 'permission-catalog'] as const,
-  permissionUsers: (code: string, boardId: number | null, page: number) =>
-    ['admin', 'permission-users', code, boardId, page] as const,
   settings: ['admin', 'settings'] as const,
   uploads: (query: unknown) => ['admin', 'uploads', query] as const,
   uploadStats: ['admin', 'upload-stats'] as const,

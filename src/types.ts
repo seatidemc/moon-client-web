@@ -5,8 +5,6 @@
 
 export type AvatarShape = 'circle' | 'square'
 
-export type BoardIconName = 'discussion' | 'code' | 'life' | 'feedback'
-
 /** 可空时间统一用 null 表示。 */
 export type Nullable<T> = T | null
 

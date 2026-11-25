@@ -35,7 +35,7 @@ export function ThreadCard({
 
   const boardBadge = board ? (
     <span className="ml-auto flex shrink-0 items-center gap-1">
-      <BoardIcon icon={board.icon} color={board.color} className="size-3.5" />
+      <BoardIcon icon={board.icon} color={board.color} size="14px" />
       <span className="whitespace-nowrap">{board.name}</span>
     </span>
   ) : null

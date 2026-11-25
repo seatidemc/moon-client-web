@@ -1,13 +1,21 @@
 import {
   Card,
   Table,
-  ToggleButton,
-  ToggleButtonGroup,
-  Tooltip,
+  Tabs,
   Typography,
 } from '@heroui/react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip as ChartTooltip,
+  XAxis,
+  YAxis,
+  type TooltipContentProps,
+} from 'recharts'
 
 import { formatNumber } from '../lib'
 import { adminKeys } from '../store'
@@ -23,66 +31,110 @@ import type { DashboardTrend } from '../types'
 
 const DAY_OPTIONS = [7, 14, 30]
 
-function TrendChart({ trend }: { trend: DashboardTrend[] }) {
-  const max = Math.max(
-    1,
-    ...trend.map((day) => Math.max(day.threads, day.replies, day.users)),
-  )
+const SERIES = [
+  { key: 'threads', name: '主题', color: 'var(--accent)', opacity: 1 },
+  { key: 'replies', name: '跟帖', color: 'var(--foreground)', opacity: 0.4 },
+  { key: 'users', name: '新用户', color: 'var(--foreground)', opacity: 0.15 },
+] as const
 
+function TrendTooltip({
+  active,
+  payload,
+  label,
+}: TooltipContentProps) {
+  if (!active || !payload?.length) return null
+
+  return (
+    <div className="min-w-36 rounded-lg border border-border bg-surface px-3 py-2 text-xs shadow-lg">
+      <p className="mb-1.5 font-medium text-foreground">{label}</p>
+      <div className="space-y-1">
+        {payload.map((item) => {
+          const series = SERIES.find((entry) => entry.key === item.dataKey)
+          if (!series) return null
+
+          return (
+            <div key={series.key} className="flex items-center gap-2">
+              <span
+                className="size-2 shrink-0 rounded-full"
+                style={{
+                  backgroundColor: series.color,
+                  opacity: series.opacity,
+                }}
+                aria-hidden="true"
+              />
+              <span className="text-muted">{series.name}</span>
+              <span className="ml-auto tabular-nums text-foreground">
+                {formatNumber(Number(item.value ?? 0))}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function TrendChart({ trend }: { trend: DashboardTrend[] }) {
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-4 text-xs text-muted">
-        <span className="flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-accent" aria-hidden="true" />
-          主题
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span
-            className="size-2 rounded-full bg-foreground/40"
-            aria-hidden="true"
-          />
-          跟帖
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span
-            className="size-2 rounded-full bg-foreground/15"
-            aria-hidden="true"
-          />
-          新用户
-        </span>
+        {SERIES.map((series) => (
+          <span key={series.key} className="flex items-center gap-1.5">
+            <span
+              className="size-2 rounded-full"
+              style={{
+                backgroundColor: series.color,
+                opacity: series.opacity,
+              }}
+              aria-hidden="true"
+            />
+            {series.name}
+          </span>
+        ))}
       </div>
 
-      <div
-        className="flex h-44 items-end gap-1 overflow-x-auto"
-        role="img"
-        aria-label="按天新增趋势"
-      >
-        {trend.map((day) => (
-          <Tooltip key={day.date} delay={0} closeDelay={0}>
-            <Tooltip.Trigger className="flex min-w-8 flex-1 flex-col items-center gap-1">
-              <div className="flex h-36 items-end gap-0.5">
-                <span
-                  className="w-1.5 rounded-t bg-accent"
-                  style={{ height: `${(day.threads / max) * 100}%` }}
-                />
-                <span
-                  className="w-1.5 rounded-t bg-foreground/40"
-                  style={{ height: `${(day.replies / max) * 100}%` }}
-                />
-                <span
-                  className="w-1.5 rounded-t bg-foreground/15"
-                  style={{ height: `${(day.users / max) * 100}%` }}
-                />
-              </div>
-              <span className="text-[10px] whitespace-nowrap text-muted">
-                {day.date.slice(5)}
-              </span>
-            </Tooltip.Trigger>
-            <Tooltip.Content>
-              {`${day.date}：主题 ${day.threads}，跟帖 ${day.replies}，新用户 ${day.users}`}
-            </Tooltip.Content>
-          </Tooltip>
-        ))}
+      <div className="h-44 w-full" role="img" aria-label="按天新增趋势">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={trend}
+            margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
+            barGap={2}
+            barCategoryGap="25%"
+          >
+            <CartesianGrid vertical={false} stroke="var(--border)" />
+            <XAxis
+              dataKey="date"
+              tickFormatter={(value: string) => value.slice(5)}
+              tick={{ fill: 'var(--muted)', fontSize: 10 }}
+              tickLine={false}
+              axisLine={false}
+              minTickGap={16}
+            />
+            <YAxis
+              width={36}
+              allowDecimals={false}
+              tick={{ fill: 'var(--muted)', fontSize: 10 }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(value: number) => formatNumber(value)}
+            />
+            <ChartTooltip
+              content={TrendTooltip}
+              cursor={{ fill: 'var(--default)', fillOpacity: 0.6 }}
+            />
+            {SERIES.map((series) => (
+              <Bar
+                key={series.key}
+                dataKey={series.key}
+                name={series.name}
+                fill={series.color}
+                fillOpacity={series.opacity}
+                radius={[4, 4, 0, 0]}
+                maxBarSize={24}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   )
@@ -103,22 +155,26 @@ export function DashboardPage() {
         title="数据看板"
         description="论坛内容、用户与板块的实时概览。"
         actions={
-          <ToggleButtonGroup
-            aria-label="统计范围"
-            size="sm"
-            selectionMode="single"
-            selectedKeys={[String(days)]}
-            onSelectionChange={(keys) => {
-              const [key] = keys
-              if (key !== undefined) setDays(Number(key))
-            }}
+          <Tabs
+            className="w-fit"
+            selectedKey={String(days)}
+            onSelectionChange={(key) => setDays(Number(key))}
           >
-            {DAY_OPTIONS.map((option) => (
-              <ToggleButton key={option} id={String(option)}>
-                近 {option} 天
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
+            <Tabs.ListContainer>
+              <Tabs.List aria-label="统计范围">
+                {DAY_OPTIONS.map((option) => (
+                  <Tabs.Tab
+                    key={option}
+                    id={String(option)}
+                    className="whitespace-nowrap"
+                  >
+                    近 {option} 天
+                    <Tabs.Indicator />
+                  </Tabs.Tab>
+                ))}
+              </Tabs.List>
+            </Tabs.ListContainer>
+          </Tabs>
         }
       />
 

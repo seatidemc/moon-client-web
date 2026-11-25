@@ -3,15 +3,17 @@ import {
   Card,
   Checkbox,
   Chip,
+  ColorArea,
+  ColorField,
+  ColorPicker,
+  ColorSlider,
   ColorSwatch,
   Description,
   EmptyState,
   Form,
   Input,
   Label,
-  ListBox,
   Modal,
-  Select,
   Table,
   TextField,
   Toolbar,
@@ -20,14 +22,24 @@ import {
   toast,
 } from '@heroui/react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowDown, ArrowUp, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Trash2,
+} from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 
+import { BoardIcon } from '@/components/BoardIcon'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { PendingButton } from '@/components/PendingButton'
+import { DEFAULT_BOARD_COLOR, DEFAULT_BOARD_ICON } from '@/lib/board-icons'
 
 import { adminApi, type BoardInput } from '../api'
-import { BOARD_ICON_OPTIONS } from '../lib'
+import { BoardIconPicker } from '../components/BoardIconPicker'
 import { adminKeys, useAdmin } from '../store'
 import { useAdminPageTitle } from '../components/use-admin-title'
 import {
@@ -47,17 +59,15 @@ interface BoardFormState {
   icon: string
   color: string
   sortOrder: string
-  enabled: boolean
 }
 
 const EMPTY_FORM: BoardFormState = {
   slug: '',
   name: '',
   description: '',
-  icon: 'discussion',
-  color: '#6366f1',
+  icon: DEFAULT_BOARD_ICON,
+  color: DEFAULT_BOARD_COLOR,
   sortOrder: '0',
-  enabled: true,
 }
 
 function formFromBoard(board: AdminBoard): BoardFormState {
@@ -68,12 +78,20 @@ function formFromBoard(board: AdminBoard): BoardFormState {
     icon: board.icon,
     color: board.color,
     sortOrder: String(board.sortOrder),
-    enabled: board.enabled,
   }
 }
 
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : '操作失败，请稍后再试。'
+}
+
+async function copySlug(slug: string) {
+  try {
+    await navigator.clipboard.writeText(slug)
+    toast.success(`已复制 slug：${slug}`)
+  } catch {
+    toast.danger('复制失败，请手动复制 slug。')
+  }
 }
 
 function BoardFormDialog({
@@ -122,7 +140,6 @@ function BoardFormDialog({
       icon: form.icon,
       color: form.color,
       sortOrder: Number(form.sortOrder) || 0,
-      enabled: form.enabled,
     }
 
     setSubmitting(true)
@@ -194,44 +211,72 @@ function BoardFormDialog({
                   />
                 </TextField>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <Select
-                    selectedKey={form.icon}
-                    onSelectionChange={(key) => {
-                      if (key !== null) update('icon', String(key))
-                    }}
-                  >
-                    <Label>图标</Label>
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        {BOARD_ICON_OPTIONS.map((option) => (
-                          <ListBox.Item
-                            key={option.value}
-                            id={option.value}
-                            textValue={option.label}
-                          >
-                            {option.label}
-                          </ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
+                <div className="grid grid-cols-2 items-start gap-3">
+                  <BoardIconPicker
+                    value={form.icon}
+                    onChange={(icon) => update('icon', icon)}
+                  />
 
-                  <TextField fullWidth>
+                  <div className="flex flex-col gap-1.5">
                     <Label>颜色</Label>
-                    <Input
+                    <ColorPicker
                       value={form.color}
-                      placeholder="#6366f1"
-                      onChange={(event) => update('color', event.target.value)}
-                    />
-                  </TextField>
+                      onChange={(color) =>
+                        update('color', color.toString('hex'))
+                      }
+                    >
+                      <ColorPicker.Trigger
+                        className="input w-full justify-between"
+                        aria-label={`颜色 ${form.color}`}
+                      >
+                        <span className="flex min-w-0 items-center gap-2">
+                          <ColorSwatch
+                            color={parseColor(form.color)}
+                            shape="circle"
+                            size="xs"
+                            aria-hidden="true"
+                          />
+                          <span className="truncate font-mono uppercase">
+                            {form.color}
+                          </span>
+                        </span>
+                        <ChevronDown
+                          className="size-4 shrink-0 text-muted"
+                          aria-hidden="true"
+                        />
+                      </ColorPicker.Trigger>
+
+                      <ColorPicker.Popover>
+                        <ColorArea
+                          aria-label="饱和度和亮度"
+                          colorSpace="hsb"
+                          xChannel="saturation"
+                          yChannel="brightness"
+                          style={{ maxWidth: 'none' }}
+                        >
+                          <ColorArea.Thumb />
+                        </ColorArea>
+                        <ColorSlider
+                          aria-label="色相"
+                          channel="hue"
+                          colorSpace="hsb"
+                        >
+                          <ColorSlider.Track>
+                            <ColorSlider.Thumb />
+                          </ColorSlider.Track>
+                        </ColorSlider>
+                        <ColorField>
+                          <Label>十六进制</Label>
+                          <ColorField.Group>
+                            <ColorField.Input />
+                          </ColorField.Group>
+                        </ColorField>
+                      </ColorPicker.Popover>
+                    </ColorPicker>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 items-end gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <TextField fullWidth>
                     <Label>排序</Label>
                     <Input
@@ -242,17 +287,6 @@ function BoardFormDialog({
                       }
                     />
                   </TextField>
-                  <Checkbox
-                    isSelected={form.enabled}
-                    onChange={(isSelected) => update('enabled', isSelected)}
-                  >
-                    <Checkbox.Content>
-                      <Checkbox.Control>
-                        <Checkbox.Indicator />
-                      </Checkbox.Control>
-                      <Label>启用板块</Label>
-                    </Checkbox.Content>
-                  </Checkbox>
                 </div>
               </Modal.Body>
 
@@ -314,7 +348,6 @@ export function BoardsPage() {
 
   async function refresh() {
     await queryClient.invalidateQueries({ queryKey: ['admin', 'boards'] })
-    await queryClient.invalidateQueries({ queryKey: ['admin', 'permission-users'] })
   }
 
   const toggleMutation = useMutation({
@@ -489,25 +522,33 @@ export function BoardsPage() {
                         </Table.Cell>
                         <Table.Cell>
                           <div className="flex items-center gap-2">
-                            <ColorSwatch
-                              color={parseColor(board.color)}
-                              shape="circle"
-                              size="sm"
-                              aria-hidden="true"
-                            />
+                            <span
+                              className="grid size-8 shrink-0 place-items-center rounded-lg"
+                              style={{
+                                backgroundColor: `color-mix(in srgb, ${board.color} 14%, transparent)`,
+                                color: board.color,
+                              }}
+                            >
+                              <BoardIcon icon={board.icon} size="18px" />
+                            </span>
                             <div className="min-w-0">
-                              <Typography.Paragraph
-                                weight="medium"
-                                truncate
-                              >
-                                {board.name}
-                              </Typography.Paragraph>
-                              <Typography.Paragraph
-                                size="xs"
-                                color="muted"
-                              >
-                                {board.slug} · {board.icon}
-                              </Typography.Paragraph>
+                              <div className="flex min-w-0 items-baseline gap-2">
+                                <Typography.Paragraph
+                                  weight="medium"
+                                  truncate
+                                >
+                                  {board.name}
+                                </Typography.Paragraph>
+                                <button
+                                  type="button"
+                                  onClick={() => void copySlug(board.slug)}
+                                  title="点击复制 slug"
+                                  aria-label={`复制 slug ${board.slug}`}
+                                  className="shrink-0 cursor-pointer truncate rounded-sm text-xs leading-4 text-muted transition-colors hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
+                                >
+                                  {board.slug}
+                                </button>
+                              </div>
                               {board.description ? (
                                 <Typography.Paragraph
                                   size="xs"

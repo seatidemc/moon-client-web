@@ -38,14 +38,14 @@ const BOARDS = [
     slug: 'e2e-general',
     name: 'E2E 综合',
     description: '端到端测试板块',
-    icon: 'discussion',
+    icon: 'message-text',
     color: '#6366f1',
   },
   {
     slug: 'e2e-other',
     name: 'E2E 其他',
     description: '无管理权限的板块',
-    icon: 'life',
+    icon: 'coffee',
     color: '#0ea5e9',
   },
 ]

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "gen:board-icons": "node scripts/generate-board-icons.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
     "test:e2e": "playwright test",
@@ -40,7 +41,9 @@
     "pixelarticons": "^2.4.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "react-router-dom": "^7.18.5"
+    "react-is": "^19.3.1",
+    "react-router-dom": "^7.18.5",
+    "recharts": "^3.11.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.1",

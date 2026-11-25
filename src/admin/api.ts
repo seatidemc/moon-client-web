@@ -16,9 +16,8 @@ import type {
   LoginRecordItem,
   Page,
   PermissionItem,
-  PermissionUser,
   SiteSettings,
-  UploadStats,
+  UploadStatsSummary,
 } from './types'
 
 /**
@@ -68,7 +67,7 @@ export interface ReplyQuery {
 export interface UserQuery {
   keyword?: string
   banned?: boolean
-  permission?: string
+  permission?: string[]
   page?: number
   pageSize?: number
 }
@@ -221,11 +220,6 @@ export const adminApi = {
   permissionCatalog: () =>
     adminRequest<ItemsResponse<PermissionItem>>('/permissions'),
 
-  permissionUsers: (code: string, params: { boardId?: number; page?: number }) =>
-    adminRequest<Page<PermissionUser>>(
-      `/permissions/${encodeURIComponent(code)}/users${buildQuery(params)}`,
-    ),
-
   settings: () => adminRequest<SiteSettings>('/settings'),
 
   updateSettings: (updates: Record<string, string>) =>
@@ -241,7 +235,7 @@ export const adminApi = {
     pageSize?: number
   }) => adminRequest<Page<AdminUpload>>(`/uploads${buildQuery(query)}`),
 
-  uploadStats: () => adminRequest<ItemsResponse<UploadStats>>('/uploads/stats'),
+  uploadStats: () => adminRequest<UploadStatsSummary>('/uploads/stats'),
 
   deleteUpload: (id: number) =>
     adminRequest<void>(`/uploads/${id}`, { method: 'DELETE' }),

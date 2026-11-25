@@ -18,6 +18,15 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Trash2 } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
+import {
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip as ChartTooltip,
+  type TooltipContentProps,
+} from 'recharts'
 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { mediaUrl } from '@/lib/media'
@@ -29,10 +38,14 @@ import {
   LoadingPanel,
   PageHeader,
   Pagination,
-  StatCard,
 } from '../components/ui'
 import { useAdminPageTitle } from '../components/use-admin-title'
-import { formatBytes, formatNumber, uploadKindLabel } from '../lib'
+import {
+  formatBytes,
+  formatNumber,
+  uploadKindLabel,
+  UPLOAD_KIND_LABELS,
+} from '../lib'
 import { adminKeys } from '../store'
 import type { AdminUpload } from '../types'
 
@@ -44,8 +57,113 @@ const KIND_OPTIONS = [
   { value: 'background', label: '主页背景' },
 ]
 
+const KIND_COLORS: Record<string, string> = {
+  post: 'var(--chart-series-1)',
+  avatar: 'var(--chart-series-2)',
+  background: 'var(--chart-series-3)',
+}
+
+interface StorageSlice {
+  key: string
+  label: string
+  value: number
+  color: string
+  count?: number
+  percent: number
+}
+
+function formatPercentValue(percent: number): string {
+  const value = percent * 100
+  if (value > 0 && value < 0.1) return '<0.1%'
+  return `${value.toFixed(1)}%`
+}
+
+function formatPercent(value: number, total: number): string {
+  if (total <= 0) return '0%'
+  return formatPercentValue(value / total)
+}
+
+function StorageTooltip({ active, payload }: TooltipContentProps) {
+  if (!active || !payload?.length) return null
+
+  const slice = payload[0].payload as StorageSlice
+
+  return (
+    <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs shadow-lg">
+      <div className="flex items-center gap-2">
+        <span
+          className="size-2 rounded-full"
+          style={{ backgroundColor: slice.color }}
+          aria-hidden="true"
+        />
+        <span className="font-medium text-foreground">{slice.label}</span>
+      </div>
+      <div className="mt-1 space-y-0.5 text-muted">
+        {slice.count !== undefined ? (
+          <div>文件 {formatNumber(slice.count)} 个</div>
+        ) : null}
+        <div>
+          {formatBytes(slice.value)} · {formatPercentValue(slice.percent)}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StoragePie({
+  title,
+  data,
+}: {
+  title: string
+  data: StorageSlice[]
+}) {
+  return (
+    <div className="flex w-64 shrink-0 flex-col items-center gap-2">
+      <p className="text-sm font-medium">{title}</p>
+      <div className="h-48 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="label"
+              innerRadius="52%"
+              outerRadius="80%"
+              paddingAngle={2}
+              stroke="none"
+            >
+              {data.map((slice) => (
+                <Cell key={slice.key} fill={slice.color} />
+              ))}
+            </Pie>
+            <Legend
+              layout="horizontal"
+              align="center"
+              verticalAlign="bottom"
+              iconType="circle"
+              iconSize={8}
+              itemSorter={null}
+              labelStyle={{ color: 'var(--foreground)' }}
+            />
+            <ChartTooltip content={StorageTooltip} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  )
+}
+
+function StorageStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-xs text-muted">{label}</div>
+      <div className="mt-0.5 text-sm font-medium tabular-nums">{value}</div>
+    </div>
+  )
+}
+
 export function UploadsPage() {
-  useAdminPageTitle('上传文件')
+  useAdminPageTitle('文件管理')
   const queryClient = useQueryClient()
 
   const [kind, setKind] = useState('')
@@ -100,15 +218,48 @@ export function UploadsPage() {
     setPage(1)
   }
 
-  const totalBytes = (statsQuery.data?.items ?? []).reduce(
-    (sum, item) => sum + item.sizeBytes,
-    0,
-  )
+  const stats = statsQuery.data?.items ?? []
+  const quotaBytes = statsQuery.data?.quotaBytes ?? 0
+  const userQuotaBytes = statsQuery.data?.userQuotaBytes ?? 0
+  const totalBytes = stats.reduce((sum, item) => sum + item.sizeBytes, 0)
+  const totalCount = stats.reduce((sum, item) => sum + item.count, 0)
+  const averageBytes = totalCount > 0 ? totalBytes / totalCount : 0
+  const remainingBytes = quotaBytes > 0 ? Math.max(quotaBytes - totalBytes, 0) : 0
+  const usedPercent = quotaBytes > 0 ? totalBytes / quotaBytes : 0
+
+  const kindSlices: StorageSlice[] = stats.map((item) => ({
+    key: item.kind,
+    label: UPLOAD_KIND_LABELS[item.kind] ?? '其他',
+    value: item.sizeBytes,
+    color: KIND_COLORS[item.kind] ?? 'var(--muted)',
+    count: item.count,
+    percent: totalBytes > 0 ? item.sizeBytes / totalBytes : 0,
+  }))
+
+  const quotaSlices: StorageSlice[] =
+    quotaBytes > 0
+      ? [
+          {
+            key: 'used',
+            label: '已用',
+            value: Math.min(totalBytes, quotaBytes),
+            color: 'var(--chart-series-1)',
+            percent: Math.min(usedPercent, 1),
+          },
+          {
+            key: 'free',
+            label: '剩余',
+            value: remainingBytes,
+            color: 'var(--muted)',
+            percent: Math.max(1 - usedPercent, 0),
+          },
+        ]
+      : []
 
   return (
     <div>
       <PageHeader
-        title="上传文件"
+        title="文件管理"
         description="论坛图片上传的占用统计与清理。被资料或正文引用的文件不能删除。"
       />
 
@@ -120,26 +271,117 @@ export function UploadsPage() {
           onRetry={() => void statsQuery.refetch()}
         />
       ) : (
-        <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {(statsQuery.data.items.length > 0
-            ? statsQuery.data.items
-            : []
-          ).map((item) => (
-            <StatCard
-              key={item.kind}
-              label={`${uploadKindLabel(item.kind)}（${item.kind}）`}
-              value={formatNumber(item.count)}
-              hint={formatBytes(item.sizeBytes)}
-            />
-          ))}
-          <StatCard
-            label="总占用"
-            value={formatBytes(totalBytes)}
-            hint={`共 ${formatNumber(
-              statsQuery.data.items.reduce((sum, item) => sum + item.count, 0),
-            )} 个文件`}
-          />
-        </div>
+        <Card className="mb-4">
+          <Card.Content className="space-y-5">
+            {kindSlices.length === 0 ? (
+              <Typography.Paragraph size="sm" color="muted">
+                暂无上传文件。
+              </Typography.Paragraph>
+            ) : (
+              <>
+                <div className="flex flex-col items-center gap-6 xl:flex-row xl:items-center xl:justify-center xl:gap-12">
+                  <div className="flex flex-wrap justify-center gap-6">
+                    <StoragePie title="用途分布" data={kindSlices} />
+                    {quotaSlices.length > 0 ? (
+                      <StoragePie title="空间配额" data={quotaSlices} />
+                    ) : (
+                      <div className="flex w-64 shrink-0 flex-col items-center gap-2">
+                        <p className="text-sm font-medium">空间配额</p>
+                        <div className="flex h-48 w-full items-center justify-center rounded-lg border border-dashed border-border text-xs text-muted">
+                          未设置存储上限
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid w-full grid-cols-2 gap-x-6 gap-y-4 xl:w-auto xl:max-w-sm">
+                    <StorageStat
+                      label="已用空间"
+                      value={formatBytes(totalBytes)}
+                    />
+                    <StorageStat
+                      label="允许空间"
+                      value={
+                        quotaBytes > 0 ? formatBytes(quotaBytes) : '不限制'
+                      }
+                    />
+                    <StorageStat
+                      label="剩余空间"
+                      value={
+                        quotaBytes > 0
+                          ? formatBytes(remainingBytes)
+                          : '不限制'
+                      }
+                    />
+                    <StorageStat
+                      label="使用率"
+                      value={
+                        quotaBytes > 0
+                          ? formatPercentValue(usedPercent)
+                          : '—'
+                      }
+                    />
+                    <StorageStat
+                      label="文件总数"
+                      value={`${formatNumber(totalCount)} 个`}
+                    />
+                    <StorageStat
+                      label="平均大小"
+                      value={
+                        totalCount > 0 ? formatBytes(averageBytes) : '—'
+                      }
+                    />
+                    <StorageStat
+                      label="单用户配额"
+                      value={
+                        userQuotaBytes > 0
+                          ? formatBytes(userQuotaBytes)
+                          : '不限制'
+                      }
+                    />
+                    <StorageStat
+                      label="用途种类"
+                      value={`${formatNumber(kindSlices.length)} 种`}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2 border-t border-border pt-4">
+                  <div className="grid grid-cols-[minmax(0,1fr)_4.5rem_5.5rem_4rem] gap-x-4 text-xs text-muted">
+                    <span>用途</span>
+                    <span className="text-right">文件数</span>
+                    <span className="text-right">占用</span>
+                    <span className="text-right">占比</span>
+                  </div>
+                  {kindSlices.map((slice) => (
+                    <div
+                      key={slice.key}
+                      className="grid grid-cols-[minmax(0,1fr)_4.5rem_5.5rem_4rem] items-center gap-x-4 text-sm"
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span
+                          className="size-2.5 shrink-0 rounded-full"
+                          style={{ backgroundColor: slice.color }}
+                          aria-hidden="true"
+                        />
+                        <span className="truncate">{slice.label}</span>
+                      </span>
+                      <span className="text-right tabular-nums text-muted">
+                        {formatNumber(slice.count ?? 0)} 个
+                      </span>
+                      <span className="text-right tabular-nums">
+                        {formatBytes(slice.value)}
+                      </span>
+                      <span className="text-right tabular-nums text-muted">
+                        {formatPercent(slice.value, totalBytes)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </Card.Content>
+        </Card>
       )}
 
       <Card className="mb-4">
