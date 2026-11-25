@@ -20,6 +20,7 @@ import { Trash2 } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 import {
   Cell,
+  Label as ChartLabel,
   Legend,
   Pie,
   PieChart,
@@ -110,16 +111,57 @@ function StorageTooltip({ active, payload }: TooltipContentProps) {
   )
 }
 
+function PieCenterLabel({
+  viewBox,
+  value,
+  caption,
+}: {
+  viewBox?: { cx?: number; cy?: number }
+  value: string
+  caption: string
+}) {
+  const cx = viewBox?.cx ?? 0
+  const cy = viewBox?.cy ?? 0
+
+  return (
+    <g>
+      <text
+        x={cx}
+        y={cy - 3}
+        textAnchor="middle"
+        fill="var(--foreground)"
+        fontSize={16}
+        fontWeight={600}
+      >
+        {value}
+      </text>
+      <text
+        x={cx}
+        y={cy + 13}
+        textAnchor="middle"
+        fill="var(--muted)"
+        fontSize={11}
+      >
+        {caption}
+      </text>
+    </g>
+  )
+}
+
 function StoragePie({
   title,
   data,
+  centerValue,
+  centerCaption,
 }: {
   title: string
   data: StorageSlice[]
+  centerValue: string
+  centerCaption: string
 }) {
   return (
-    <div className="flex w-64 shrink-0 flex-col items-center gap-2">
-      <p className="text-sm font-medium">{title}</p>
+    <div className="flex w-56 shrink-0 flex-col gap-2">
+      <p className="text-center text-sm font-medium">{title}</p>
       <div className="h-48 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -135,6 +177,15 @@ function StoragePie({
               {data.map((slice) => (
                 <Cell key={slice.key} fill={slice.color} />
               ))}
+              <ChartLabel
+                position="center"
+                content={
+                  <PieCenterLabel
+                    value={centerValue}
+                    caption={centerCaption}
+                  />
+                }
+              />
             </Pie>
             <Legend
               layout="horizontal"
@@ -143,7 +194,7 @@ function StoragePie({
               iconType="circle"
               iconSize={8}
               itemSorter={null}
-              labelStyle={{ color: 'var(--foreground)' }}
+              labelStyle={{ color: 'var(--foreground)', fontSize: 12 }}
             />
             <ChartTooltip content={StorageTooltip} />
           </PieChart>
@@ -153,11 +204,37 @@ function StoragePie({
   )
 }
 
-function StorageStat({ label, value }: { label: string; value: string }) {
+function StorageStat({
+  label,
+  value,
+  hint,
+  dot,
+  className,
+}: {
+  label: string
+  value: string
+  hint?: string
+  dot?: string
+  className?: string
+}) {
   return (
-    <div>
-      <div className="text-xs text-muted">{label}</div>
-      <div className="mt-0.5 text-sm font-medium tabular-nums">{value}</div>
+    <div className={className}>
+      <div className="flex items-center gap-1.5 text-xs text-muted">
+        {dot ? (
+          <span
+            className="size-2 shrink-0 rounded-full"
+            style={{ backgroundColor: dot }}
+            aria-hidden="true"
+          />
+        ) : null}
+        {label}
+      </div>
+      <div className="mt-0.5 text-lg font-semibold leading-tight tabular-nums">
+        {value}
+      </div>
+      {hint ? (
+        <div className="mt-0.5 text-xs tabular-nums text-muted">{hint}</div>
+      ) : null}
     </div>
   )
 }
@@ -272,113 +349,98 @@ export function UploadsPage() {
         />
       ) : (
         <Card className="mb-4">
-          <Card.Content className="space-y-5">
+          <Card.Content>
             {kindSlices.length === 0 ? (
               <Typography.Paragraph size="sm" color="muted">
                 暂无上传文件。
               </Typography.Paragraph>
             ) : (
-              <>
-                <div className="flex flex-col items-center gap-6 xl:flex-row xl:items-center xl:justify-center xl:gap-12">
-                  <div className="flex flex-wrap justify-center gap-6">
-                    <StoragePie title="用途分布" data={kindSlices} />
-                    {quotaSlices.length > 0 ? (
-                      <StoragePie title="空间配额" data={quotaSlices} />
-                    ) : (
-                      <div className="flex w-64 shrink-0 flex-col items-center gap-2">
-                        <p className="text-sm font-medium">空间配额</p>
-                        <div className="flex h-48 w-full items-center justify-center rounded-lg border border-dashed border-border text-xs text-muted">
-                          未设置存储上限
-                        </div>
+              <div className="flex flex-col items-start gap-6 xl:flex-row xl:gap-10">
+                <div className="flex flex-wrap justify-start gap-x-2 gap-y-6">
+                  <StoragePie
+                    title="用途分布"
+                    data={kindSlices}
+                    centerValue={formatBytes(totalBytes)}
+                    centerCaption="总占用"
+                  />
+                  {quotaSlices.length > 0 ? (
+                    <StoragePie
+                      title="空间配额"
+                      data={quotaSlices}
+                      centerValue={formatPercentValue(usedPercent)}
+                      centerCaption="已使用"
+                    />
+                  ) : (
+                    <div className="flex w-56 shrink-0 flex-col gap-2">
+                      <p className="text-center text-sm font-medium">空间配额</p>
+                      <div className="flex h-48 w-full items-center justify-center rounded-lg border border-dashed border-border text-xs text-muted">
+                        未设置存储上限
                       </div>
-                    )}
-                  </div>
-
-                  <div className="grid w-full grid-cols-2 gap-x-6 gap-y-4 xl:w-auto xl:max-w-sm">
-                    <StorageStat
-                      label="已用空间"
-                      value={formatBytes(totalBytes)}
-                    />
-                    <StorageStat
-                      label="允许空间"
-                      value={
-                        quotaBytes > 0 ? formatBytes(quotaBytes) : '不限制'
-                      }
-                    />
-                    <StorageStat
-                      label="剩余空间"
-                      value={
-                        quotaBytes > 0
-                          ? formatBytes(remainingBytes)
-                          : '不限制'
-                      }
-                    />
-                    <StorageStat
-                      label="使用率"
-                      value={
-                        quotaBytes > 0
-                          ? formatPercentValue(usedPercent)
-                          : '—'
-                      }
-                    />
-                    <StorageStat
-                      label="文件总数"
-                      value={`${formatNumber(totalCount)} 个`}
-                    />
-                    <StorageStat
-                      label="平均大小"
-                      value={
-                        totalCount > 0 ? formatBytes(averageBytes) : '—'
-                      }
-                    />
-                    <StorageStat
-                      label="单用户配额"
-                      value={
-                        userQuotaBytes > 0
-                          ? formatBytes(userQuotaBytes)
-                          : '不限制'
-                      }
-                    />
-                    <StorageStat
-                      label="用途种类"
-                      value={`${formatNumber(kindSlices.length)} 种`}
-                    />
-                  </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-2 border-t border-border pt-4">
-                  <div className="grid grid-cols-[minmax(0,1fr)_4.5rem_5.5rem_4rem] gap-x-4 text-xs text-muted">
-                    <span>用途</span>
-                    <span className="text-right">文件数</span>
-                    <span className="text-right">占用</span>
-                    <span className="text-right">占比</span>
-                  </div>
-                  {kindSlices.map((slice) => (
-                    <div
+                <div className="grid w-full min-w-0 grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 xl:flex-1 xl:grid-cols-4">
+                  <StorageStat
+                    label="已用空间"
+                    value={formatBytes(totalBytes)}
+                  />
+                  <StorageStat
+                    label="允许空间"
+                    value={
+                      quotaBytes > 0 ? formatBytes(quotaBytes) : '不限制'
+                    }
+                  />
+                  <StorageStat
+                    label="剩余空间"
+                    value={
+                      quotaBytes > 0
+                        ? formatBytes(remainingBytes)
+                        : '不限制'
+                    }
+                  />
+                  <StorageStat
+                    label="使用率"
+                    value={
+                      quotaBytes > 0
+                        ? formatPercentValue(usedPercent)
+                        : '—'
+                    }
+                  />
+                  <StorageStat
+                    label="文件总数"
+                    value={`${formatNumber(totalCount)} 个`}
+                  />
+                  <StorageStat
+                    label="平均大小"
+                    value={
+                      totalCount > 0 ? formatBytes(averageBytes) : '—'
+                    }
+                  />
+                  <StorageStat
+                    label="单用户配额"
+                    value={
+                      userQuotaBytes > 0
+                        ? formatBytes(userQuotaBytes)
+                        : '不限制'
+                    }
+                  />
+                  <StorageStat
+                    label="用途种类"
+                    value={`${formatNumber(kindSlices.length)} 种`}
+                  />
+                  {kindSlices.map((slice, index) => (
+                    <StorageStat
                       key={slice.key}
-                      className="grid grid-cols-[minmax(0,1fr)_4.5rem_5.5rem_4rem] items-center gap-x-4 text-sm"
-                    >
-                      <span className="flex min-w-0 items-center gap-2">
-                        <span
-                          className="size-2.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: slice.color }}
-                          aria-hidden="true"
-                        />
-                        <span className="truncate">{slice.label}</span>
-                      </span>
-                      <span className="text-right tabular-nums text-muted">
-                        {formatNumber(slice.count ?? 0)} 个
-                      </span>
-                      <span className="text-right tabular-nums">
-                        {formatBytes(slice.value)}
-                      </span>
-                      <span className="text-right tabular-nums text-muted">
-                        {formatPercent(slice.value, totalBytes)}
-                      </span>
-                    </div>
+                      className={index === 0 ? 'col-start-1' : undefined}
+                      dot={slice.color}
+                      label={slice.label}
+                      value={formatBytes(slice.value)}
+                      hint={`${formatNumber(slice.count ?? 0)} 个 · ${formatPercent(slice.value, totalBytes)}`}
+                    />
                   ))}
                 </div>
-              </>
+              </div>
             )}
           </Card.Content>
         </Card>
