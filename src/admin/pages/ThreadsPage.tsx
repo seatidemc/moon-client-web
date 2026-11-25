@@ -839,14 +839,6 @@ export function ThreadsPage() {
                         >
                           {thread.title}
                         </Typography.Paragraph>
-                        <Typography.Paragraph
-                          size="xs"
-                          color="muted"
-                          truncate
-                          className="max-w-xs"
-                        >
-                          {thread.excerpt}
-                        </Typography.Paragraph>
                       </Table.Cell>
                       <Table.Cell>{thread.board.name}</Table.Cell>
                       <Table.Cell>

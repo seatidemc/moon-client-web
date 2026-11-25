@@ -28,7 +28,7 @@ const RUN = Date.now().toString(36)
 const TAG = `e2e${RUN}`
 const TITLE = `E2E 主题 ${RUN}`
 const OTHER_TITLE = `E2E 其他板块 ${RUN}`
-const BOB_TEXT = `Bob 的跟帖 ${RUN}`
+const BOB_TEXT = `Bob 的回复 ${RUN}`
 const ALICE_TEXT = `Alice 的引用与提及 ${RUN}`
 const BIO_TEXT = `Alice 的 E2E 简介 ${RUN}`
 
@@ -139,14 +139,14 @@ test.describe.serial('Moon 论坛主流程', () => {
     await context.close()
   })
 
-  test('跟帖、楼层引用、@ 提及与主题点赞', async ({ browser }) => {
+  test('回复、楼层引用、@ 提及与主题点赞', async ({ browser }) => {
     const bob = await newSession(browser, 'e2ebob')
     await bob.page.goto(threadUrl)
     await expect(
       bob.page.getByRole('heading', { level: 1, name: TITLE }),
     ).toBeVisible()
 
-    const bobEditor = bob.page.getByLabel('跟帖内容')
+    const bobEditor = bob.page.getByLabel('回复内容')
     await bobEditor.click()
     await bob.page.keyboard.type(BOB_TEXT)
     await bob.page.getByRole('button', { name: '发布', exact: true }).click()
@@ -183,7 +183,7 @@ test.describe.serial('Moon 论坛主流程', () => {
       .getByRole('button', { name: '回复第 1 楼' })
       .click()
 
-    const composer = alice.page.getByLabel('跟帖内容')
+    const composer = alice.page.getByLabel('回复内容')
     await composer.click()
     await alice.page.keyboard.type(`${ALICE_TEXT} `)
     await alice.page.keyboard.type('@e2ebob')
@@ -381,10 +381,10 @@ test.describe.serial('Moon 论坛主流程', () => {
     await page.goto(threadUrl)
     const bobArticle = page.locator(`#reply-${bobReplyId}`)
     await expect(bobArticle).toBeVisible()
-    await bobArticle.getByRole('button', { name: '删除跟帖' }).click()
+    await bobArticle.getByRole('button', { name: '删除回复' }).click()
 
     const dialog = page.getByRole('dialog')
-    await expect(dialog).toContainText('删除这条跟帖？')
+    await expect(dialog).toContainText('删除这条回复？')
     await dialog.getByRole('button', { name: '删除', exact: true }).click()
 
     await expect(bobArticle).toContainText('该楼层已删除')

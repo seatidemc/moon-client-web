@@ -43,12 +43,13 @@ export const LAB_ROLE_LABELS: Record<string, string> = {
   superuser: '超级管理员',
 }
 
-export function labRoleLabel(role: string): string {
+export function labRoleLabel(role: string | null | undefined): string {
+  if (!role) return LAB_ROLE_LABELS.user
   return LAB_ROLE_LABELS[role] ?? role
 }
 
 export const UPLOAD_KIND_LABELS: Record<string, string> = {
-  post: '主题/跟帖',
+  post: '主题/回复',
   avatar: '头像',
   background: '主页背景',
 }

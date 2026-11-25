@@ -42,7 +42,7 @@ import type { AdminReply, BatchFailure } from '../types'
 
 const PAGE_SIZE = 20
 
-/** 后台跟帖详情返回完整正文；列表接口仍只返回摘要以保持轻量。 */
+/** 后台回复详情返回完整正文；列表接口仍只返回摘要以保持轻量。 */
 
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : '操作失败，请稍后再试。'
@@ -77,14 +77,14 @@ function EditReplyDialog({
   async function handleSave() {
     if (saving) return
     if (!content.replace(/<[^>]*>/g, '').trim()) {
-      toast.danger('跟帖正文不能为空。')
+      toast.danger('回复正文不能为空。')
       return
     }
 
     setSaving(true)
     try {
       await adminApi.updateReply(reply.id, content)
-      toast.success('跟帖已保存')
+      toast.success('回复已保存')
       onSaved()
       onClose()
     } catch (mutationError) {
@@ -99,15 +99,15 @@ function EditReplyDialog({
       <Modal.Backdrop>
         <Modal.Container size="lg" scroll="inside">
           <Modal.Dialog>
-            <Modal.CloseTrigger aria-label="关闭跟帖编辑" />
+            <Modal.CloseTrigger aria-label="关闭回复编辑" />
             <Modal.Header>
               <Modal.Heading>
-                编辑跟帖 · {reply.threadTitle} #{reply.floor}
+                编辑回复 · {reply.threadTitle} #{reply.floor}
               </Modal.Heading>
             </Modal.Header>
             <Modal.Body className="space-y-3">
               {contentQuery.isPending ? (
-                <LoadingPanel label="正在读取跟帖正文…" />
+                <LoadingPanel label="正在读取回复正文…" />
               ) : contentQuery.isError ? (
                 <ErrorPanel
                   message={contentQuery.error.message}
@@ -117,7 +117,7 @@ function EditReplyDialog({
                 <RichTextEditor
                   value={content}
                   onChange={setContent}
-                  ariaLabel="跟帖正文"
+                  ariaLabel="回复正文"
                   advanced={false}
                 />
               )}
@@ -132,7 +132,7 @@ function EditReplyDialog({
                 isDisabled={!contentQuery.isSuccess}
                 onPress={() => void handleSave()}
               >
-                保存跟帖
+                保存回复
               </PendingButton>
             </Modal.Footer>
           </Modal.Dialog>
@@ -143,7 +143,7 @@ function EditReplyDialog({
 }
 
 export function RepliesPage() {
-  useAdminPageTitle('跟帖管理')
+  useAdminPageTitle('回复管理')
   const admin = useAdmin()
   const queryClient = useQueryClient()
 
@@ -192,7 +192,7 @@ export function RepliesPage() {
       adminApi.deleteReply(input.id, input.reason || undefined),
     meta: { skipGlobalError: true },
     onSuccess: () => {
-      toast.success('跟帖已删除')
+      toast.success('回复已删除')
       refresh()
     },
     onError: (error) => toast.danger(errorText(error)),
@@ -202,7 +202,7 @@ export function RepliesPage() {
     mutationFn: (id: number) => adminApi.restoreReply(id),
     meta: { skipGlobalError: true },
     onSuccess: () => {
-      toast.success('跟帖已恢复')
+      toast.success('回复已恢复')
       refresh()
     },
     onError: (error) => toast.danger(errorText(error)),
@@ -254,13 +254,13 @@ export function RepliesPage() {
   return (
     <div>
       <PageHeader
-        title="跟帖管理"
-        description="按主题、作者与关键词筛选跟帖，编辑正文或删除/恢复。"
+        title="回复管理"
+        description="按主题、作者与关键词筛选回复，编辑正文或删除/恢复。"
       />
 
       <Card className="mb-4">
         <Toolbar
-          aria-label="跟帖筛选"
+          aria-label="回复筛选"
           className="flex flex-wrap items-end gap-3"
         >
           <Form
@@ -350,7 +350,7 @@ export function RepliesPage() {
 
       <Card className="mb-4">
         <Toolbar
-          aria-label="跟帖批量操作"
+          aria-label="回复批量操作"
           className="flex flex-wrap items-end gap-3"
         >
           <Typography.Paragraph size="sm" color="muted">
@@ -432,10 +432,10 @@ export function RepliesPage() {
         />
       ) : (
         <>
-          <Table aria-label="跟帖列表">
+          <Table aria-label="回复列表">
             <Table.ScrollContainer>
               <Table.Content
-                aria-label="跟帖列表"
+                aria-label="回复列表"
                 selectionMode="multiple"
                 selectedKeys={new Set(selected)}
                 onSelectionChange={(keys) =>
@@ -450,7 +450,7 @@ export function RepliesPage() {
                   <Table.Column id="select">
                     <Checkbox
                       slot="selection"
-                      aria-label="选择本页全部跟帖"
+                      aria-label="选择本页全部回复"
                     >
                       <Checkbox.Content>
                         <Checkbox.Control>
@@ -477,7 +477,7 @@ export function RepliesPage() {
                 </Table.Header>
                 <Table.Body
                   renderEmptyState={() => (
-                    <EmptyState>没有符合条件的跟帖</EmptyState>
+                    <EmptyState>没有符合条件的回复</EmptyState>
                   )}
                 >
                   {replies.map((reply) => (
@@ -485,7 +485,7 @@ export function RepliesPage() {
                       <Table.Cell>
                         <Checkbox
                           slot="selection"
-                          aria-label={`选择跟帖 ${reply.id}`}
+                          aria-label={`选择回复 ${reply.id}`}
                         >
                           <Checkbox.Content>
                             <Checkbox.Control>
@@ -553,7 +553,7 @@ export function RepliesPage() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              aria-label="编辑跟帖"
+                              aria-label="编辑回复"
                               onPress={() => setEditing(reply)}
                             >
                               <Pencil className="size-3.5" />
@@ -566,7 +566,7 @@ export function RepliesPage() {
                               size="sm"
                               variant="ghost"
                               className="text-danger"
-                              aria-label="删除跟帖"
+                              aria-label="删除回复"
                               onPress={() => setReasonTarget(reply)}
                             >
                               <Trash2 className="size-3.5" />
@@ -578,7 +578,7 @@ export function RepliesPage() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              aria-label="恢复跟帖"
+                              aria-label="恢复回复"
                               isDisabled={restoringId === reply.id}
                               onPress={() => {
                                 setRestoringId(reply.id)
@@ -622,9 +622,9 @@ export function RepliesPage() {
         onOpenChange={(isOpen) => {
           if (!isOpen) setReasonTarget(null)
         }}
-        title={`删除跟帖 #${reasonTarget?.floor ?? ''}？`}
+        title={`删除回复 #${reasonTarget?.floor ?? ''}？`}
         description="删除后保留楼层占位，可在“已删除”筛选中恢复。"
-        confirmLabel="删除跟帖"
+        confirmLabel="删除回复"
         onConfirm={(reason) => {
           if (reasonTarget) {
             deleteMutation.mutate({ id: reasonTarget.id, reason })

@@ -20,7 +20,7 @@ interface ReasonDialogProps {
 }
 
 /**
- * 需要填写操作原因的管理动作弹窗（删除主题/跟帖等），
+ * 需要填写操作原因的管理动作弹窗（删除主题/回复等），
  * 原因会写入后端审计日志。
  */
 export function ReasonDialog({

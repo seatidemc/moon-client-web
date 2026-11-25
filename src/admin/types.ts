@@ -164,7 +164,6 @@ export interface SiteSettings {
   footerText: string
   allowGuestRead: boolean
   defaultAvatarUrlTemplate: string
-  registrationEnabled: boolean
   raw: Record<string, string>
 }
 

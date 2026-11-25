@@ -8,7 +8,6 @@ import {
   Label,
   TextArea,
   TextField,
-  Typography,
   toast,
 } from '@heroui/react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -33,7 +32,6 @@ const SETTING_KEYS = {
   footerText: 'footer_text',
   allowGuestRead: 'allow_guest_read',
   defaultAvatarUrlTemplate: 'default_avatar_url_template',
-  registrationEnabled: 'registration_enabled',
 } as const
 
 interface SettingsForm {
@@ -43,7 +41,6 @@ interface SettingsForm {
   footerText: string
   allowGuestRead: boolean
   defaultAvatarUrlTemplate: string
-  registrationEnabled: boolean
 }
 
 function formFromSettings(settings: SiteSettings): SettingsForm {
@@ -54,7 +51,6 @@ function formFromSettings(settings: SiteSettings): SettingsForm {
     footerText: settings.footerText,
     allowGuestRead: settings.allowGuestRead,
     defaultAvatarUrlTemplate: settings.defaultAvatarUrlTemplate,
-    registrationEnabled: settings.registrationEnabled,
   }
 }
 
@@ -99,7 +95,6 @@ export function SettingsPage() {
       [SETTING_KEYS.allowGuestRead]: String(form.allowGuestRead),
       [SETTING_KEYS.defaultAvatarUrlTemplate]:
         form.defaultAvatarUrlTemplate.trim(),
-      [SETTING_KEYS.registrationEnabled]: String(form.registrationEnabled),
     }
 
     setSaving(true)
@@ -208,19 +203,6 @@ export function SettingsPage() {
                     </Label>
                   </Checkbox.Content>
                 </Checkbox>
-                <Checkbox
-                  isSelected={form.registrationEnabled}
-                  onChange={(isSelected) =>
-                    update('registrationEnabled', isSelected)
-                  }
-                >
-                  <Checkbox.Content>
-                    <Checkbox.Control>
-                      <Checkbox.Indicator />
-                    </Checkbox.Control>
-                    <Label>开放注册（预留项，当前版本不生效）</Label>
-                  </Checkbox.Content>
-                </Checkbox>
               </div>
 
               <div className="flex gap-2">
@@ -244,10 +226,6 @@ export function SettingsPage() {
               </div>
             </Card.Content>
           </Card>
-
-          <Typography.Paragraph size="xs" color="muted" className="mt-3">
-            未知设置键会被后端拒绝；设置更新写入审计日志。
-          </Typography.Paragraph>
         </Form>
       )}
     </div>

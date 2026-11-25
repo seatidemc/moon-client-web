@@ -33,7 +33,7 @@ const DAY_OPTIONS = [7, 14, 30]
 
 const SERIES = [
   { key: 'threads', name: '主题', color: 'var(--accent)', opacity: 1 },
-  { key: 'replies', name: '跟帖', color: 'var(--foreground)', opacity: 0.4 },
+  { key: 'replies', name: '回复', color: 'var(--foreground)', opacity: 0.4 },
   { key: 'users', name: '新用户', color: 'var(--foreground)', opacity: 0.15 },
 ] as const
 
@@ -201,7 +201,7 @@ export function DashboardPage() {
                 hint={`今日 +${formatNumber(dashboardQuery.data.today.threads)}`}
               />
               <StatCard
-                label="跟帖"
+                label="回复"
                 value={formatNumber(dashboardQuery.data.totals.replies)}
                 hint={`今日 +${formatNumber(dashboardQuery.data.today.replies)}`}
               />
@@ -248,7 +248,7 @@ export function DashboardPage() {
                       主题
                     </Table.Column>
                     <Table.Column id="replies" className="text-right">
-                      跟帖
+                      回复
                     </Table.Column>
                     <Table.Column id="users" className="text-right">
                       新用户

@@ -29,9 +29,9 @@ const RUN = Date.now().toString(36)
 const THREAD_TITLE = `后台 E2E 主题 ${RUN}`
 const SECOND_TITLE = `后台 E2E 批量主题 ${RUN}`
 const OTHER_TITLE = `后台 E2E 其他板块主题 ${RUN}`
-const REPLY_THREAD_TITLE = `后台 E2E 跟帖主题 ${RUN}`
+const REPLY_THREAD_TITLE = `后台 E2E 回复主题 ${RUN}`
 const THREAD_TEXT = `后台主题正文 ${RUN}`
-const REPLY_TEXT = `后台跟帖正文 ${RUN}`
+const REPLY_TEXT = `后台回复正文 ${RUN}`
 const UPLOAD_NAME = `e2e-admin-upload-${RUN}.png`
 const BOARD_SLUG = `e2e-admin-${RUN}`
 const BOARD_NAME = `后台板块 ${RUN}`
@@ -109,7 +109,7 @@ async function createReply(thread: number, text: string): Promise<number> {
     { data: { contentHtml: `<p>${text}</p>` } },
   )
   if (!response.ok()) {
-    throw new Error(`创建跟帖失败：${response.status()} ${await response.text()}`)
+    throw new Error(`创建回复失败：${response.status()} ${await response.text()}`)
   }
   const body = json<{ data: { id: number } }>(await response.json())
   return body.data.id
@@ -264,7 +264,7 @@ test.beforeAll(async ({ browser }) => {
   replyThreadId = await createThread(
     generalBoardId,
     REPLY_THREAD_TITLE,
-    `${THREAD_TEXT} 跟帖专用`,
+    `${THREAD_TEXT} 回复专用`,
   )
   replyId = await createReply(replyThreadId, REPLY_TEXT)
 
@@ -496,10 +496,10 @@ test.describe.serial('Moon 管理后台', () => {
     await expectToast('批量操作成功 1 条')
   })
 
-  test('跟帖管理：编辑正文、删除与恢复', async () => {
+  test('回复管理：编辑正文、删除与恢复', async () => {
     await gotoAdmin(adminPage, '/replies')
     await expect(
-      adminPage.getByRole('heading', { level: 1, name: '跟帖管理' }),
+      adminPage.getByRole('heading', { level: 1, name: '回复管理' }),
     ).toBeVisible()
 
     await adminPage.getByLabel('关键词', { exact: true }).fill(REPLY_TEXT)
@@ -507,27 +507,27 @@ test.describe.serial('Moon 管理后台', () => {
 
     let row = adminPage.locator('tbody tr').filter({ hasText: REPLY_TEXT })
     await expect(row).toBeVisible()
-    await row.getByRole('button', { name: '编辑跟帖' }).click()
+    await row.getByRole('button', { name: '编辑回复' }).click()
 
     let dialog = adminPage.getByRole('dialog')
-    const editor = dialog.getByLabel('跟帖正文')
+    const editor = dialog.getByLabel('回复正文')
     await expect(editor).toBeVisible({ timeout: 20_000 })
     await editor.click()
     await adminPage.keyboard.press('ControlOrMeta+A')
     await adminPage.keyboard.type(`${REPLY_TEXT} 已编辑`)
-    await dialog.getByRole('button', { name: '保存跟帖' }).click()
-    await expectToast('跟帖已保存')
+    await dialog.getByRole('button', { name: '保存回复' }).click()
+    await expectToast('回复已保存')
 
     row = adminPage
       .locator('tbody tr')
       .filter({ hasText: `${REPLY_TEXT} 已编辑` })
     await expect(row).toBeVisible()
 
-    await row.getByRole('button', { name: '删除跟帖' }).click()
+    await row.getByRole('button', { name: '删除回复' }).click()
     dialog = adminPage.getByRole('dialog')
-    await dialog.getByLabel('操作原因').fill(`后台 E2E 删除跟帖 ${RUN}`)
-    await dialog.getByRole('button', { name: '删除跟帖' }).click()
-    await expectToast('跟帖已删除')
+    await dialog.getByLabel('操作原因').fill(`后台 E2E 删除回复 ${RUN}`)
+    await dialog.getByRole('button', { name: '删除回复' }).click()
+    await expectToast('回复已删除')
 
     await chooseOption(adminPage, '状态', '已删除')
     await adminPage.getByRole('button', { name: '查询' }).click()
@@ -535,10 +535,10 @@ test.describe.serial('Moon 管理后台', () => {
       .locator('tbody tr')
       .filter({ hasText: `${REPLY_TEXT} 已编辑` })
     await expect(row.getByText('已删除')).toBeVisible()
-    await row.getByRole('button', { name: '恢复跟帖' }).click()
-    await expectToast('跟帖已恢复')
+    await row.getByRole('button', { name: '恢复回复' }).click()
+    await expectToast('回复已恢复')
 
-    // 恢复后跟帖离开“已删除”列表，切回正常状态确认。
+    // 恢复后回复离开“已删除”列表，切回正常状态确认。
     await chooseOption(adminPage, '状态', '正常')
     await adminPage.getByRole('button', { name: '查询' }).click()
     row = adminPage
@@ -652,7 +652,7 @@ test.describe.serial('Moon 管理后台', () => {
     ).toBeVisible()
     await expect(adminPage.getByText('已用空间')).toBeVisible()
 
-    await chooseOption(adminPage, '用途', '主题/跟帖')
+    await chooseOption(adminPage, '用途', '主题/回复')
     await adminPage.getByRole('button', { name: '查询' }).click()
 
     const row = adminPage

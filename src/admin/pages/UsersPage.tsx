@@ -486,7 +486,7 @@ function UserDetailDialog({
                           className="mt-1"
                         >
                           #{user.id} · 注册于 {formatDateTime(user.createdAt)} ·
-                          主题 {user.threadCount} · 跟帖 {user.replyCount} · 获赞{' '}
+                          主题 {user.threadCount} · 回复 {user.replyCount} · 获赞{' '}
                           {user.likeCount}
                         </Typography.Paragraph>
                         <Typography.Paragraph size="xs" color="muted">
@@ -841,7 +841,7 @@ export function UsersPage() {
                       </Table.Cell>
                       <Table.Cell>
                         <Typography.Paragraph size="xs" color="muted">
-                          {user.threadCount} 主题 · {user.replyCount} 跟帖
+                          {user.threadCount} 主题 · {user.replyCount} 回复
                         </Typography.Paragraph>
                       </Table.Cell>
                       <Table.Cell>

@@ -52,7 +52,7 @@ import type { AdminUpload } from '../types'
 const PAGE_SIZE = 20
 
 const KIND_OPTIONS = [
-  { value: 'post', label: '主题/跟帖' },
+  { value: 'post', label: '主题/回复' },
   { value: 'avatar', label: '头像' },
   { value: 'background', label: '主页背景' },
 ]

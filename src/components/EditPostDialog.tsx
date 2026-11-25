@@ -21,7 +21,7 @@ interface EditPostDialogProps {
   initialTitle?: string
   initialContent: string
   onSave: (values: { title: string; content: string }) => Promise<void> | void
-  /** 编辑跟帖时用于 re# 楼层提示 */
+  /** 编辑回复时用于 re# 楼层提示 */
   floorOptions?: ReplyReferenceOption[]
   /** 所属板块色，用于让编辑弹窗沿用板块主题色 */
   boardColor?: string

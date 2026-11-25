@@ -22,7 +22,7 @@ interface PostContentProps {
   className?: string
   /** 点击图片时打开与图片同一楼层内的图片预览。 */
   imageLightbox?: boolean
-  /** 传入后启用跟帖回复语法 re#楼层号 */
+  /** 传入后启用楼层回复语法 re#楼层号 */
   replyReferences?: ReplyReferenceOptions
 }
 

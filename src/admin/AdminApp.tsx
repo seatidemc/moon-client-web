@@ -65,7 +65,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     to: '/replies',
-    label: '跟帖管理',
+    label: '回复管理',
     icon: MessageSquare,
     visible: (admin) => admin.hasAnyScope('content.view_admin'),
   },
@@ -195,15 +195,11 @@ function AdminLayout() {
             </div>
 
             <div className="flex items-center gap-3">
-              {admin.isSuperuser ? (
-                <Chip size="sm" variant="soft" color="accent">
-                  <Chip.Label>超级管理员</Chip.Label>
-                </Chip>
-              ) : (
+              {!admin.isSuperuser ? (
                 <Chip size="sm" variant="soft" color="default">
                   <Chip.Label>板块管理员</Chip.Label>
                 </Chip>
-              )}
+              ) : null}
               {admin.me.user ? (
                 <span className="hidden items-center gap-2 sm:flex">
                   <UserAvatar user={admin.me.user} />

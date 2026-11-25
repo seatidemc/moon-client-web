@@ -35,7 +35,7 @@ import { scrollIntoViewAbove } from '@/lib/scroll'
 import type { Reply } from '@/types'
 
 export interface ReplyComposerHandle {
-  /** 在跟帖末尾追加楼层引用 chip，并聚焦输入框 */
+  /** 在回复末尾追加楼层引用 chip，并聚焦输入框 */
   appendReplyReference: (floor: number) => void
 }
 
@@ -209,7 +209,7 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
                   compact
                   value={content}
                   onChange={setContent}
-                  ariaLabel="跟帖内容"
+                  ariaLabel="回复内容"
                   syncExternalValue={!expanded}
                   floorOptions={floorOptions}
                   onQuickSendChange={setQuickSend}
@@ -324,7 +324,7 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
                 className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col"
               >
                 <Modal.Header>
-                  <Modal.Heading>发布跟帖</Modal.Heading>
+                  <Modal.Heading>发布回复</Modal.Heading>
                 </Modal.Header>
 
                 <Modal.Body className="flex min-h-0 flex-1 flex-col">
@@ -332,7 +332,7 @@ export function ReplyComposer({ threadId, ref }: ReplyComposerProps) {
                     value={content}
                     onChange={setContent}
                     fillHeight
-                    ariaLabel="跟帖内容"
+                    ariaLabel="回复内容"
                     syncExternalValue={expanded}
                     floorOptions={floorOptions}
                   />

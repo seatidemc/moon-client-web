@@ -200,7 +200,9 @@ export function AuditPage() {
                   <Table.Column id="actor">操作人</Table.Column>
                   <Table.Column id="action">动作</Table.Column>
                   <Table.Column id="target">目标</Table.Column>
-                  <Table.Column id="detail">详情</Table.Column>
+                  <Table.Column id="detail" className="min-w-96">
+                    详情
+                  </Table.Column>
                   <Table.Column id="source">来源</Table.Column>
                 </Table.Header>
                 <Table.Body
@@ -240,7 +242,7 @@ export function AuditPage() {
                           </Disclosure.Heading>
                           <Disclosure.Content>
                             <Disclosure.Body>
-                              <pre className="mt-1 max-w-md overflow-x-auto rounded bg-default-soft p-2 text-[11px] whitespace-pre-wrap">
+                              <pre className="mt-1 w-full max-w-2xl overflow-x-auto rounded bg-default-soft p-2 text-[11px] whitespace-pre-wrap break-words">
                                 {formatJsonDetail(log.detail)}
                               </pre>
                             </Disclosure.Body>

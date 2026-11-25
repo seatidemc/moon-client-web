@@ -364,7 +364,7 @@ export function ThreadPage() {
               </div>
             </article>
 
-            <section className="relative flex flex-col gap-5" aria-label="跟帖">
+            <section className="relative flex flex-col gap-5" aria-label="回复">
               {threadReplies.length > 0 ? (
                 threadReplies.map((reply) => {
                   const replyAuthor = reply.author
@@ -442,7 +442,7 @@ export function ThreadPage() {
                               isIconOnly
                               variant="ghost"
                               className="text-muted hover:text-danger"
-                              aria-label="删除跟帖"
+                              aria-label="删除回复"
                               onPress={() => setReplyToDelete(reply)}
                             >
                               <Trash2 className="size-3.5" />
@@ -598,7 +598,7 @@ export function ThreadPage() {
         isOpen={deleteThreadOpen}
         onOpenChange={setDeleteThreadOpen}
         title="删除这个主题？"
-        description="主题和它下面的所有跟帖都会被删除，此操作无法撤销。"
+        description="主题和它下面的所有回复都会被删除，此操作无法撤销。"
         confirmLabel="删除主题"
         isPending={deleteThread.isPending}
         onConfirm={() => void handleDeleteThread()}
@@ -608,7 +608,7 @@ export function ThreadPage() {
         onOpenChange={(isOpen) => {
           if (!isOpen) setReplyToDelete(null)
         }}
-        title="删除这条跟帖？"
+        title="删除这条回复？"
         description="删除后无法恢复。"
         isPending={deleteReply.isPending}
         onConfirm={() => void handleDeleteReply()}
