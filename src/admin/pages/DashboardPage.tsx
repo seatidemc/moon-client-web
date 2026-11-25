@@ -29,7 +29,13 @@ import {
 } from '../components/ui'
 import type { DashboardTrend } from '../types'
 
-const DAY_OPTIONS = [7, 14, 30]
+const RANGE_OPTIONS = [
+  { value: 7, label: '近 7 天' },
+  { value: 14, label: '近 14 天' },
+  { value: 30, label: '近 30 天' },
+  // 后端约定 days=0 表示全部时间。
+  { value: 0, label: '全部' },
+] as const
 
 const SERIES = [
   { key: 'threads', name: '主题', color: 'var(--accent)', opacity: 1 },
@@ -162,13 +168,13 @@ export function DashboardPage() {
           >
             <Tabs.ListContainer>
               <Tabs.List aria-label="统计范围">
-                {DAY_OPTIONS.map((option) => (
+                {RANGE_OPTIONS.map((option) => (
                   <Tabs.Tab
-                    key={option}
-                    id={String(option)}
+                    key={option.value}
+                    id={String(option.value)}
                     className="whitespace-nowrap"
                   >
-                    近 {option} 天
+                    {option.label}
                     <Tabs.Indicator />
                   </Tabs.Tab>
                 ))}
@@ -188,12 +194,6 @@ export function DashboardPage() {
       ) : (
         <div className="space-y-5">
           <section aria-label="总量">
-            <Typography.Heading
-              level={2}
-              className="mb-2 text-sm font-medium text-muted"
-            >
-              总量
-            </Typography.Heading>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <StatCard
                 label="主题"
@@ -231,12 +231,6 @@ export function DashboardPage() {
           </Card>
 
           <section aria-label="每日明细">
-            <Typography.Heading
-              level={2}
-              className="mb-2 text-sm font-medium text-muted"
-            >
-              每日明细
-            </Typography.Heading>
             <Table aria-label="每日明细">
               <Table.ScrollContainer>
                 <Table.Content aria-label="每日明细">
