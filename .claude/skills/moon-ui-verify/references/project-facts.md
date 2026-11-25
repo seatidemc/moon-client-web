@@ -131,26 +131,20 @@ Endpoints (`src/admin/api.ts`, prefix `/forum-v1/admin`):
 
 - Main checkout: `/Users/su/code/moon-client-web`
 - Worktrees: `/Users/su/code/moon-client-web/.claude/worktrees/<name>`
-- `.claude` is gitignored; `.agents` is tracked.
+- `.gitignore` ignores `.claude/*` but re-includes `.claude/skills/`, so this skill is tracked while
+  `.claude/settings.local.json` and `.claude/worktrees/` stay local.
 - A fresh worktree has no `node_modules`. Symlink the main checkout's:
   `ln -s /Users/su/code/moon-client-web/node_modules node_modules`
   (relative from the worktree root: `../../../node_modules`).
 - `EnterWorktree` may base a new worktree on `origin/main`. Check the ref before editing (see
   `blockers.md` #1).
 - Skill discovery (verified with `claude --debug-file` on 2026-11-25, CLI 2.1.330):
-  - project skills load only from `/Users/su/code/moon-client-web/.claude/skills` — the main
-    checkout, even when the session starts inside a worktree;
+  - project skills load from `/Users/su/code/moon-client-web/.claude/skills` — the main checkout,
+    even when the session starts inside a worktree;
   - user skills load from `/Users/su/.claude/skills`;
-  - `.agents/skills` is **not** scanned. This repo keeps canonical skill content under `.agents`,
-    with no committed `.claude/skills` mirror.
-  - `--add-dir <dir>` does add `<dir>/.claude/skills` as an "additional" skill source.
-  - To load this skill locally, create the ignored symlink once per main checkout:
-    `mkdir -p .claude/skills && ln -s ../../.agents/skills/moon-ui-verify .claude/skills/moon-ui-verify`
-    (run from `/Users/su/code/moon-client-web`).
-  - If the canonical files exist only on a worktree branch, point the link at that worktree
-    (`../../.claude/worktrees/<name>/.agents/skills/moon-ui-verify`) until the branch is merged.
-- A worktree created before a skill existed will not see it until the branch contains the files and
-  the discovery path exposes them.
+  - `.agents/skills` is not scanned, which is why this skill lives in `.claude/skills`;
+  - `--add-dir <dir>` adds `<dir>/.claude/skills` as an "additional" skill source.
+- A worktree created before a skill existed will not see it until the branch contains the files.
 
 ## Drift checks
 

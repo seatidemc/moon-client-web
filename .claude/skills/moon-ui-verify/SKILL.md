@@ -13,9 +13,8 @@ admin app (`admin.html#/...`).
 Non-goals: general React debugging, backend design, pixel-diff visual baselines, and full E2E seeding
 unless the user asks for them.
 
-Canonical files live in `.agents/skills/moon-ui-verify/`. Claude Code discovers project skills from
-`.claude/skills`, so expose this directory with a local symlink there when setting up a checkout:
-`ln -s ../../.agents/skills/moon-ui-verify .claude/skills/moon-ui-verify`.
+Canonical files live in `.claude/skills/moon-ui-verify/`, which Claude Code scans directly as a
+project skill.
 
 ## Intake checklist
 
@@ -69,7 +68,7 @@ Run these checks first and stop on red. Details for each failure live in
 4. Run:
 
 ```bash
-node .agents/skills/moon-ui-verify/scripts/ui-probe.mjs \
+node .claude/skills/moon-ui-verify/scripts/ui-probe.mjs \
   --config test-results/ui-probe/configs/audit-chevron.json
 ```
 

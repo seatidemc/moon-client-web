@@ -9,7 +9,7 @@
  * (and its MySQL/backend requirements) is never triggered.
  *
  * Usage:
- *   node .agents/skills/moon-ui-verify/scripts/ui-probe.mjs --config <config.json>
+ *   node .claude/skills/moon-ui-verify/scripts/ui-probe.mjs --config <config.json>
  *        [--out <dir>] [--headed] [--browser chrome|chromium] [--timeout <ms>]
  *        [--no-screenshots] [--json] [--verbose]
  *

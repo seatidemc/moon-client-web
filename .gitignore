@@ -1,5 +1,6 @@
 # Logs
-.claude
+.claude/*
+!.claude/skills/
 logs
 *.log
 npm-debug.log*

@@ -51,7 +51,7 @@ ln -s /Users/su/code/moon-client-web/node_modules node_modules
 # from a standard worktree root this is: ln -s ../../../node_modules node_modules
 ```
 
-**Verify:** `node --check .agents/skills/moon-ui-verify/scripts/ui-probe.mjs` and a probe launch both
+**Verify:** `node --check .claude/skills/moon-ui-verify/scripts/ui-probe.mjs` and a probe launch both
 work.
 
 ---
@@ -208,7 +208,7 @@ worktree isolation guard.
 **Fix:** Write scripts and configs with the Write tool, then run one plain command from the worktree:
 
 ```bash
-node .agents/skills/moon-ui-verify/scripts/ui-probe.mjs --config test-results/ui-probe/configs/audit-chevron.json
+node .claude/skills/moon-ui-verify/scripts/ui-probe.mjs --config test-results/ui-probe/configs/audit-chevron.json
 ```
 
 Keep all commands inside the current worktree; do not `cd` to `/Users/su/code/moon-client-web`.

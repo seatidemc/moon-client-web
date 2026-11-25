@@ -4,7 +4,7 @@
 under `test-results/ui-probe/configs/<name>.json` (gitignored), and run from the repo/worktree root:
 
 ```bash
-node .agents/skills/moon-ui-verify/scripts/ui-probe.mjs \
+node .claude/skills/moon-ui-verify/scripts/ui-probe.mjs \
   --config test-results/ui-probe/configs/audit-chevron.json
 ```
 
