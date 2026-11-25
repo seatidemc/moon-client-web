@@ -235,14 +235,19 @@ export function AuditPage() {
                       <Table.Cell>
                         <Disclosure>
                           <Disclosure.Heading>
-                            <Disclosure.Trigger className="text-xs text-accent">
+                            <Disclosure.Trigger className="inline-flex items-center gap-1 text-xs text-accent">
                               查看
                               <Disclosure.Indicator />
                             </Disclosure.Trigger>
                           </Disclosure.Heading>
                           <Disclosure.Content>
                             <Disclosure.Body>
-                              <pre className="mt-1 w-full max-w-2xl overflow-x-auto rounded bg-default-soft p-2 text-[11px] whitespace-pre-wrap break-words">
+                              {/*
+                               * w-0 + min-w-full keeps the expanded JSON from
+                               * contributing to the table's intrinsic width, so
+                               * the column does not resize when a row opens.
+                               */}
+                              <pre className="mt-1 w-0 min-w-full overflow-x-auto rounded bg-default-soft p-2 text-[11px] whitespace-pre-wrap break-words">
                                 {formatJsonDetail(log.detail)}
                               </pre>
                             </Disclosure.Body>
