@@ -125,7 +125,7 @@ starting the app once with real auth and copying the network response when the s
 
 | What you see | Likely cause |
 |---|---|
-| `Tide` login form | 401 on `/admin/auth/me`, wrong path, or `user: null` |
+| `Moon` login form | 401 on `/admin/auth/me`, wrong path, or `user: null` |
 | 无管理权限 | 403; identity mock lacks the route permission |
 | 无法读取管理状态 | 5xx or network failure on `/admin/auth/me` |
 | Page shell but empty table | page API unmocked, wrong envelope, or wrong shape |

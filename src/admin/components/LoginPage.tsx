@@ -44,7 +44,7 @@ export function LoginPage() {
       <Card className="w-full max-w-sm">
         <Card.Content>
           <Form onSubmit={handleSubmit} className="space-y-4">
-            <p className="brand-logo text-2xl tracking-tight">Tide</p>
+            <p className="brand-logo text-2xl tracking-tight">Moon</p>
 
             <TextField fullWidth>
               <Label>管理员账号</Label>

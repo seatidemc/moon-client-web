@@ -14,7 +14,7 @@ export const USER_LIST_PAGE_SIZE = 5
 
 /** /site 尚未返回时的占位站点配置，与后端默认值一致。 */
 export const DEFAULT_SITE: Site = {
-  siteName: 'Tide',
+  siteName: 'Moon',
   siteDescription: '',
   announcement: '',
   footerText: '',

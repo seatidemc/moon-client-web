@@ -127,7 +127,7 @@ do the same.
 
 ## 6. Admin auth blocks the page (login form instead of the route)
 
-**Symptom:** `/admin.html#/audit` renders `Tide / 管理员账号 / 密码 / 登录管理后台` instead of the
+**Symptom:** `/admin.html#/audit` renders `Moon / 管理员账号 / 密码 / 登录管理后台` instead of the
 target page.
 
 **Detect:** Network log or `result.json` `apiErrors` shows 401 on `/forum-v1/admin/auth/me`; the probe
