@@ -1,9 +1,19 @@
+/*
+ * Fonts live under src/assets so Vite fingerprints them into /assets/*.
+ * Combined with the immutable Cache-Control rule for /assets/* in
+ * public/_headers, repeat visits load them without any network request.
+ *
+ * Minecraft SC uses `optional`: the font is preloaded (see index.html) and
+ * served from cache on later visits, so it is ready before the first layout.
+ * On a first visit over a slow link it misses the short block window and the
+ * page keeps the fallback for that view instead of swapping mid-read.
+ */
 @font-face {
   font-family: "Minecraft SC";
-  src: url("/fonts/MinecraftSC-Regular.woff2") format("woff2");
+  src: url("./assets/fonts/MinecraftSC-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
   unicode-range:
     U+0020-007E, U+00A0-00FF, U+2000-206F, U+3000-303F, U+4E00-9FFF,
     U+FF00-FFEF;
@@ -11,7 +21,7 @@
 
 @font-face {
   font-family: "Recursive";
-  src: url("/fonts/Recursive-VF.woff2") format("woff2");
+  src: url("./assets/fonts/Recursive-VF.woff2") format("woff2");
   font-weight: 300 1000;
   font-style: oblique -15deg 0deg;
   font-display: swap;

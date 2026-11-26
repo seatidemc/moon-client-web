@@ -9,6 +9,20 @@
       content="Moon 是 Seatide 玩家社区的论坛"
     />
     <meta name="theme-color" content="#f7f7f8" />
+    <!--
+      Start the pixel-font download while the page shell is still parsing so it
+      is ready before the first paint. Vite rewrites this to the hashed
+      /assets/* URL at build time. `crossorigin` is required: @font-face
+      requests are CORS requests, and without it the preload is discarded and
+      the font is fetched a second time.
+    -->
+    <link
+      rel="preload"
+      href="/src/assets/fonts/MinecraftSC-Regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <title>Moon</title>
   </head>
   <body>

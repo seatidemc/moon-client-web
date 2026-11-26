@@ -1,0 +1,16 @@
+# Response headers for the static-assets Worker (read by `wrangler deploy`,
+# see wrangler.jsonc).
+#
+# Cloudflare's default for Workers static assets is
+# `public, max-age=0, must-revalidate`, so without this file the browser
+# revalidates every JS/CSS/font file on every page load (a 304 round trip —
+# harmless on fast links, but on slow ones it is a full RTT before the pixel
+# font becomes usable, i.e. a visible fallback-to-brand font swap).
+#
+# Vite fingerprints every file under /assets/ from its content, so those URLs
+# can be cached forever. The HTML entry points keep the default and therefore
+# always reference the current hashes after a deploy; a font or code change
+# produces a new URL instead of a stale cache hit.
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
